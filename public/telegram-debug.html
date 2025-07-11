@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🤖 Telegram Bot Debug</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: #1a1a1a !important;
+            color: #00ff00 !important;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .header {
+            background: #ff0000;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .section {
+            background: rgba(0,255,0,0.1);
+            border: 1px solid #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .error { color: #ff4444; }
+        .success { color: #44ff44; }
+        .warning { color: #ffaa44; }
+        
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+        
+        .test-pass { border-color: #44ff44; background: rgba(68,255,68,0.1); }
+        .test-fail { border-color: #ff4444; background: rgba(255,68,68,0.1); }
+        .test-warn { border-color: #ffaa44; background: rgba(255,170,68,0.1); }
+        
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+        }
+        
+        button:hover { background: #44ff44; }
+        
+        .log {
+            background: #000;
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        🤖 TELEGRAM BOT ДИАГНОСТИКА
+        <br>Анализ проблемы черного экрана
+    </div>
+
+    <div class="section">
+        <h3>📊 СИСТЕМНАЯ ИНФОРМАЦИЯ</h3>
+        <div id="system-info">Загрузка...</div>
+    </div>
+
+    <div class="section">
+        <h3>🌐 ТЕСТ ПОДКЛЮЧЕНИЯ</h3>
+        <button onclick="testConnections()">🔄 Запустить тесты</button>
+        <div id="connection-tests"></div>
+    </div>
+
+    <div class="section">
+        <h3>🤖 TELEGRAM API ТЕСТ</h3>
+        <button onclick="testTelegramAPI()">📱 Тест Telegram WebApp</button>
+        <div id="telegram-tests"></div>
+    </div>
+
+    <div class="section">
+        <h3>📝 ЛОГИ РЕАЛЬНОГО ВРЕМЕНИ</h3>
+        <button onclick="startLogging()">▶️ Начать логирование</button>
+        <button onclick="stopLogging()">⏹️ Остановить</button>
+        <div class="log" id="live-logs">Нажмите "Начать логирование" для мониторинга...</div>
+    </div>
+
+    <div class="section">
+        <h3>🛠️ РЕШЕНИЯ ПРОБЛЕМ</h3>
+        <div id="solutions"></div>
+    </div>
+
+    <script>
+        let loggingInterval = null;
+        let testResults = [];
+        
+        // Системная информация
+        function displaySystemInfo() {
+            const info = {
+                'User-Agent': navigator.userAgent,
+                'Экран': `${screen.width}x${screen.height}`,
+                'Viewport': `${window.innerWidth}x${window.innerHeight}`,
+                'URL': window.location.href,
+                'Referer': document.referrer || 'Нет',
+                'Язык': navigator.language,
+                'Платформа': navigator.platform,
+                'Время': new Date().toLocaleString()
+            };
+            
+            let html = '';
+            for (const [key, value] of Object.entries(info)) {
+                html += `<div><strong>${key}:</strong> ${value}</div>`;
+            }
+            
+            document.getElementById('system-info').innerHTML = html;
+        }
+        
+        // Тест подключений
+        async function testConnections() {
+            const tests = [
+                { name: 'HTTP /app', url: '/app' },
+                { name: 'HTTPS /app', url: 'https://89.169.182.9:3443/app' },
+                { name: 'API Categories', url: '/products/categories' },
+                { name: 'Telegram Script', url: 'https://telegram.org/js/telegram-web-app.js' }
+            ];
+            
+            let html = '';
+            
+            for (const test of tests) {
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(test.url, { 
+                        method: 'HEAD',
+                        mode: 'no-cors'
+                    });
+                    const endTime = Date.now();
+                    
+                    html += `<div class="test-result test-pass">
+                        ✅ ${test.name}: OK (${endTime - startTime}ms)
+                    </div>`;
+                } catch (error) {
+                    html += `<div class="test-result test-fail">
+                        ❌ ${test.name}: ОШИБКА - ${error.message}
+                    </div>`;
+                }
+            }
+            
+            document.getElementById('connection-tests').innerHTML = html;
+        }
+        
+        // Тест Telegram API
+        function testTelegramAPI() {
+            let html = '';
+            
+            // Проверка наличия Telegram объекта
+            if (window.Telegram) {
+                html += `<div class="test-result test-pass">
+                    ✅ window.Telegram: Доступен
+                </div>`;
+                
+                if (window.Telegram.WebApp) {
+                    html += `<div class="test-result test-pass">
+                        ✅ Telegram.WebApp: Доступен
+                    </div>`;
+                    
+                    const webApp = window.Telegram.WebApp;
+                    
+                    // Проверяем свойства WebApp
+                    const properties = [
+                        'initData', 'initDataUnsafe', 'version', 'platform',
+                        'colorScheme', 'themeParams', 'isExpanded', 'viewportHeight',
+                        'viewportStableHeight', 'headerColor', 'backgroundColor'
+                    ];
+                    
+                    properties.forEach(prop => {
+                        if (webApp[prop] !== undefined) {
+                            html += `<div class="test-result test-pass">
+                                ✅ WebApp.${prop}: ${JSON.stringify(webApp[prop]).substring(0, 100)}
+                            </div>`;
+                        } else {
+                            html += `<div class="test-result test-warn">
+                                ⚠️ WebApp.${prop}: Не определено
+                            </div>`;
+                        }
+                    });
+                    
+                } else {
+                    html += `<div class="test-result test-fail">
+                        ❌ Telegram.WebApp: НЕ ДОСТУПЕН
+                    </div>`;
+                }
+            } else {
+                html += `<div class="test-result test-fail">
+                    ❌ window.Telegram: НЕ ДОСТУПЕН
+                </div>`;
+            }
+            
+            // Проверка мобильного устройства
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            html += `<div class="test-result ${isMobile ? 'test-pass' : 'test-warn'}">
+                ${isMobile ? '✅' : '⚠️'} Мобильное устройство: ${isMobile ? 'ДА' : 'НЕТ'}
+            </div>`;
+            
+            // Проверка источника
+            const fromTelegram = document.referrer.includes('telegram') || 
+                               window.location.href.includes('tgWebAppData');
+            html += `<div class="test-result ${fromTelegram ? 'test-pass' : 'test-fail'}">
+                ${fromTelegram ? '✅' : '❌'} Запуск из Telegram: ${fromTelegram ? 'ДА' : 'НЕТ'}
+            </div>`;
+            
+            document.getElementById('telegram-tests').innerHTML = html;
+        }
+        
+        // Логирование в реальном времени
+        function startLogging() {
+            if (loggingInterval) return;
+            
+            const logElement = document.getElementById('live-logs');
+            let logCount = 0;
+            
+            logElement.innerHTML = 'Мониторинг запущен...\n';
+            
+            loggingInterval = setInterval(async () => {
+                try {
+                    // Отправляем тестовый запрос
+                    const response = await fetch('/products/categories', {
+                        headers: {
+                            'X-Debug-Source': 'telegram-debug',
+                            'X-Debug-Time': Date.now()
+                        }
+                    });
+                    
+                    logCount++;
+                    const timestamp = new Date().toLocaleTimeString();
+                    logElement.innerHTML += `[${timestamp}] Тест #${logCount}: ${response.status} ${response.statusText}\n`;
+                    
+                    // Автоскролл
+                    logElement.scrollTop = logElement.scrollHeight;
+                    
+                } catch (error) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    logElement.innerHTML += `[${timestamp}] ОШИБКА: ${error.message}\n`;
+                }
+            }, 3000);
+        }
+        
+        function stopLogging() {
+            if (loggingInterval) {
+                clearInterval(loggingInterval);
+                loggingInterval = null;
+                document.getElementById('live-logs').innerHTML += '\nМониторинг остановлен.\n';
+            }
+        }
+        
+        // Решения проблем
+        function displaySolutions() {
+            const solutions = [
+                {
+                    problem: '🤖 Бот не обращается к серверу',
+                    solution: 'Проверьте URL в BotFather: /setmenubutton → https://89.169.182.9:3443/app'
+                },
+                {
+                    problem: '🔒 SSL сертификат не валиден',
+                    solution: 'Telegram требует валидный SSL. Используйте Let\'s Encrypt или купите сертификат'
+                },
+                {
+                    problem: '📱 Черный экран в мобильном Telegram',
+                    solution: 'Проблема с iframe. Проверьте заголовки X-Frame-Options и CSP'
+                },
+                {
+                    problem: '🌐 Mixed Content ошибки',
+                    solution: 'Все ресурсы должны загружаться по HTTPS'
+                }
+            ];
+            
+            let html = '';
+            solutions.forEach(item => {
+                html += `<div class="test-result test-warn">
+                    <strong>${item.problem}</strong><br>
+                    💡 ${item.solution}
+                </div>`;
+            });
+            
+            document.getElementById('solutions').innerHTML = html;
+        }
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            displaySystemInfo();
+            displaySolutions();
+            
+            // Автоматически запускаем тесты
+            setTimeout(() => {
+                testConnections();
+                testTelegramAPI();
+            }, 1000);
+        });
+        
+        // Отправка диагностических данных на сервер
+        async function sendDiagnostics() {
+            const diagnostics = {
+                userAgent: navigator.userAgent,
+                url: window.location.href,
+                referrer: document.referrer,
+                timestamp: Date.now(),
+                telegramAvailable: !!(window.Telegram && window.Telegram.WebApp),
+                testResults: testResults
+            };
+            
+            try {
+                await fetch('/debug/report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(diagnostics)
+                });
+            } catch (error) {
+                console.error('Ошибка отправки диагностики:', error);
+            }
+        }
+        
+        // Отправляем диагностику при загрузке
+        window.addEventListener('load', sendDiagnostics);
+    </script>
+</body>
+</html> 

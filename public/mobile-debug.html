@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Мобильная Диагностика</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #ff0000 !important;
+            color: white !important;
+            font-family: monospace;
+            padding: 20px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .debug-info {
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .success { background: #00ff00 !important; color: black !important; }
+        .error { background: #ff0000 !important; color: white !important; }
+        .warning { background: #ffaa00 !important; color: black !important; }
+        
+        button {
+            background: white;
+            color: black;
+            border: none;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 16px;
+            margin: 10px 0;
+            width: 100%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-info">
+        <h1>🚨 МОБИЛЬНАЯ ДИАГНОСТИКА</h1>
+        <p>Если вы видите этот красный экран - значит страница загружается!</p>
+    </div>
+    
+    <div id="info" class="debug-info">
+        <p>Загрузка информации...</p>
+    </div>
+    
+    <button onclick="testAPI()">🧪 Тест API</button>
+    <button onclick="clearCache()">🗑️ Очистить кэш</button>
+    <button onclick="goToApp()">🚀 Перейти в приложение</button>
+    <button onclick="location.reload()">🔄 Перезагрузить</button>
+    
+    <div id="log" class="debug-info">
+        <h3>📋 Лог:</h3>
+        <pre id="logContent">Инициализация...</pre>
+    </div>
+
+    <script>
+        let logContent = '';
+        
+        function log(message) {
+            const now = new Date().toLocaleTimeString();
+            logContent += `[${now}] ${message}\n`;
+            document.getElementById('logContent').textContent = logContent;
+            console.log(message);
+        }
+        
+        function updateInfo() {
+            const info = document.getElementById('info');
+            const userAgent = navigator.userAgent;
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(userAgent);
+            const telegramAvailable = !!(window.Telegram && window.Telegram.WebApp);
+            
+            info.innerHTML = `
+                <h3>📱 Информация об устройстве:</h3>
+                <p><strong>Мобильное:</strong> ${isMobile ? '✅ ДА' : '❌ НЕТ'}</p>
+                <p><strong>Экран:</strong> ${screen.width}x${screen.height}</p>
+                <p><strong>Viewport:</strong> ${window.innerWidth}x${window.innerHeight}</p>
+                <p><strong>Telegram API:</strong> ${telegramAvailable ? '✅ ДА' : '❌ НЕТ'}</p>
+                <p><strong>URL:</strong> ${window.location.href}</p>
+                <p><strong>User-Agent:</strong> ${userAgent.substring(0, 100)}...</p>
+            `;
+            
+            log(`Устройство: ${isMobile ? 'Мобильное' : 'Десктоп'}`);
+            log(`Telegram API: ${telegramAvailable ? 'Доступен' : 'Недоступен'}`);
+        }
+        
+        async function testAPI() {
+            log('Тестирование API...');
+            try {
+                const response = await fetch('/products/categories');
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ API работает! Получено ${data.length} категорий`);
+                    document.getElementById('info').className = 'debug-info success';
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                log(`❌ Ошибка API: ${error.message}`);
+                document.getElementById('info').className = 'debug-info error';
+            }
+        }
+        
+        function clearCache() {
+            log('Очистка кэша...');
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                    log('✅ Кэш очищен');
+                });
+            }
+            localStorage.clear();
+            sessionStorage.clear();
+            log('✅ LocalStorage очищен');
+        }
+        
+        function goToApp() {
+            log('Переход в приложение...');
+            window.location.href = '/app';
+        }
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            log('DOM загружен');
+            updateInfo();
+            
+            // Автоматический тест API через 2 секунды
+            setTimeout(testAPI, 2000);
+        });
+        
+        // Обработка ошибок
+        window.onerror = function(message, source, lineno, colno, error) {
+            log(`❌ Ошибка: ${message} (${source}:${lineno})`);
+            return true;
+        };
+        
+        log('Скрипт инициализирован');
+    </script>
+</body>
+</html> 

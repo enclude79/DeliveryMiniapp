@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="HandheldFriendly" content="true">
+    <title>Delivery App Mobile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 20px;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .container {
+            max-width: 100%;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .status {
+            padding: 5px;
+            margin-top: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .log {
+            background: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🍽️ Delivery App</h1>
+        <p>Мобильная версия</p>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Диагностика</h2>
+            <div id="status" class="status info">Проверка...</div>
+            <div id="log" class="log">Загрузка...</div>
+            <button id="testBtn">Проверить соединение</button>
+            <button id="showInfoBtn">Показать информацию</button>
+            <button id="openAppBtn">Открыть приложение</button>
+        </div>
+    </div>
+    
+    <script>
+        // Глобальные переменные для логирования
+        let logs = [];
+        const maxLogs = 20;
+        
+        // Функция для добавления логов
+        function log(message, type = 'info') {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            const logMessage = `[${timeStr}] [${type}] ${message}`;
+            
+            logs.unshift(logMessage);
+            if (logs.length > maxLogs) {
+                logs.pop();
+            }
+            
+            document.getElementById('log').textContent = logs.join('\n');
+            console.log(message);
+        }
+        
+        // Функция для обновления статуса
+        function updateStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+        
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Страница загружена');
+            
+            // Проверка мобильного устройства
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            log(`Устройство: ${isMobile ? 'Мобильное' : 'Десктоп'}`);
+            log(`User-Agent: ${navigator.userAgent}`);
+            
+            // Проверка Telegram WebApp
+            if (window.Telegram && window.Telegram.WebApp) {
+                log('Telegram WebApp API доступен', 'success');
+                updateStatus('Telegram WebApp API доступен', 'success');
+                
+                try {
+                    const tg = window.Telegram.WebApp;
+                    log(`Версия WebApp: ${tg.version || 'неизвестно'}`);
+                    log(`Платформа: ${tg.platform || 'неизвестно'}`);
+                    
+                    // Инициализация WebApp
+                    tg.ready();
+                    log('WebApp готов (tg.ready())', 'success');
+                    
+                    tg.expand();
+                    log('WebApp развернут (tg.expand())', 'success');
+                } catch (error) {
+                    log(`Ошибка инициализации WebApp: ${error.message}`, 'error');
+                    updateStatus('Ошибка инициализации WebApp', 'error');
+                }
+            } else {
+                log('Telegram WebApp API недоступен', 'error');
+                updateStatus('Telegram WebApp API недоступен', 'error');
+            }
+            
+            // Обработчики кнопок
+            document.getElementById('testBtn').addEventListener('click', function() {
+                fetch('/products/categories')
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error('Ошибка сети');
+                    })
+                    .then(data => {
+                        log(`API работает. Получено ${data.length} категорий`, 'success');
+                        updateStatus('API работает', 'success');
+                    })
+                    .catch(error => {
+                        log(`Ошибка API: ${error.message}`, 'error');
+                        updateStatus('Ошибка API', 'error');
+                    });
+            });
+            
+            document.getElementById('showInfoBtn').addEventListener('click', function() {
+                if (window.Telegram && window.Telegram.WebApp) {
+                    const tg = window.Telegram.WebApp;
+                    log('--- Информация о WebApp ---');
+                    log(`initDataUnsafe: ${JSON.stringify(tg.initDataUnsafe)}`);
+                    log(`colorScheme: ${tg.colorScheme}`);
+                    log(`themeParams: ${JSON.stringify(tg.themeParams)}`);
+                    log(`isExpanded: ${tg.isExpanded}`);
+                    log(`viewportHeight: ${tg.viewportHeight}`);
+                    log(`viewportStableHeight: ${tg.viewportStableHeight}`);
+                } else {
+                    log('WebApp недоступен', 'error');
+                }
+            });
+            
+            document.getElementById('openAppBtn').addEventListener('click', function() {
+                window.location.href = '/app';
+            });
+        });
+        
+        // Глобальный обработчик ошибок
+        window.onerror = function(message, source, lineno, colno, error) {
+            log(`Ошибка: ${message} (${source}:${lineno})`, 'error');
+            updateStatus('Произошла ошибка', 'error');
+            return true;
+        };
+    </script>
+</body>
+</html> 

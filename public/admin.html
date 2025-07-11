@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель | Сервис доставки</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: #4CAF50;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .login-form {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            margin: 100px auto;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="text"], input[type="password"], input[type="date"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .btn-primary {
+            background: #007bff !important;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3 !important;
+        }
+        
+        .orders-table, .customers-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status.pending { background: #fff3cd; color: #856404; }
+        .status.processing { background: #d4edda; color: #155724; }
+        .status.delivering { background: #cce5ff; color: #004085; }
+        .status.completed { background: #d1ecf1; color: #0c5460; }
+        .status.cancelled { background: #f8d7da; color: #721c24; }
+        
+        .hidden { display: none; }
+        
+        .order-card, .customer-card {
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .order-card:hover, .customer-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .filters-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .filters-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+        
+        .pagination {
+            margin-top: 20px;
+        }
+        
+        .customer-link {
+            color: #007bff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .customer-link:hover {
+            text-decoration: underline;
+        }
+        
+        .modal-xl {
+            max-width: 90%;
+        }
+        
+        .order-items-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .customer-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .address-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .address-default {
+            border-color: #28a745;
+            background-color: #f8fff9;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Форма входа -->
+    <div id="loginForm" class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title text-center mb-4">Вход в админ-панель</h3>
+                        <form id="login">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Имя пользователя</label>
+                                <input type="text" class="form-control" id="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Пароль</label>
+                                <input type="password" class="form-control" id="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Войти</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основной контент -->
+    <div id="mainContent" class="container mt-4" style="display: none;">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">Админ-панель</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" data-page="orders">Заказы</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="customers">Клиенты</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="products">Товары</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="categories">Категории</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="security">🛡️ Безопасность</a>
+                        </li>
+                    </ul>
+                    <button id="logoutBtn" class="btn btn-outline-danger ms-auto">Выйти</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Заказы -->
+        <div id="ordersPage">
+            <h2 class="mb-4">📋 Управление заказами</h2>
+            
+            <!-- Фильтры -->
+            <div class="filters-panel">
+                <h5>🔍 Фильтры</h5>
+                <div class="filters-row">
+                    <div>
+                        <label>Дата с:</label>
+                        <input type="date" id="dateFrom" class="form-control">
+                    </div>
+                    <div>
+                        <label>Дата по:</label>
+                        <input type="date" id="dateTo" class="form-control">
+                    </div>
+                    <div>
+                        <label>Статус:</label>
+                        <select id="statusFilter" class="form-control">
+                            <option value="">Все статусы</option>
+                            <option value="получен">Получен</option>
+                            <option value="в_обработке">В обработке</option>
+                            <option value="собирается">Собирается</option>
+                            <option value="в_доставке">В доставке</option>
+                            <option value="доставлен">Доставлен</option>
+                            <option value="отменен">Отменен</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Telegram ID клиента:</label>
+                        <input type="text" id="customerFilter" class="form-control" placeholder="telegram_id">
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="applyOrderFilters()">Применить</button>
+                        <button class="btn btn-secondary" onclick="clearOrderFilters()">Очистить</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Список заказов -->
+            <div class="orders-table">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>№ заказа</th>
+                                <th>Дата</th>
+                                <th>Клиент</th>
+                                <th>Адрес</th>
+                                <th>Сумма</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Загрузка...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Пагинация заказов -->
+            <nav id="ordersPagination" class="pagination-container">
+                <!-- Пагинация будет добавлена динамически -->
+            </nav>
+        </div>
+
+        <!-- Клиенты -->
+        <div id="customersPage" style="display: none;">
+            <h2 class="mb-4">👥 Управление клиентами</h2>
+            
+            <!-- Фильтры клиентов -->
+            <div class="filters-panel">
+                <h5>🔍 Поиск клиентов</h5>
+                <div class="filters-row">
+                    <div>
+                        <label>Поиск:</label>
+                        <input type="text" id="customerSearch" class="form-control" placeholder="Имя, username или telegram_id">
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="applyCustomerFilters()">Найти</button>
+                        <button class="btn btn-secondary" onclick="clearCustomerFilters()">Очистить</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Список клиентов -->
+            <div class="customers-table">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Клиент</th>
+                                <th>Telegram ID</th>
+                                <th>Телефон</th>
+                                <th>Заказов</th>
+                                <th>Потрачено</th>
+                                <th>Последний заказ</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Загрузка...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Пагинация клиентов -->
+            <nav id="customersPagination" class="pagination-container">
+                <!-- Пагинация будет добавлена динамически -->
+            </nav>
+        </div>
+
+        <!-- Товары -->
+        <div id="productsPage" style="display: none;">
+            <h2 class="mb-4">🛍️ Управление товарами</h2>
+            
+            <!-- Панель управления товарами -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                    <i class="fas fa-plus"></i> Добавить товар
+                </button>
+                
+                <!-- Фильтр по категориям -->
+                <div class="d-flex align-items-center">
+                    <label class="me-2">Категория:</label>
+                    <select id="productCategoryFilter" class="form-select" style="width: auto;">
+                        <option value="">Все категории</option>
+                        <!-- Заполняется динамически -->
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Таблица товаров -->
+            <div class="products-table">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Изображение</th>
+                                <th>Название</th>
+                                <th>Описание</th>
+                                <th>Цена</th>
+                                <th>Вес</th>
+                                <th>Категория</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Загрузка...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Категории -->
+        <div id="categoriesPage" style="display: none;">
+            <h2 class="mb-4">📁 Управление категориями</h2>
+            <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                Добавить категорию
+            </button>
+            <div id="categoriesList" class="row"></div>
+        </div>
+
+        <!-- Безопасность -->
+        <div id="securityPage" style="display: none;">
+            <h2 class="mb-4">🛡️ Управление безопасностью</h2>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>📊 Статистика безопасности</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="securityStats">
+                                <div class="text-center">
+                                    <div class="spinner-border" role="status"></div>
+                                    <p>Загрузка статистики...</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-info btn-sm mt-2" onclick="loadSecurityStats()">
+                                🔄 Обновить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>🚫 Заблокированные IP</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="blacklistedIPs">
+                                <!-- Будет заполнено динамически -->
+                            </div>
+                            <div class="mt-3">
+                                <h6>Разблокировать IP:</h6>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="unblockIP" placeholder="192.168.1.1">
+                                    <button class="btn btn-warning" onclick="unblockIP()">Разблокировать</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>📈 События безопасности (последние 50)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Время</th>
+                                            <th>Тип</th>
+                                            <th>IP</th>
+                                            <th>Детали</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="securityEvents">
+                                        <tr>
+                                            <td colspan="4" class="text-center">
+                                                <em>События будут отображаться здесь при обновлении статистики</em>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно детального просмотра заказа -->
+    <div class="modal fade" id="orderDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">🛍️ Заказ #<span id="orderDetailId"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="customer-details">
+                                <h6>👤 Информация о клиенте</h6>
+                                <div id="orderCustomerInfo"></div>
+                                <button class="btn btn-sm btn-outline-primary mt-2" onclick="openCustomerCard()">
+                                    Открыть карточку клиента
+                                </button>
+                            </div>
+                            
+                            <div class="customer-details">
+                                <h6>📍 Адрес доставки</h6>
+                                <div id="orderAddressInfo"></div>
+                            </div>
+                            
+                            <div class="customer-details">
+                                <h6>📅 Информация о заказе</h6>
+                                <div id="orderGeneralInfo"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>🛒 Список товаров</h6>
+                            <div id="orderItemsList" class="order-items-list"></div>
+                            
+                            <div class="mt-3">
+                                <h6>📋 Управление статусом</h6>
+                                <div id="orderStatusActions" class="btn-group-vertical w-100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно карточки клиента -->
+    <div class="modal fade" id="customerModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">👤 Карточка клиента</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" id="customerTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-tab-pane" type="button" role="tab">
+                                Информация
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="addresses-tab" data-bs-toggle="tab" data-bs-target="#addresses-tab-pane" type="button" role="tab">
+                                Адреса
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders-tab-pane" type="button" role="tab">
+                                Заказы
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="customerTabContent">
+                        <div class="tab-pane fade show active" id="info-tab-pane" role="tabpanel">
+                            <div id="customerInfo" class="mt-3"></div>
+                        </div>
+                        <div class="tab-pane fade" id="addresses-tab-pane" role="tabpanel">
+                            <div id="customerAddresses" class="mt-3"></div>
+                        </div>
+                        <div class="tab-pane fade" id="orders-tab-pane" role="tabpanel">
+                            <div id="customerOrders" class="mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления категории -->
+    <div class="modal fade" id="addCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить категорию</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCategoryForm">
+                        <div class="mb-3">
+                            <label class="form-label">Название категории</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="addCategoryForm" class="btn btn-primary">Добавить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления товара -->
+    <div class="modal fade" id="addProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить товар</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addProductForm" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">Название</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Описание</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Цена</label>
+                            <input type="number" class="form-control" name="price" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Вес (г)</label>
+                            <input type="number" class="form-control" name="weight" step="1" placeholder="Вес в граммах">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Категория</label>
+                            <select class="form-control" name="category_id" required>
+                                <!-- Заполняется динамически -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="active" id="addProductActive" checked>
+                                <label class="form-check-label" for="addProductActive">
+                                    Товар активен
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Изображение</label>
+                            <input type="file" class="form-control" name="image" accept="image/*">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="addProductForm" class="btn btn-primary">Добавить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно карточки товара -->
+    <div class="modal fade" id="productCardModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">📦 Карточка товара</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="productCardContent">
+                        <!-- Содержимое будет загружено динамически -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    <button type="button" class="btn btn-primary" id="editProductBtn">
+                        <i class="fas fa-edit"></i> Редактировать
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования товара -->
+    <div class="modal fade" id="editProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактировать товар</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProductForm" enctype="multipart/form-data">
+                        <input type="hidden" name="id">
+                        <div class="mb-3">
+                            <label class="form-label">Название</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Описание</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Цена</label>
+                            <input type="number" class="form-control" name="price" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Вес (г)</label>
+                            <input type="number" class="form-control" name="weight" step="1" placeholder="Вес в граммах">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Категория</label>
+                            <select class="form-control" name="category_id" required>
+                                <!-- Заполняется динамически -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="active" id="editProductActive" checked>
+                                <label class="form-check-label" for="editProductActive">
+                                    Товар активен
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Текущее изображение</label>
+                            <img id="currentProductImage" src="" alt="" class="img-fluid mb-2" style="display: none;">
+                            <input type="file" class="form-control" name="image" accept="image/*">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="editProductForm" class="btn btn-primary">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/admin.js"></script>
+</body>
+</html> 

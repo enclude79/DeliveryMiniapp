@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery App</title>
+    <meta name="description" content="Приложение доставки еды">
+    <meta name="theme-color" content="#ff6b35">
+    
+    <!-- Оптимизация для PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Delivery App">
+    
+    <!-- Preload критических ресурсов -->
+    <link rel="preload" as="script" href="https://telegram.org/js/telegram-web-app.js">
+    
+    <!-- КРИТИЧЕСКИЕ CSS СТИЛИ ДЛЯ ИСПРАВЛЕНИЯ ЧЕРНОГО ЭКРАНА -->
+    <style>
+        /* КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ЧЕРНОГО ЭКРАНА */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            height: 100%;
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            min-height: 100vh !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            padding: 0;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 16px 80px;
+            min-height: 100vh;
+            background-color: #ffffff !important;
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        /* Быстрая загрузка контента */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+            color: #666;
+        }
+
+        /* Базовые стили для категорий */
+        .categories {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .category-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .category-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .category-emoji {
+            font-size: 32px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .category-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* Скрытые элементы */
+        .hidden {
+            display: none !important;
+        }
+
+        #products-view {
+            display: none;
+        }
+
+        #products-view.active {
+            display: block;
+        }
+    </style>
+    
+    <script>
+        // ЭКСТРЕННОЕ ИСПРАВЛЕНИЕ ЧЕРНОГО ЭКРАНА
+        document.documentElement.style.cssText = 'background: white !important; min-height: 100vh !important;';
+        
+        // Система отключения console.log в production
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            console.log = function() {};
+            console.warn = function() {};
+            console.info = function() {};
+            // Оставляем console.error для критических ошибок
+        }
+        
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Принудительное отображение контента
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.style.cssText = 'background: white !important; min-height: 100vh !important; display: block !important; visibility: visible !important; color: black !important;';
+            console.log('🟢 DOM загружен, стили применены');
+        });
+
+        // ДИАГНОСТИЧЕСКИЕ ФУНКЦИИ ДЛЯ ОТЛАДКИ TELEGRAM WEBAPP
+        function diagnoseWebApp() {
+            console.log('=== ДИАГНОСТИКА TELEGRAM WEBAPP ===');
+            console.log('window.Telegram:', !!window.Telegram);
+            console.log('window.Telegram.WebApp:', !!(window.Telegram && window.Telegram.WebApp));
+            
+            if (window.Telegram && window.Telegram.WebApp) {
+                const webapp = window.Telegram.WebApp;
+                console.log('WebApp версия:', webapp.version);
+                console.log('WebApp платформа:', webapp.platform);
+                console.log('WebApp isVersionAtLeast(6.1):', webapp.isVersionAtLeast('6.1'));
+                
+                console.log('initData:', webapp.initData || 'НЕТ');
+                console.log('initDataUnsafe:', webapp.initDataUnsafe || 'НЕТ');
+                
+                if (webapp.initDataUnsafe) {
+                    console.log('initDataUnsafe.user:', webapp.initDataUnsafe.user || 'НЕТ');
+                    console.log('initDataUnsafe.auth_date:', webapp.initDataUnsafe.auth_date || 'НЕТ');
+                    console.log('initDataUnsafe.start_param:', webapp.initDataUnsafe.start_param || 'НЕТ');
+                }
+                
+                if (webapp.initData) {
+                    console.log('Разбор initData:');
+                    try {
+                        const urlParams = new URLSearchParams(webapp.initData);
+                        console.log('URLParams:', Object.fromEntries(urlParams));
+                        
+                        const userParam = urlParams.get('user');
+                        if (userParam) {
+                            const user = JSON.parse(decodeURIComponent(userParam));
+                            console.log('Пользователь из initData:', user);
+                        }
+                    } catch (e) {
+                        console.error('Ошибка разбора initData:', e);
+                    }
+                }
+            }
+            console.log('=== КОНЕЦ ДИАГНОСТИКИ ===');
+        }
+
+        // Тестирование сразу после загрузки страницы
+        window.addEventListener('load', () => {
+            setTimeout(diagnoseWebApp, 500);
+        });
+
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Безопасная инициализация Telegram WebApp
+        let tg = null;
+        let telegramScriptLoaded = false;
+        
+        // Принудительная загрузка Telegram WebApp скрипта
+        (function() {
+            const script = document.createElement('script');
+            script.src = 'https://telegram.org/js/telegram-web-app.js';
+            script.onerror = function() {
+                initializeFallbackTg();
+            };
+            script.onload = function() {
+                telegramScriptLoaded = true;
+                initializeTelegramWebApp();
+            };
+            document.head.appendChild(script);
+        })();
+        
+        // Инициализация Telegram WebApp
+        function initializeTelegramWebApp() {
+            try {
+                if (window.Telegram && window.Telegram.WebApp) {
+                    tg = window.Telegram.WebApp;
+                    console.log('✅ Telegram WebApp инициализирован');
+                    console.log('Версия WebApp:', tg.version);
+                    console.log('Платформа:', tg.platform);
+                    console.log('Данные пользователя доступны:', !!(tg.initDataUnsafe && tg.initDataUnsafe.user));
+                    
+                    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                        console.log('✅ Пользователь Telegram найден:', tg.initDataUnsafe.user);
+                    } else if (tg.initData) {
+                        console.log('📝 initData доступны, пытаемся извлечь пользователя');
+                        console.log('initData:', tg.initData);
+                    } else {
+                        console.warn('❌ Данные пользователя Telegram недоступны');
+                    }
+                    
+                    tg.ready();
+                    tg.expand();
+                    
+                    // Применение темы
+                    if (tg.themeParams) {
+                        document.body.style.backgroundColor = tg.themeParams.bg_color || '#ffffff';
+                        document.body.style.color = tg.themeParams.text_color || '#000000';
+                    }
+                } else {
+                    throw new Error('Telegram WebApp API недоступен');
+                }
+            } catch (error) {
+                console.error('Ошибка WebApp:', error);
+                initializeFallbackTg();
+            }
+        }
+        
+        // Заглушка для работы без Telegram
+        function initializeFallbackTg() {
+            tg = {
+                ready: () => {},
+                expand: () => {},
+                close: () => window.history.back(),
+                MainButton: {
+                    setText: () => {},
+                    show: () => {},
+                    hide: () => {},
+                    onClick: () => {}
+                },
+                HapticFeedback: {
+                    impactOccurred: () => {}
+                },
+                showAlert: (message) => alert(message),
+                themeParams: {
+                    bg_color: '#ffffff',
+                    text_color: '#000000'
+                }
+            };
+
+        }
+
+        // Глобальные переменные
+        let categories = [];
+        let products = [];
+        let cart = {};
+        let currentCategory = null;
+        let currentUser = null;
+        let userAddresses = [];
+        let userOrders = [];
+        let currentView = 'categories'; // 'categories', 'products', 'profile'
+
+        // Загрузка данных при старте
+        document.addEventListener('DOMContentLoaded', function() {
+            // Принудительное отображение
+            document.body.style.display = 'block';
+            document.body.style.visibility = 'visible';
+            
+            // Инициализация пользователя
+            initializeUser();
+            
+            loadCategories();
+            updateCartIcon();
+            
+            // Настройка главной кнопки Telegram (если доступна)
+            setTimeout(() => {
+                if (tg && tg.MainButton) {
+                    tg.MainButton.setText('Посмотреть корзину');
+                    tg.MainButton.onClick(showCart);
+                }
+            }, 1000);
+        });
+
+        // Инициализация пользователя
+        async function initializeUser() {
+            try {
+                // ПРИОРИТЕТ: Реальные данные пользователя из Telegram
+                let userData = null;
+                
+                // Пытаемся получить реальные данные пользователя из Telegram WebApp
+                if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    const telegramUser = tg.initDataUnsafe.user;
+                    console.log('Получены данные реального пользователя Telegram:', telegramUser);
+                    
+                    userData = {
+                        telegram_id: telegramUser.id.toString(),
+                        first_name: telegramUser.first_name || '',
+                        last_name: telegramUser.last_name || '',
+                        username: telegramUser.username || ''
+                    };
+                }
+                
+                // Если нет данных от Telegram, пытаемся получить из initData
+                if (!userData && tg && tg.initData) {
+                    try {
+                        const urlParams = new URLSearchParams(tg.initData);
+                        const userParam = urlParams.get('user');
+                        if (userParam) {
+                            const telegramUser = JSON.parse(decodeURIComponent(userParam));
+                            console.log('Получены данные пользователя из initData:', telegramUser);
+                            
+                            userData = {
+                                telegram_id: telegramUser.id.toString(),
+                                first_name: telegramUser.first_name || '',
+                                last_name: telegramUser.last_name || '',
+                                username: telegramUser.username || ''
+                            };
+                        }
+                    } catch (e) {
+                        console.error('Ошибка парсинга initData:', e);
+                    }
+                }
+                
+                // ТОЛЬКО если нет реальных данных - используем демо
+                if (!userData) {
+                    console.warn('Не удалось получить данные реального пользователя, используем демо режим');
+                    userData = {
+                        telegram_id: 'demo_user',
+                        first_name: 'Демо',
+                        last_name: 'Пользователь', 
+                        username: 'demo_user'
+                    };
+                } else {
+                    console.log('✅ Используем данные реального пользователя:', userData.telegram_id);
+                }
+                
+                // Создаем или обновляем пользователя в базе данных
+                const response = await fetch('/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                if (response.ok) {
+                    currentUser = await response.json();
+                    console.log('✅ Пользователь инициализирован:', currentUser.telegram_id);
+                    
+                    // Загружаем адреса пользователя
+                    await loadUserAddresses();
+                    
+                    // Проверяем, нужно ли показать экран добавления адреса
+                    if (userAddresses.length === 0) {
+                        showAddressSetup();
+                    }
+                } else {
+                    console.error('Ошибка создания пользователя:', response.status);
+                }
+                
+            } catch (error) {
+                console.error('Ошибка инициализации пользователя:', error);
+            }
+        }
+
+        // Загрузка адресов пользователя
+        async function loadUserAddresses() {
+            try {
+                if (!currentUser || !currentUser.telegram_id) {
+                    return;
+                }
+                
+                const response = await fetch(`/addresses/${currentUser.telegram_id}`);
+                if (response.ok) {
+                    userAddresses = await response.json();
+                } else {
+                    console.error('Ошибка загрузки адресов:', response.status);
+                    userAddresses = [];
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки адресов:', error);
+                userAddresses = [];
+            }
+        }
+
+        // Показать экран настройки адреса
+        function showAddressSetup() {
+            
+            const message = 'Добро пожаловать! Для доставки нам нужен ваш адрес. Хотите определить его автоматически по вашему местоположению?';
+            
+            if (tg && tg.showConfirm) {
+                tg.showConfirm(message, (confirmed) => {
+                    if (confirmed) {
+                        requestGeolocation();
+                    } else {
+                        showManualAddressForm();
+                    }
+                });
+            } else {
+                const confirmed = confirm(message);
+                if (confirmed) {
+                    requestGeolocation();
+                } else {
+                    showManualAddressForm();
+                }
+            }
+        }
+
+        // Запрос геолокации
+        function requestGeolocation() {
+            
+            // Проверяем доступность Telegram WebApp Location API
+            if (tg && tg.LocationManager) {
+                tg.LocationManager.getLocation((location) => {
+                    if (location) {
+                        geocodeAndSaveAddress(location.latitude, location.longitude);
+                    } else {
+                        fallbackToWebGeolocation();
+                    }
+                });
+            } else {
+                fallbackToWebGeolocation();
+            }
+        }
+
+        // Fallback к Web Geolocation API
+        function fallbackToWebGeolocation() {
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        geocodeAndSaveAddress(position.coords.latitude, position.coords.longitude);
+                    },
+                    (error) => {
+                        console.error(' Ошибка геолокации:', error);
+                        showManualAddressForm();
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+                );
+            } else {
+                showManualAddressForm();
+            }
+        }
+
+        // Геокодирование и сохранение адреса
+        async function geocodeAndSaveAddress(latitude, longitude) {
+            try {
+                
+                // Получаем адрес по координатам
+                const response = await fetch('/addresses/geocode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ latitude, longitude })
+                });
+                
+                if (response.ok) {
+                    const addressData = await response.json();
+                    
+                    // Показываем форму для уточнения адреса
+                    showAddressConfirmation(addressData);
+                } else {
+                    console.error(' Ошибка геокодирования:', response.status);
+                    showManualAddressForm();
+                }
+            } catch (error) {
+                console.error(' Ошибка геокодирования:', error);
+                showManualAddressForm();
+            }
+        }
+
+        // Показать подтверждение адреса
+        function showAddressConfirmation(addressData) {
+            const message = `Мы определили ваш адрес как:\n\n${addressData.full_address}\n\nВсё верно?`;
+            
+            if (tg && tg.showConfirm) {
+                tg.showConfirm(message, (confirmed) => {
+                    if (confirmed) {
+                        saveAddress(addressData, 'Основной адрес');
+                    } else {
+                        showManualAddressForm(addressData);
+                    }
+                });
+            } else {
+                const confirmed = confirm(message);
+                if (confirmed) {
+                    saveAddress(addressData, 'Основной адрес');
+                } else {
+                    showManualAddressForm(addressData);
+                }
+            }
+        }
+
+        // Показать форму ручного ввода адреса
+        function showManualAddressForm(prefillData = null) {
+            
+            // Пока простая реализация через prompt
+            const address = prompt('Введите ваш адрес:', prefillData ? prefillData.full_address : '');
+            
+            if (address && address.trim()) {
+                const addressData = {
+                    full_address: address.trim(),
+                    latitude: prefillData ? prefillData.latitude : null,
+                    longitude: prefillData ? prefillData.longitude : null
+                };
+                
+                saveAddress(addressData, 'Основной адрес');
+            }
+        }
+
+        // Сохранить адрес
+        async function saveAddress(addressData, addressName) {
+            try {
+                
+                const addressToSave = {
+                    telegram_id: currentUser.telegram_id,
+                    name: addressName,
+                    latitude: addressData.latitude,
+                    longitude: addressData.longitude,
+                    full_address: addressData.full_address,
+                    entrance: '',
+                    floor: '',
+                    apartment: '',
+                    intercom: '',
+                    comment: '',
+                    is_default: true
+                };
+                
+                const response = await fetch('/addresses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(addressToSave)
+                });
+                
+                if (response.ok) {
+                    const savedAddress = await response.json();
+                    
+                    // Обновляем список адресов
+                    await loadUserAddresses();
+                    
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Адрес успешно сохранен!');
+                    } else {
+                        alert('Адрес успешно сохранен!');
+                    }
+                } else {
+                    console.error(' Ошибка сохранения адреса:', response.status);
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Ошибка сохранения адреса');
+                    } else {
+                        alert('Ошибка сохранения адреса');
+                    }
+                }
+            } catch (error) {
+                console.error(' Ошибка сохранения адреса:', error);
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Ошибка сохранения адреса');
+                } else {
+                    alert('Ошибка сохранения адреса');
+                }
+            }
+        }
+
+        // Загрузка категорий
+        async function loadCategories() {
+            try {
+                const response = await fetch('/products/categories');
+                categories = await response.json();
+                displayCategories();
+            } catch (error) {
+                console.error(' Ошибка загрузки категорий:', error);
+                document.getElementById('categories-list').innerHTML = '<div class="loading">Ошибка загрузки категорий</div>';
+            }
+        }
+
+        // Отображение категорий
+        function displayCategories() {
+            const container = document.getElementById('categories-list');
+            const emojis = {
+                'Мороженное': '🍦',
+                'Пельмени': '🥟',
+                'Бургеры': '🍔',
+                'Пицца': '🍕',
+                'Суши': '🍱',
+                'Напитки': '🥤',
+                'Десерты': '🍰',
+                'Салаты': '🥗'
+            };
+
+            container.innerHTML = categories.map(category => `
+                <div class="category-card" onclick="showProducts(${category.id})">
+                    <span class="category-emoji">${emojis[category.name] || '🍽️'}</span>
+                    <div class="category-name">${category.name}</div>
+                </div>
+            `).join('');
+        }
+
+        // Показать товары категории
+        async function showProducts(categoryId) {
+            currentCategory = categoryId;
+            try {
+                
+                // Показываем загрузку
+                const container = document.getElementById('products-list');
+                container.innerHTML = `
+                    <div class="loading" style="grid-column: 1 / -1;">
+                        <div style="font-size: 24px; margin-bottom: 8px;">⏳</div>
+                        Загрузка товаров...
+                    </div>
+                `;
+                
+                const response = await fetch(`/products/category/${categoryId}`);
+                products = await response.json();
+                displayProducts();
+                
+                document.getElementById('categories-view').style.display = 'none';
+                document.getElementById('products-view').classList.add('active');
+            } catch (error) {
+                console.error(' Ошибка загрузки товаров:', error);
+                const container = document.getElementById('products-list');
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">❌</div>
+                        <div class="empty-state-title">Ошибка загрузки</div>
+                        <div class="empty-state-description">Не удалось загрузить товары. Попробуйте еще раз.</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Отображение товаров
+        function displayProducts() {
+            const container = document.getElementById('products-list');
+            
+            if (!products || products.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">🛒</div>
+                        <div class="empty-state-title">Пока нет товаров</div>
+                        <div class="empty-state-description">В этой категории товары скоро появятся!</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = products.map(product => {
+                const cartQuantity = cart[product.id] ? cart[product.id].quantity : 0;
+                const hasInCart = cartQuantity > 0;
+                
+                return `
+                    <div class="product-card" data-product-id="${product.id}">
+                        <div class="product-image">
+                            ${product.image ? 
+                                `<img src="${product.image}" alt="${product.name}" loading="lazy">` : 
+                                '<div style="color: #bbb; font-size: 24px;">📦</div>'
+                            }
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name">${product.name}</div>
+                            ${product.description ? `<div class="product-description">${product.description}</div>` : ''}
+                            ${product.weight ? `<div class="product-weight">${product.weight}</div>` : ''}
+                            <div class="product-price">${product.price} ₽</div>
+                            <div class="product-actions">
+                                <!-- Кнопки управления количеством (показываются когда товар в корзине) -->
+                                <div class="quantity-controls ${hasInCart ? 'active' : ''}" id="quantity-${product.id}">
+                                    <button class="quantity-btn" onclick="decreaseQuantity(${product.id})" ${cartQuantity <= 1 ? 'data-remove="true"' : ''}>
+                                        ${cartQuantity <= 1 ? '🗑️' : '−'}
+                                    </button>
+                                    <span class="quantity-display" id="quantity-display-${product.id}">${cartQuantity}</span>
+                                    <button class="quantity-btn" onclick="increaseQuantity(${product.id})">+</button>
+                                </div>
+                                
+                                <!-- Кнопка "В корзину" (показывается когда товара нет в корзине) -->
+                                <button class="add-to-cart-btn ${hasInCart ? 'hidden' : ''}" 
+                                        id="add-btn-${product.id}" 
+                                        onclick="addToCart(${product.id})">
+                                    В корзину
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Показать категории
+        function showCategories() {
+            document.getElementById('products-view').classList.remove('active');
+            document.getElementById('categories-view').style.display = 'block';
+        }
+
+        // Добавить в корзину
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            if (cart[productId]) {
+                cart[productId].quantity += 1;
+            } else {
+                cart[productId] = {
+                    ...product,
+                    quantity: 1
+                };
+            }
+
+            updateCartIcon();
+            updateProductUI(productId);
+            
+            // Анимация добавления
+            const productCard = document.querySelector(`[data-product-id="${productId}"]`);
+            if (productCard) {
+                productCard.classList.add('adding');
+                setTimeout(() => {
+                    productCard.classList.remove('adding');
+                }, 300);
+            }
+            
+            // Виброотклик (если доступен)
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        // Увеличить количество товара
+        function increaseQuantity(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            if (cart[productId]) {
+                cart[productId].quantity += 1;
+            } else {
+                cart[productId] = {
+                    ...product,
+                    quantity: 1
+                };
+            }
+
+            updateCartIcon();
+            updateProductUI(productId);
+            
+            // Виброотклик
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        // Уменьшить количество товара
+        function decreaseQuantity(productId) {
+            if (!cart[productId]) return;
+
+            if (cart[productId].quantity > 1) {
+                cart[productId].quantity -= 1;
+            } else {
+                // Удаляем товар из корзины
+                delete cart[productId];
+            }
+
+            updateCartIcon();
+            updateProductUI(productId);
+            
+            // Виброотклик
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        // Обновление UI товара после изменения количества
+        function updateProductUI(productId) {
+            const cartQuantity = cart[productId] ? cart[productId].quantity : 0;
+            const hasInCart = cartQuantity > 0;
+            
+            // Обновляем элементы UI
+            const quantityControls = document.getElementById(`quantity-${productId}`);
+            const quantityDisplay = document.getElementById(`quantity-display-${productId}`);
+            const addButton = document.getElementById(`add-btn-${productId}`);
+            
+            if (quantityControls && quantityDisplay && addButton) {
+                // Показываем/скрываем элементы управления
+                if (hasInCart) {
+                    quantityControls.classList.add('active');
+                    addButton.classList.add('hidden');
+                    quantityDisplay.textContent = cartQuantity;
+                    
+                    // Обновляем кнопку уменьшения (показываем корзину если количество = 1)
+                    const decreaseBtn = quantityControls.querySelector('.quantity-btn');
+                    if (cartQuantity <= 1) {
+                        decreaseBtn.innerHTML = '🗑️';
+                        decreaseBtn.setAttribute('data-remove', 'true');
+                    } else {
+                        decreaseBtn.innerHTML = '−';
+                        decreaseBtn.removeAttribute('data-remove');
+                    }
+                } else {
+                    quantityControls.classList.remove('active');
+                    addButton.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Обновление иконки корзины
+        function updateCartIcon() {
+            const totalItems = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
+            const countElement = document.getElementById('cart-count');
+            
+            if (totalItems > 0) {
+                countElement.textContent = totalItems;
+                countElement.style.display = 'flex';
+                if (tg && tg.MainButton) {
+                    const totalPrice = Object.values(cart).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    tg.MainButton.setText(`Корзина • ${totalPrice} ₽`);
+                    tg.MainButton.show();
+                }
+            } else {
+                countElement.style.display = 'none';
+                if (tg && tg.MainButton) {
+                    tg.MainButton.hide();
+                }
+            }
+        }
+
+        // Показать корзину
+        function showCart() {
+            const modal = document.getElementById('cart-modal');
+            const itemsContainer = document.getElementById('cart-items');
+            const totalContainer = document.getElementById('cart-total');
+            
+            const cartItems = Object.values(cart);
+            
+            if (cartItems.length === 0) {
+                itemsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">Корзина пуста</div>';
+                totalContainer.textContent = 'Итого: 0 ₽';
+            } else {
+                itemsContainer.innerHTML = cartItems.map(item => `
+                    <div class="cart-item">
+                        <div>
+                            <div style="font-weight: 600;">${item.name}</div>
+                            <div style="color: #999; font-size: 14px;">${item.price} ₽ × ${item.quantity}</div>
+                        </div>
+                        <div style="font-weight: 600;">${item.price * item.quantity} ₽</div>
+                    </div>
+                `).join('');
+                
+                const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                totalContainer.textContent = `Итого: ${total} ₽`;
+            }
+            
+            modal.classList.add('active');
+        }
+
+        // Закрыть корзину
+        function closeCart() {
+            document.getElementById('cart-modal').classList.remove('active');
+        }
+
+        // Показать детали товара
+        function showProductDetails(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            
+            const message = `${product.name}\n\n${product.description || 'Нет описания'}\n\nЦена: ${product.price} ₽`;
+            
+            if (tg && tg.showAlert) {
+                tg.showAlert(message);
+            } else {
+                alert(message);
+            }
+        }
+
+        // Оформление заказа
+        async function checkout() {
+            const cartItems = Object.values(cart);
+            if (cartItems.length === 0) {
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Корзина пуста!');
+                } else {
+                    alert('Корзина пуста!');
+                }
+                return;
+            }
+            
+            // Проверяем, есть ли пользователь и адрес
+            if (!currentUser) {
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Ошибка: пользователь не найден. Перезагрузите приложение.');
+                } else {
+                    alert('Ошибка: пользователь не найден. Перезагрузите приложение.');
+                }
+                return;
+            }
+            
+            if (userAddresses.length === 0) {
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Для оформления заказа нужно указать адрес доставки.');
+                } else {
+                    alert('Для оформления заказа нужно указать адрес доставки.');
+                }
+                showAddressSetup();
+                return;
+            }
+            
+            try {
+                const defaultAddress = userAddresses.find(addr => addr.is_default) || userAddresses[0];
+                
+                const orderData = {
+                    user_id: currentUser.id,
+                    telegram_id: currentUser.telegram_id,
+                    items: cartItems,
+                    total: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                    address: defaultAddress.full_address,
+                    address_details: {
+                        id: defaultAddress.id,
+                        name: defaultAddress.name,
+                        entrance: defaultAddress.entrance,
+                        floor: defaultAddress.floor,
+                        apartment: defaultAddress.apartment,
+                        intercom: defaultAddress.intercom,
+                        comment: defaultAddress.comment
+                    },
+                    timestamp: new Date().toISOString()
+                };
+                
+                
+                // Отправляем заказ на сервер
+                const response = await fetch('/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (response.ok) {
+                    const order = await response.json();
+                    
+                    // Очистка корзины
+                    cart = {};
+                    updateCartIcon();
+                    closeCart();
+                    
+                    if (tg && tg.showAlert) {
+                        tg.showAlert(`Заказ #${order.id} оформлен! Спасибо за покупку!`);
+                    } else {
+                        alert(`Заказ #${order.id} оформлен! Спасибо за покупку!`);
+                    }
+                } else {
+                    console.error(' Ошибка создания заказа:', response.status);
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Ошибка оформления заказа. Попробуйте еще раз.');
+                    } else {
+                        alert('Ошибка оформления заказа. Попробуйте еще раз.');
+                    }
+                }
+                
+            } catch (error) {
+                console.error(' Ошибка оформления заказа:', error);
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Ошибка оформления заказа. Попробуйте еще раз.');
+                } else {
+                    alert('Ошибка оформления заказа. Попробуйте еще раз.');
+                }
+            }
+        }
+
+        // ===============================
+        // ФУНКЦИИ НАВИГАЦИИ
+        // ===============================
+
+        function showCatalog() {
+            currentView = 'categories';
+            hideAllViews();
+            document.getElementById('categories-view').style.display = 'block';
+            setActiveNavItem('nav-catalog');
+        }
+
+        function showProfile() {
+            currentView = 'profile';
+            hideAllViews();
+            document.getElementById('profile-view').classList.add('active');
+            setActiveNavItem('nav-profile');
+            loadProfileData();
+        }
+
+        function hideAllViews() {
+            document.getElementById('categories-view').style.display = 'none';
+            document.getElementById('products-view').classList.remove('active');
+            document.getElementById('profile-view').classList.remove('active');
+        }
+
+        function setActiveNavItem(activeId) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.getElementById(activeId).classList.add('active');
+        }
+
+        // ===============================
+        // ФУНКЦИИ ЛИЧНОГО КАБИНЕТА
+        // ===============================
+
+        async function loadProfileData() {
+            try {
+                // Загружаем адреса
+                await loadUserAddresses();
+                displayAddresses();
+                
+                // Загружаем историю заказов
+                await loadUserOrders();
+                displayOrders();
+                
+            } catch (error) {
+                console.error('Ошибка загрузки данных профиля:', error);
+            }
+        }
+
+        async function loadUserOrders() {
+            try {
+                if (!currentUser) return;
+                
+                const response = await fetch(`/orders/user/${currentUser.telegram_id}`);
+                if (response.ok) {
+                    userOrders = await response.json();
+                } else {
+                    console.error('Ошибка загрузки заказов:', response.status);
+                    userOrders = [];
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки заказов:', error);
+                userOrders = [];
+            }
+        }
+
+        function displayAddresses() {
+            const container = document.getElementById('addresses-list');
+            
+            if (userAddresses.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">Адреса не добавлены</div>';
+                return;
+            }
+            
+            container.innerHTML = userAddresses.map(address => `
+                <div class="address-card ${address.is_default ? 'default' : ''}">
+                    ${address.is_default ? '<div class="address-badge">По умолчанию</div>' : ''}
+                    <div class="address-name">${address.name}</div>
+                    <div class="address-details">
+                        📍 ${address.full_address}<br>
+                        ${address.entrance ? `🚪 Подъезд: ${address.entrance}<br>` : ''}
+                        ${address.floor ? `🏢 Этаж: ${address.floor}<br>` : ''}
+                        ${address.apartment ? `🏠 Квартира: ${address.apartment}<br>` : ''}
+                        ${address.intercom ? `📞 Домофон: ${address.intercom}<br>` : ''}
+                        ${address.comment ? `💬 ${address.comment}` : ''}
+                    </div>
+                    <div class="address-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="editAddress(${address.id})">✏️ Изменить</button>
+                        <button class="btn btn-sm btn-outline" onclick="deleteAddress(${address.id})">🗑️ Удалить</button>
+                        ${!address.is_default ? `<button class="btn btn-sm btn-primary" onclick="setDefaultAddress(${address.id})">⭐ По умолчанию</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function displayOrders() {
+            const container = document.getElementById('orders-list');
+            
+            if (userOrders.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">Заказы отсутствуют</div>';
+                return;
+            }
+            
+            container.innerHTML = userOrders.map(order => {
+                const statusClass = getOrderStatusClass(order.status);
+                const statusText = getOrderStatusText(order.status);
+                const items = parseOrderItems(order.items);
+                const orderDate = new Date(order.created_at).toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div>
+                                <div class="order-number">Заказ #${order.id}</div>
+                                <div class="order-date">${orderDate}</div>
+                            </div>
+                            <div class="order-status ${statusClass}">${statusText}</div>
+                        </div>
+                        <div class="order-items">
+                            ${items.slice(0, 3).map(item => `• ${item.name} x${item.quantity}`).join('<br>')}
+                            ${items.length > 3 ? `<br>... и еще ${items.length - 3} товар(ов)` : ''}
+                        </div>
+                        <div class="order-total">Итого: ${order.total} ₽</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function parseOrderItems(itemsString) {
+            try {
+                return JSON.parse(itemsString || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function getOrderStatusClass(status) {
+            const statusMap = {
+                'pending': 'pending',
+                'in_process': 'in-process', 
+                'delivered': 'delivered',
+                'cancelled': 'cancelled'
+            };
+            return statusMap[status] || 'pending';
+        }
+
+        function getOrderStatusText(status) {
+            const statusMap = {
+                'pending': 'В обработке',
+                'in_process': 'Готовится',
+                'delivered': 'Доставлен',
+                'cancelled': 'Отменен'
+            };
+            return statusMap[status] || 'В обработке';
+        }
+
+        // ===============================
+        // ФУНКЦИИ УПРАВЛЕНИЯ АДРЕСАМИ
+        // ===============================
+
+        function showAddAddressForm() {
+            document.getElementById('address-modal').classList.add('active');
+            clearAddressForm();
+        }
+
+        function closeAddressModal() {
+            document.getElementById('address-modal').classList.remove('active');
+        }
+
+        function clearAddressForm() {
+            document.getElementById('address-name').value = '';
+            document.getElementById('address-full').value = '';
+            document.getElementById('address-city').value = '';
+            document.getElementById('address-street').value = '';
+            document.getElementById('address-house').value = '';
+            document.getElementById('address-building').value = '';
+            document.getElementById('address-entrance').value = '';
+            document.getElementById('address-floor').value = '';
+            document.getElementById('address-apartment').value = '';
+            document.getElementById('address-intercom').value = '';
+            document.getElementById('address-comment').value = '';
+            document.getElementById('address-default').checked = false;
+        }
+
+        async function requestLocationForAddress() {
+            try {
+                
+                const position = await getCurrentPosition();
+                
+                // Геокодируем координаты
+                const response = await fetch('/addresses/geocode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    })
+                });
+                
+                if (response.ok) {
+                    const addressData = await response.json();
+                    
+                    // Заполняем основное поле адреса
+                    document.getElementById('address-full').value = addressData.full_address;
+                    
+                    // Парсим адрес для структурированных полей
+                    parseAndFillAddressFields(addressData.full_address);
+                    
+                } else {
+                    throw new Error('Ошибка геокодирования');
+                }
+                
+            } catch (error) {
+                console.error(' Ошибка определения местоположения:', error);
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Не удалось определить местоположение. Введите адрес вручную.');
+                } else {
+                    alert('Не удалось определить местоположение. Введите адрес вручную.');
+                }
+            }
+        }
+
+        // Парсинг адреса и заполнение структурированных полей
+        function parseAndFillAddressFields(fullAddress) {
+            try {
+                
+                // Простой парсер для российских адресов
+                const addressParts = fullAddress.split(',').map(part => part.trim());
+                
+                // Ищем город (обычно первое или второе слово)
+                let city = '';
+                let street = '';
+                let house = '';
+                
+                for (let i = 0; i < addressParts.length; i++) {
+                    const part = addressParts[i];
+                    
+                    // Город (содержит слова типа "город", название без "улица")
+                    if (part.includes('город') || part.includes('Москва') || part.includes('Санкт-Петербург') || 
+                        (i < 2 && !part.includes('улица') && !part.includes('проспект') && !part.includes('переулок'))) {
+                        if (!city) city = part;
+                    }
+                    
+                    // Улица (содержит "улица", "проспект", "переулок", "бульвар")
+                    if (part.includes('улица') || part.includes('проспект') || part.includes('переулок') || 
+                        part.includes('бульвар') || part.includes('площадь') || part.includes('набережная')) {
+                        street = part;
+                    }
+                    
+                    // Дом (содержит "дом" или начинается с цифр)
+                    if (part.includes('дом') || /^\d/.test(part)) {
+                        // Извлекаем номер дома
+                        const houseMatch = part.match(/\d+[а-я]?/i);
+                        if (houseMatch) {
+                            house = houseMatch[0];
+                        }
+                    }
+                }
+                
+                // Заполняем поля
+                if (city) {
+                    document.getElementById('address-city').value = city;
+                }
+                if (street) {
+                    document.getElementById('address-street').value = street;
+                }
+                if (house) {
+                    document.getElementById('address-house').value = house;
+                }
+                
+                
+            } catch (error) {
+                console.error('Ошибка парсинга адреса:', error);
+            }
+        }
+
+        function getCurrentPosition() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Геолокация не поддерживается'));
+                    return;
+                }
+                
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 600000
+                });
+            });
+        }
+
+        async function saveAddress() {
+            try {
+                
+                // Собираем структурированный адрес
+                const city = document.getElementById('address-city').value.trim();
+                const street = document.getElementById('address-street').value.trim();
+                const house = document.getElementById('address-house').value.trim();
+                const building = document.getElementById('address-building').value.trim();
+                
+                // Формируем полный адрес если он не был заполнен автоматически
+                let fullAddress = document.getElementById('address-full').value.trim();
+                if (!fullAddress && (city || street || house)) {
+                    const addressParts = [city, street, house, building].filter(Boolean);
+                    fullAddress = addressParts.join(', ');
+                }
+                
+                const addressData = {
+                    name: document.getElementById('address-name').value.trim(),
+                    full_address: fullAddress,
+                    entrance: document.getElementById('address-entrance').value.trim(),
+                    floor: document.getElementById('address-floor').value.trim(),
+                    apartment: document.getElementById('address-apartment').value.trim(),
+                    intercom: document.getElementById('address-intercom').value.trim(),
+                    comment: document.getElementById('address-comment').value.trim(),
+                    is_default: document.getElementById('address-default').checked
+                };
+                
+                
+                if (!addressData.name || !addressData.full_address) {
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Заполните обязательные поля: название и адрес');
+                    } else {
+                        alert('Заполните обязательные поля: название и адрес');
+                    }
+                    return;
+                }
+                
+                if (!currentUser || !currentUser.telegram_id) {
+                    console.error('Пользователь не инициализирован');
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Ошибка: пользователь не найден. Перезагрузите приложение.');
+                    } else {
+                        alert('Ошибка: пользователь не найден. Перезагрузите приложение.');
+                    }
+                    return;
+                }
+                
+                const requestData = {
+                    telegram_id: currentUser.telegram_id,
+                    ...addressData
+                };
+                
+                
+                const response = await fetch('/addresses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+                
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    closeAddressModal();
+                    await loadUserAddresses();
+                    displayAddresses();
+                    
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Адрес успешно сохранен');
+                    } else {
+                        alert('Адрес успешно сохранен');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.error('Детали ошибки сервера:', errorText);
+                    throw new Error(`Ошибка сервера: ${response.status} - ${errorText}`);
+                }
+                
+            } catch (error) {
+                console.error(' Ошибка сохранения адреса:', error);
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Ошибка сохранения адреса');
+                } else {
+                    alert('Ошибка сохранения адреса');
+                }
+            }
+        }
+
+        async function deleteAddress(addressId) {
+            try {
+                const confirmed = tg && tg.showConfirm ? 
+                    await new Promise(resolve => tg.showConfirm('Удалить адрес?', resolve)) :
+                    confirm('Удалить адрес?');
+                    
+                if (!confirmed) return;
+                
+                const response = await fetch(`/addresses/address/${addressId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    await loadUserAddresses();
+                    displayAddresses();
+                    
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Адрес удален');
+                    } else {
+                        alert('Адрес удален');
+                    }
+                } else {
+                    throw new Error('Ошибка сервера');
+                }
+                
+            } catch (error) {
+                console.error(' Ошибка удаления адреса:', error);
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Ошибка удаления адреса');
+                } else {
+                    alert('Ошибка удаления адреса');
+                }
+            }
+        }
+
+        async function setDefaultAddress(addressId) {
+            try {
+                const response = await fetch(`/addresses/address/${addressId}/default`, {
+                    method: 'PUT'
+                });
+                
+                if (response.ok) {
+                    await loadUserAddresses();
+                    displayAddresses();
+                } else {
+                    throw new Error('Ошибка сервера');
+                }
+                
+            } catch (error) {
+                console.error(' Ошибка установки адреса по умолчанию:', error);
+            }
+        }
+
+        function editAddress(addressId) {
+            // TODO: Реализовать редактирование адреса
+            if (tg && tg.showAlert) {
+                tg.showAlert('Функция редактирования адреса будет добавлена позже');
+            } else {
+                alert('Функция редактирования адреса будет добавлена позже');
+            }
+        }
+
+        // Переопределяем функцию showCategories для поддержки навигации
+        const originalShowCategories = window.showCategories;
+        function showCategories() {
+            if (currentView === 'products') {
+                // Возврат из товаров к категориям
+                hideAllViews();
+                document.getElementById('categories-view').style.display = 'block';
+                currentView = 'categories';
+                setActiveNavItem('nav-catalog');
+            } else {
+                // Переход к каталогу из другого раздела
+                showCatalog();
+            }
+        }
+
+        // Обработка ошибок
+        window.addEventListener('error', function(event) {
+            console.error('JavaScript Error:', event.error);
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled Promise Rejection:', event.reason);
+        });
+        
+    </script>
+</body>
+</html> 
