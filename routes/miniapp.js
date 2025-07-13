@@ -62,7 +62,7 @@ router.get('/', (req, res) => {
 // Получение категорий
 router.get('/categories', async (req, res) => {
     try {
-        const categories = await query('SELECT * FROM categories ORDER BY name');
+        const categories = await query('SELECT * FROM categories ORDER BY order_priority ASC, name ASC');
         res.json(categories);
     } catch (error) {
         console.error('Ошибка получения категорий:', error);
@@ -92,7 +92,7 @@ router.get('/products', async (req, res) => {
             SELECT p.*, c.name as category_name
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id
-            ORDER BY c.name, p.name
+            ORDER BY c.order_priority ASC, c.name ASC, p.order_priority ASC, p.name ASC
         `);
         res.json(products);
     } catch (error) {

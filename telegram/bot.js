@@ -81,12 +81,12 @@ bot.onText(/🍔 Посмотреть меню|\/menu/, async (msg) => {
     logBot('INFO', 'Запрошено меню', { chatId });
 
     try {
-        const categories = await query('SELECT * FROM categories');
+        const categories = await query('SELECT * FROM categories ORDER BY order_priority ASC, name ASC');
         logBot('DEBUG', 'Получены категории', { chatId, categories: categories.map(c => c.name) });
 
         const keyboard = {
             inline_keyboard: categories.map(cat => ([{
-                text: `${getCategoryEmoji(cat.name)} ${cat.name}`,
+                text: `${cat.emoji || getCategoryEmoji(cat.name)} ${cat.name}`,
                 callback_data: `category_${cat.id}`
             }]))
         };
@@ -115,9 +115,28 @@ function getCategoryEmoji(categoryName) {
         'Десерты': '🍰',
         'Салаты': '🥗',
         'Мороженное': '🍦',
-        'Пельмени': '🥟'
+        'Пельмени': '🥟',
+        'Супы': '🍲',
+        'Закуски': '🥨',
+        'Завтраки': '🥞',
+        'Обеды': '🍽️',
+        'Ужины': '🍖',
+        'Роллы': '🍣',
+        'Паста': '🍝',
+        'Хлеб': '🥖',
+        'Молочные': '🥛',
+        'Фрукты': '🍎',
+        'Овощи': '🥕',
+        'Мясо': '🥩',
+        'Рыба': '🐟',
+        'Морепродукты': '🦐',
+        'Кондитерские': '🧁',
+        'Выпечка': '🥐',
+        'Снеки': '🍿',
+        'Соусы': '🥫',
+        'Специи': '🧂'
     };
-    return emojis[categoryName] || '🍽';
+    return emojis[categoryName] || '🍽️';
 }
 
 // Обработка выбора категории
@@ -131,7 +150,7 @@ bot.on('callback_query', async (callbackQuery) => {
         if (data.startsWith('category_')) {
             const categoryId = data.split('_')[1];
             const products = await query(
-                'SELECT * FROM products WHERE category_id = ?',
+                'SELECT * FROM products WHERE category_id = ? ORDER BY order_priority ASC, name ASC',
                 [categoryId]
             );
 
@@ -141,9 +160,13 @@ bot.on('callback_query', async (callbackQuery) => {
                     `https://www.deliveryvlg.xyz${product.image}` : 
                     'https://via.placeholder.com/400x300?text=Нет+изображения';
 
+                const priceText = product.network_price ? 
+                    `💰 Цена: ~${product.network_price} ₽~ *${product.price} ₽*` : 
+                    `💰 Цена: ${product.price} ₽`;
+
                 const message = `
 *${product.name}*
-💰 Цена: ${product.price} ₽
+${priceText}
 
 ${product.description || 'Нет описания'}
 `;
@@ -201,10 +224,14 @@ ${product.description || 'Нет описания'}
                 `https://www.deliveryvlg.xyz${product.image}` : 
                 'https://via.placeholder.com/400x300?text=Нет+изображения';
 
+            const priceText = product.network_price ? 
+                `💰 Цена: ~${product.network_price} ₽~ *${product.price} ₽*` : 
+                `💰 Цена: ${product.price} ₽`;
+
             const message = `
 *${product.name}*
 📑 Категория: ${product.category_name}
-💰 Цена: ${product.price} ₽
+${priceText}
 
 📝 *Описание:*
 ${product.description || 'Нет описания'}

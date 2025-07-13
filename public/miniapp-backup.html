@@ -586,7 +586,7 @@
 
             container.innerHTML = categories.map(category => `
                 <div class="category-card" onclick="showProducts(${category.id})">
-                    <span class="category-emoji">${emojis[category.name] || '🍽️'}</span>
+                    <span class="category-emoji">${category.emoji || emojis[category.name] || '🍽️'}</span>
                     <div class="category-name">${category.name}</div>
                 </div>
             `).join('');
@@ -794,6 +794,14 @@
             }
         }
 
+        // Обновить UI всех товаров
+        function updateAllProductsUI() {
+            // Проходим по всем товарам и обновляем их UI
+            products.forEach(product => {
+                updateProductUI(product.id);
+            });
+        }
+
         // Обновление иконки корзины
         function updateCartIcon() {
             const totalItems = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
@@ -931,6 +939,9 @@
                     cart = {};
                     updateCartIcon();
                     closeCart();
+                    
+                    // Обновляем UI всех товаров для скрытия количеств
+                    updateAllProductsUI();
                     
                     if (tg && tg.showAlert) {
                         tg.showAlert(`Заказ #${order.id} оформлен! Спасибо за покупку!`);

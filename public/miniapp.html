@@ -198,6 +198,38 @@
             margin-bottom: 12px;
         }
 
+        .price-weight-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .prices-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .current-price {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .network-price {
+            font-size: 12px;
+            color: #9CA3AF;
+            text-decoration: line-through;
+            font-weight: 500;
+        }
+
+        .weight-right {
+            font-size: 12px;
+            color: #9CA3AF;
+            font-weight: 500;
+        }
+
         .btn {
             width: 100%;
             padding: 10px;
@@ -389,6 +421,155 @@
             font-weight: 600;
         }
 
+        .unavailable-text {
+            width: 100%;
+            padding: 10px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #9CA3AF;
+            background: #F3F4F6;
+            border-radius: 10px;
+            border: 1px solid #E5E7EB;
+        }
+
+        /* Стили для управления адресами */
+        .address-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-address {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-color);
+            background: var(--background-light);
+        }
+
+        .btn-address:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-address.primary {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+        }
+
+        .btn-address.primary:hover {
+            background: var(--secondary-color);
+        }
+
+        .btn-address.danger {
+            background: #EF4444;
+            color: white;
+            border: none;
+        }
+
+        .btn-address.danger:hover {
+            background: #DC2626;
+        }
+
+        /* Форма редактирования адреса */
+        .address-edit-form {
+            background: var(--background-white);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+            border: 2px solid var(--primary-color);
+            box-shadow: var(--card-shadow);
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(46, 134, 171, 0.1);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .form-actions button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-save {
+            background: var(--success-color);
+            color: white;
+            border: none;
+        }
+
+        .btn-save:hover {
+            background: #16A34A;
+        }
+
+        .btn-cancel {
+            background: var(--background-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-cancel:hover {
+            background: var(--border-color);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -425,6 +606,291 @@
             font-size: 48px;
             margin-bottom: 16px;
             display: block;
+        }
+
+        /* Стили для улучшенной системы заказов */
+        .orders-filters {
+            margin-bottom: 16px;
+        }
+
+        .orders-filters select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--background-white);
+            font-size: 14px;
+            color: var(--text-primary);
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+
+        .order-item {
+            background: var(--background-white);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+
+        .order-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .order-number {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+
+        .order-total {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        .order-date {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .order-time {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .order-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .order-status.pending {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+
+        .order-status.в_обработке {
+            background-color: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        .order-status.собирается {
+            background-color: #F3E8FF;
+            color: #7C3AED;
+        }
+
+        .order-status.в_доставке {
+            background-color: #FEF3C7;
+            color: #D97706;
+        }
+
+        .order-status.доставлен {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+
+        .order-status.отменен {
+            background-color: #FEE2E2;
+            color: #DC2626;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn-order {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+
+        .btn-order.primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-order.primary:hover {
+            background-color: #1E6F8C;
+        }
+
+        .btn-order.secondary {
+            background-color: var(--background-light);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-order.secondary:hover {
+            background-color: #E5E7EB;
+        }
+
+        .btn-order.danger {
+            background-color: #DC2626;
+            color: white;
+        }
+
+        .btn-order.danger:hover {
+            background-color: #B91C1C;
+        }
+
+        .btn-order:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Модальное окно деталей заказа */
+        .order-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .order-modal-content {
+            background: var(--background-white);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .order-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .order-modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .order-modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .order-item-detail {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .order-item-detail:last-child {
+            border-bottom: none;
+        }
+
+        .order-item-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-right: 12px;
+        }
+
+        .order-item-info {
+            flex: 1;
+        }
+
+        .order-item-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .order-item-quantity {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .order-item-price {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .operator-message {
+            margin: 16px 0;
+            padding: 12px;
+            background-color: #E3F2FD;
+            border-left: 4px solid var(--primary-color);
+            border-radius: 8px;
+        }
+
+        .operator-message p {
+            margin: 0 0 8px 0;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .operator-message-content {
+            color: var(--text-primary);
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .order-summary {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 2px solid var(--border-color);
+        }
+
+        .order-summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .order-summary-total {
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--text-primary);
+        }
+
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
@@ -473,6 +939,18 @@
             <!-- История заказов -->
             <div class="profile-section">
                 <h3>📋 История заказов</h3>
+                
+                <!-- Фильтры по периоду -->
+                <div class="orders-filters">
+                    <select id="period-filter" onchange="filterOrdersByPeriod()">
+                        <option value="all">Все время</option>
+                        <option value="today">Сегодня</option>
+                        <option value="week">Неделя</option>
+                        <option value="month">Месяц</option>
+                        <option value="3months">3 месяца</option>
+                    </select>
+                </div>
+                
                 <div id="orders-list">
                     <div class="loading">Загрузка заказов...</div>
                 </div>
@@ -483,6 +961,19 @@
         <div class="cart-icon" id="cart-icon" onclick="showCart()">
             🛒
             <span class="cart-count hidden" id="cart-count">0</span>
+        </div>
+    </div>
+
+    <!-- Модальное окно деталей заказа -->
+    <div id="order-modal" class="order-modal hidden">
+        <div class="order-modal-content">
+            <div class="order-modal-header">
+                <div class="order-modal-title">Детали заказа</div>
+                <button class="order-modal-close" onclick="closeOrderModal()">×</button>
+            </div>
+            <div id="order-modal-body">
+                <div class="loading">Загрузка...</div>
+            </div>
         </div>
     </div>
 
@@ -589,7 +1080,7 @@
                 displayAddresses();
                 
                 await loadUserOrders();
-                displayOrders();
+                await displayOrders();
             } catch (error) {
                 console.error('Ошибка загрузки данных профиля:', error);
             }
@@ -624,7 +1115,7 @@
 
             container.innerHTML = categories.map(category => `
                 <div class="category-card" onclick="showProducts(${category.id})">
-                    <span class="category-emoji">${emojis[category.name] || '🍽️'}</span>
+                    <span class="category-emoji">${category.emoji || emojis[category.name] || '🍽️'}</span>
                     <div class="category-name">${category.name}</div>
                 </div>
             `).join('');
@@ -660,6 +1151,7 @@
             container.innerHTML = products.map(product => {
                 const cartQuantity = cart[product.id] ? cart[product.id].quantity : 0;
                 const hasInCart = cartQuantity > 0;
+                const isUnavailable = product.available === 0 || product.available === false;
                 
                 return `
                     <div class="product-card" data-product-id="${product.id}">
@@ -670,21 +1162,31 @@
                             }
                         </div>
                         <div class="product-name">${product.name}</div>
-                        <div class="product-price">${product.price} ₽</div>
-                        
-                        <div class="quantity-controls ${hasInCart ? 'active' : ''}" id="quantity-${product.id}">
-                            <button class="quantity-btn" onclick="decreaseQuantity(${product.id})">
-                                ${cartQuantity <= 1 ? '🗑️' : '−'}
-                            </button>
-                            <span class="quantity-display">${cartQuantity}</span>
-                            <button class="quantity-btn" onclick="increaseQuantity(${product.id})">+</button>
+                        <div class="price-weight-row">
+                            <div class="prices-left">
+                                <span class="current-price">${product.price} ₽</span>
+                                ${product.network_price ? `<span class="network-price">${product.network_price} ₽</span>` : ''}
+                            </div>
+                            <div class="weight-right">${product.weight ? product.weight + 'г' : '—'}</div>
                         </div>
                         
-                        <button class="btn ${hasInCart ? 'hidden' : ''}" 
-                                id="add-btn-${product.id}" 
-                                onclick="addToCart(${product.id})">
-                            В корзину
-                        </button>
+                        ${isUnavailable ? `
+                            <div class="unavailable-text">Временно недоступен</div>
+                        ` : `
+                            <div class="quantity-controls ${hasInCart ? 'active' : ''}" id="quantity-${product.id}">
+                                <button class="quantity-btn" onclick="decreaseQuantity(${product.id})">
+                                    ${cartQuantity <= 1 ? '🗑️' : '−'}
+                                </button>
+                                <span class="quantity-display">${cartQuantity}</span>
+                                <button class="quantity-btn" onclick="increaseQuantity(${product.id})">+</button>
+                            </div>
+                            
+                            <button class="btn ${hasInCart ? 'hidden' : ''}" 
+                                    id="add-btn-${product.id}" 
+                                    onclick="addToCart(${product.id})">
+                                В корзину
+                            </button>
+                        `}
                     </div>
                 `;
             }).join('');
@@ -727,6 +1229,23 @@
             }
         }
 
+        // Форматирование названия адреса
+        function formatAddressName(address) {
+            let name = address.name || 'Адрес';
+            
+            // Убираем стандартные названия
+            if (name === 'Основной адрес' || name === 'Основной') {
+                name = 'Адрес';
+            }
+            
+            // Добавляем статус основного адреса
+            if (address.is_default) {
+                name += ' (основной)';
+            }
+            
+            return name;
+        }
+
         // Отображение адресов
         function displayAddresses() {
             const container = document.getElementById('addresses-list');
@@ -756,30 +1275,68 @@
             }
             
             const addressesHtml = userAddresses.map(address => `
-                <div class="address-item ${address.is_default ? 'default' : ''}">
-                    <div class="address-name">${address.name} ${address.is_default ? '✅' : ''}</div>
+                <div class="address-item ${address.is_default ? 'default' : ''}" id="address-${address.id}">
+                    <div class="address-name">${formatAddressName(address)}</div>
                     <div class="address-text">${address.full_address}</div>
                     ${address.entrance ? `<div class="address-text">Подъезд: ${address.entrance}</div>` : ''}
+                    ${address.floor ? `<div class="address-text">Этаж: ${address.floor}</div>` : ''}
                     ${address.apartment ? `<div class="address-text">Квартира: ${address.apartment}</div>` : ''}
-                    <div style="margin-top: 8px;">
-                        <button onclick="editAddressPrompt(${address.id})" style="
-                            padding: 6px 12px; 
-                            background: var(--background-light); 
-                            border: 1px solid var(--border-color); 
-                            border-radius: 8px; 
-                            font-size: 12px; 
-                            margin-right: 8px;
-                            cursor: pointer;
-                        ">✏️ Редактировать</button>
-                        ${!address.is_default ? `<button onclick="setDefaultAddress(${address.id})" style="
-                            padding: 6px 12px; 
-                            background: var(--accent-color); 
-                            color: white; 
-                            border: none; 
-                            border-radius: 8px; 
-                            font-size: 12px;
-                            cursor: pointer;
-                        ">⭐ По умолчанию</button>` : ''}
+                    ${address.intercom ? `<div class="address-text">Домофон: ${address.intercom}</div>` : ''}
+                    ${address.comment ? `<div class="address-text">💬 ${address.comment}</div>` : ''}
+                    
+                    <div class="address-actions">
+                        <button class="btn-address" onclick="showEditAddressForm(${address.id})">✏️ Редактировать</button>
+                        ${!address.is_default ? `<button class="btn-address primary" onclick="setDefaultAddress(${address.id})">⭐ По умолчанию</button>` : ''}
+                        ${userAddresses.length > 1 ? `<button class="btn-address danger" onclick="deleteAddress(${address.id})">🗑️ Удалить</button>` : ''}
+                    </div>
+                    
+                    <div class="address-edit-form hidden" id="edit-form-${address.id}">
+                        <div class="form-group">
+                            <label for="edit-name-${address.id}">Название адреса</label>
+                            <input type="text" id="edit-name-${address.id}" value="${address.name || ''}" placeholder="Например: Дом, Офис">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-address-${address.id}">Полный адрес</label>
+                            <textarea id="edit-address-${address.id}" rows="3" placeholder="Улица, дом">${address.full_address || ''}</textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-entrance-${address.id}">Подъезд</label>
+                                <input type="text" id="edit-entrance-${address.id}" value="${address.entrance || ''}" placeholder="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-floor-${address.id}">Этаж</label>
+                                <input type="text" id="edit-floor-${address.id}" value="${address.floor || ''}" placeholder="5">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-apartment-${address.id}">Квартира</label>
+                                <input type="text" id="edit-apartment-${address.id}" value="${address.apartment || ''}" placeholder="15">
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-intercom-${address.id}">Домофон</label>
+                                <input type="text" id="edit-intercom-${address.id}" value="${address.intercom || ''}" placeholder="123К">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="edit-comment-${address.id}">Комментарий</label>
+                            <textarea id="edit-comment-${address.id}" rows="2" placeholder="Дополнительная информация">${address.comment || ''}</textarea>
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="edit-default-${address.id}" ${address.is_default ? 'checked' : ''}>
+                            <label for="edit-default-${address.id}">Сделать основным адресом</label>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button class="btn-save" onclick="saveAddressEdits(${address.id})">💾 Сохранить</button>
+                            <button class="btn-cancel" onclick="hideEditAddressForm(${address.id})">❌ Отменить</button>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -804,32 +1361,300 @@
         }
 
         // Отображение заказов
-        function displayOrders() {
+        async function displayOrders(filteredOrders = null) {
             const container = document.getElementById('orders-list');
+            const ordersToShow = filteredOrders || userOrders;
             
-            if (!userOrders || userOrders.length === 0) {
+            if (!ordersToShow || ordersToShow.length === 0) {
                 container.innerHTML = '<div class="empty-state"><span class="empty-state-emoji">📋</span>Пока нет заказов</div>';
                 return;
             }
             
-            container.innerHTML = userOrders.map(order => {
-                const orderDate = new Date(order.created_at).toLocaleDateString('ru-RU');
-                return `
+            // Показываем индикатор загрузки
+            container.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+            
+            // Асинхронно обрабатываем каждый заказ
+            const orderElements = [];
+            for (const order of ordersToShow) {
+                const orderDate = new Date(order.created_at);
+                const formattedDate = orderDate.toLocaleDateString('ru-RU');
+                const formattedTime = orderDate.toLocaleTimeString('ru-RU', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                // Определяем статус и возможность отмены
+                const statusText = getStatusText(order.status);
+                const canCancel = await canCancelOrder(order.status);
+                
+                orderElements.push(`
                     <div class="order-item">
                         <div class="order-header">
                             <div class="order-number">Заказ #${order.id}</div>
-                            <div class="order-total">${order.total_amount} ₽</div>
+                            <div class="order-total">${order.total} ₽</div>
                         </div>
-                        <div class="order-date">${orderDate}</div>
+                        <div class="order-date">📅 ${formattedDate}</div>
+                        <div class="order-time">⏰ ${formattedTime}</div>
+                        <div class="order-status ${order.status}">${statusText}</div>
+                        <div class="order-actions">
+                            <button class="btn-order secondary" onclick="showOrderDetails(${order.id})">
+                                📋 Детали
+                            </button>
+                            ${canCancel ? `
+                                <button class="btn-order danger" onclick="cancelOrder(${order.id})">
+                                    ❌ Отменить
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `);
+            }
+            
+            container.innerHTML = orderElements.join('');
+        }
+
+        // Получить текст статуса с эмодзи
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '⏳ Ожидает подтверждения',
+                'в_обработке': '🔄 В обработке',
+                'собирается': '📦 Собирается',
+                'в_доставке': '🚚 В доставке',
+                'доставлен': '✅ Доставлен',
+                'отменен': '❌ Отменен'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Проверить возможность отмены заказа
+        async function canCancelOrder(status) {
+            try {
+                // Получаем информацию о критическом статусе
+                const response = await fetch('/settings/critical_order_status');
+                if (!response.ok) {
+                    console.error('Ошибка получения критического статуса');
+                    // Fallback к старой логике
+                    const cancelableStatuses = ['pending', 'в_обработке'];
+                    return cancelableStatuses.includes(status);
+                }
+                
+                const criticalStatusData = await response.json();
+                const criticalStatus = criticalStatusData.value;
+                
+                // Получаем информацию о всех статусах
+                const statusesResponse = await fetch('/api/admin/order-statuses');
+                if (!statusesResponse.ok) {
+                    console.error('Ошибка получения статусов заказов');
+                    // Fallback к старой логике
+                    const cancelableStatuses = ['pending', 'в_обработке'];
+                    return cancelableStatuses.includes(status);
+                }
+                
+                const allStatuses = await statusesResponse.json();
+                
+                // Находим информацию о текущем статусе
+                const currentStatus = allStatuses.find(s => s.key === status);
+                const criticalStatusInfo = allStatuses.find(s => s.key === criticalStatus);
+                
+                if (!currentStatus || !criticalStatusInfo) {
+                    console.error('Не найдена информация о статусах');
+                    // Fallback к старой логике
+                    const cancelableStatuses = ['pending', 'в_обработке'];
+                    return cancelableStatuses.includes(status);
+                }
+                
+                // Проверяем по очередности
+                return currentStatus.order_priority < criticalStatusInfo.order_priority && status !== 'отменен';
+                
+            } catch (error) {
+                console.error('Ошибка проверки возможности отмены:', error);
+                // Fallback к старой логике
+                const cancelableStatuses = ['pending', 'в_обработке'];
+                return cancelableStatuses.includes(status);
+            }
+        }
+
+        // Фильтрация заказов по периоду
+        async function filterOrdersByPeriod() {
+            const period = document.getElementById('period-filter').value;
+            
+            if (period === 'all') {
+                await displayOrders();
+                return;
+            }
+            
+            const now = new Date();
+            let filterDate = new Date();
+            
+            switch (period) {
+                case 'today':
+                    filterDate.setHours(0, 0, 0, 0);
+                    break;
+                case 'week':
+                    filterDate.setDate(now.getDate() - 7);
+                    break;
+                case 'month':
+                    filterDate.setMonth(now.getMonth() - 1);
+                    break;
+                case '3months':
+                    filterDate.setMonth(now.getMonth() - 3);
+                    break;
+            }
+            
+            const filteredOrders = userOrders.filter(order => {
+                const orderDate = new Date(order.created_at);
+                return orderDate >= filterDate;
+            });
+            
+            await displayOrders(filteredOrders);
+        }
+
+        // Показать детали заказа
+        async function showOrderDetails(orderId) {
+            const modal = document.getElementById('order-modal');
+            const modalBody = document.getElementById('order-modal-body');
+            
+            // Показываем модальное окно с загрузкой
+            modal.classList.remove('hidden');
+            modalBody.innerHTML = '<div class="loading">Загрузка деталей заказа...</div>';
+            
+            try {
+                const response = await fetch(`/orders/${orderId}/details`);
+                const orderDetails = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(orderDetails.error || 'Ошибка загрузки деталей');
+                }
+                
+                // Формируем HTML с деталями заказа
+                const orderDate = new Date(orderDetails.created_at);
+                const formattedDate = orderDate.toLocaleDateString('ru-RU');
+                const formattedTime = orderDate.toLocaleTimeString('ru-RU', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                modalBody.innerHTML = `
+                    <div class="order-info">
+                        <h4>📋 Заказ #${orderDetails.id}</h4>
+                        <p><strong>📅 Дата:</strong> ${formattedDate}</p>
+                        <p><strong>⏰ Время:</strong> ${formattedTime}</p>
+                        <p><strong>📍 Адрес:</strong> ${orderDetails.address || 'Не указан'}</p>
+                        <p><strong>🔄 Статус:</strong> ${getStatusText(orderDetails.status)}</p>
+                        ${orderDetails.comment ? `<p><strong>💬 Комментарий:</strong> ${orderDetails.comment}</p>` : ''}
+                        ${orderDetails.operator_message ? `
+                            <div class="operator-message">
+                                <p><strong>📝 Информация от оператора:</strong></p>
+                                <div class="operator-message-content">${orderDetails.operator_message}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="order-items">
+                        <h4>🛍️ Товары в заказе:</h4>
+                        ${orderDetails.items.map(item => `
+                            <div class="order-item-detail">
+                                ${item.image ? `<img src="${item.image}" alt="${item.name}" class="order-item-image">` : ''}
+                                <div class="order-item-info">
+                                    <div class="order-item-name">${item.name}</div>
+                                    <div class="order-item-quantity">${item.quantity} шт.</div>
+                                </div>
+                                <div class="order-item-price">${item.price} ₽</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="order-summary">
+                        <div class="order-summary-row">
+                            <span>Общая сумма:</span>
+                            <span class="order-summary-total">${orderDetails.total} ₽</span>
+                        </div>
                     </div>
                 `;
-            }).join('');
+                
+            } catch (error) {
+                console.error('Ошибка загрузки деталей заказа:', error);
+                modalBody.innerHTML = `
+                    <div class="error-message">
+                        <p>❌ Ошибка загрузки деталей заказа</p>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
         }
+
+        // Закрыть модальное окно деталей заказа
+        function closeOrderModal() {
+            const modal = document.getElementById('order-modal');
+            modal.classList.add('hidden');
+        }
+
+        // Отменить заказ
+        async function cancelOrder(orderId) {
+            if (!confirm('Вы уверены, что хотите отменить этот заказ?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/orders/${orderId}/cancel`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: tg.initDataUnsafe?.user?.id || 'test_user'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Ошибка отмены заказа');
+                }
+                
+                // Показываем сообщение об успехе
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Заказ успешно отменен');
+                } else {
+                    alert('Заказ успешно отменен');
+                }
+                
+                // Обновляем список заказов
+                await loadUserOrders();
+                await displayOrders();
+                
+            } catch (error) {
+                console.error('Ошибка отмены заказа:', error);
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Ошибка: ' + error.message);
+                } else {
+                    alert('Ошибка: ' + error.message);
+                }
+            }
+        }
+
+        // Закрытие модального окна по клику на фон
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('order-modal');
+            if (event.target === modal) {
+                closeOrderModal();
+            }
+        });
 
         // Добавить в корзину
         function addToCart(productId) {
             const product = products.find(p => p.id === productId);
             if (!product) return;
+
+            // Проверяем доступность товара
+            if (product.available === 0 || product.available === false) {
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Товар временно недоступен');
+                } else {
+                    alert('Товар временно недоступен');
+                }
+                return;
+            }
 
             if (cart[productId]) {
                 cart[productId].quantity += 1;
@@ -843,6 +1668,19 @@
 
         // Увеличить количество
         function increaseQuantity(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            // Проверяем доступность товара
+            if (product.available === 0 || product.available === false) {
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Товар временно недоступен');
+                } else {
+                    alert('Товар временно недоступен');
+                }
+                return;
+            }
+
             if (cart[productId]) {
                 cart[productId].quantity += 1;
                 updateCartIcon();
@@ -885,6 +1723,14 @@
                     addButton.classList.remove('hidden');
                 }
             }
+        }
+
+        // Обновить UI всех товаров
+        function updateAllProductsUI() {
+            // Проходим по всем товарам и обновляем их UI
+            products.forEach(product => {
+                updateProductUI(product.id);
+            });
         }
 
         // Обновить иконку корзины
@@ -985,6 +1831,9 @@
                     // Очистка корзины
                     cart = {};
                     updateCartIcon();
+                    
+                    // Обновляем UI всех товаров для скрытия количеств
+                    updateAllProductsUI();
                     
                     tg.showAlert(`Заказ #${order.id} оформлен! Спасибо за покупку!`);
                 } else {
@@ -1135,21 +1984,62 @@
             }
         }
 
-        // Редактирование адреса через prompt
-        function editAddressPrompt(addressId) {
-            const address = userAddresses.find(addr => addr.id === addressId);
-            if (!address) return;
+        // Показать форму редактирования адреса
+        function showEditAddressForm(addressId) {
+            // Скрываем все другие формы
+            document.querySelectorAll('.address-edit-form').forEach(form => {
+                form.classList.add('hidden');
+            });
             
-            const newAddress = prompt('Введите новый адрес:', address.full_address);
-            if (newAddress && newAddress.trim() && newAddress.trim() !== address.full_address) {
-                updateAddress(addressId, { full_address: newAddress.trim() });
+            // Показываем форму для выбранного адреса
+            const form = document.getElementById(`edit-form-${addressId}`);
+            if (form) {
+                form.classList.remove('hidden');
             }
         }
 
-        // Обновление адреса
-        async function updateAddress(addressId, updateData) {
+        // Скрыть форму редактирования адреса
+        function hideEditAddressForm(addressId) {
+            const form = document.getElementById(`edit-form-${addressId}`);
+            if (form) {
+                form.classList.add('hidden');
+            }
+        }
+
+        // Сохранить изменения адреса
+        async function saveAddressEdits(addressId) {
             try {
-                const response = await fetch(`/addresses/address/${addressId}`, {
+                const updateData = {
+                    name: document.getElementById(`edit-name-${addressId}`).value.trim(),
+                    full_address: document.getElementById(`edit-address-${addressId}`).value.trim(),
+                    entrance: document.getElementById(`edit-entrance-${addressId}`).value.trim(),
+                    floor: document.getElementById(`edit-floor-${addressId}`).value.trim(),
+                    apartment: document.getElementById(`edit-apartment-${addressId}`).value.trim(),
+                    intercom: document.getElementById(`edit-intercom-${addressId}`).value.trim(),
+                    comment: document.getElementById(`edit-comment-${addressId}`).value.trim(),
+                    is_default: document.getElementById(`edit-default-${addressId}`).checked
+                };
+
+                // Валидация обязательных полей
+                if (!updateData.name) {
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Укажите название адреса');
+                    } else {
+                        alert('Укажите название адреса');
+                    }
+                    return;
+                }
+
+                if (!updateData.full_address) {
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Укажите полный адрес');
+                    } else {
+                        alert('Укажите полный адрес');
+                    }
+                    return;
+                }
+
+                const response = await fetch(`/addresses/${addressId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(updateData)
@@ -1158,17 +2048,82 @@
                 if (response.ok) {
                     await loadUserAddresses();
                     displayAddresses();
-                    tg.showAlert('Адрес успешно обновлен!');
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Адрес успешно обновлен!');
+                    } else {
+                        alert('Адрес успешно обновлен!');
+                    }
                 } else {
                     console.error('Ошибка обновления адреса:', response.status);
-                    tg.showAlert('Ошибка обновления адреса');
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Ошибка обновления адреса');
+                    } else {
+                        alert('Ошибка обновления адреса');
+                    }
                 }
                 
             } catch (error) {
                 console.error('Ошибка обновления адреса:', error);
-                tg.showAlert('Ошибка обновления адреса');
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Ошибка обновления адреса');
+                } else {
+                    alert('Ошибка обновления адреса');
+                }
             }
         }
+
+        // Удалить адрес
+        async function deleteAddress(addressId) {
+            try {
+                // Проверяем, что это не последний адрес
+                if (userAddresses.length <= 1) {
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Нельзя удалить последний адрес');
+                    } else {
+                        alert('Нельзя удалить последний адрес');
+                    }
+                    return;
+                }
+
+                // Подтверждение удаления
+                const confirmed = tg && tg.showConfirm ? 
+                    await new Promise(resolve => tg.showConfirm('Удалить адрес?', resolve)) :
+                    confirm('Удалить адрес?');
+                    
+                if (!confirmed) return;
+
+                const response = await fetch(`/addresses/${addressId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    await loadUserAddresses();
+                    displayAddresses();
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Адрес удален');
+                    } else {
+                        alert('Адрес удален');
+                    }
+                } else {
+                    console.error('Ошибка удаления адреса:', response.status);
+                    if (tg && tg.showAlert) {
+                        tg.showAlert('Ошибка удаления адреса');
+                    } else {
+                        alert('Ошибка удаления адреса');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Ошибка удаления адреса:', error);
+                if (tg && tg.showAlert) {
+                    tg.showAlert('Ошибка удаления адреса');
+                } else {
+                    alert('Ошибка удаления адреса');
+                }
+            }
+        }
+
+
 
         // Установить адрес по умолчанию
         async function setDefaultAddress(addressId) {

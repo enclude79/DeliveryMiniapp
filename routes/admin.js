@@ -293,6 +293,7 @@ router.get('/orders/:id', authenticateToken, async (req, res) => {
             total_amount: order.total,
             items: items,
             comment: order.comment || '',
+            operator_message: order.operator_message || '',
             created_at: order.created_at,
             telegram_id: order.telegram_id,
             user_id: order.user_id
@@ -302,6 +303,38 @@ router.get('/orders/:id', authenticateToken, async (req, res) => {
         res.json(orderDetails);
     } catch (error) {
         console.error('[ADMIN API] Ошибка при получении деталей заказа:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+// Обновление сообщения оператора для заказа
+router.put('/orders/:id/operator-message', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { operator_message } = req.body;
+        
+        console.log(`[ADMIN API] Updating operator message for order ${id}`);
+        
+        // Проверяем существование заказа
+        const [order] = await query('SELECT id FROM orders WHERE id = ?', [id]);
+        if (!order) {
+            return res.status(404).json({ error: 'Заказ не найден' });
+        }
+        
+        // Обновляем сообщение оператора
+        await query(
+            'UPDATE orders SET operator_message = ? WHERE id = ?',
+            [operator_message || null, id]
+        );
+        
+        console.log(`[ADMIN API] Operator message updated for order ${id}`);
+        res.json({ 
+            success: true, 
+            message: 'Сообщение оператора обновлено',
+            operator_message: operator_message || ''
+        });
+    } catch (error) {
+        console.error('[ADMIN API] Ошибка обновления сообщения оператора:', error);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
     }
 });
@@ -459,7 +492,7 @@ router.put('/orders/:id/status', authenticateToken, async (req, res) => {
 // Получение списка категорий
 router.get('/categories', authenticateToken, async (req, res) => {
     try {
-        const categories = await query('SELECT * FROM categories ORDER BY name');
+        const categories = await query('SELECT * FROM categories ORDER BY order_priority ASC, name ASC');
         res.json(categories);
     } catch (error) {
         console.error('Ошибка при получении категорий:', error);
@@ -469,7 +502,7 @@ router.get('/categories', authenticateToken, async (req, res) => {
 
 // Создание новой категории
 router.post('/categories', authenticateToken, async (req, res) => {
-    const { name } = req.body;
+    const { name, order_priority, emoji } = req.body;
 
     if (!name || name.trim() === '') {
         return res.status(400).json({ error: 'Название категории обязательно' });
@@ -477,13 +510,15 @@ router.post('/categories', authenticateToken, async (req, res) => {
 
     try {
         const result = await query(
-            'INSERT INTO categories (name) VALUES (?)',
-            [name.trim()]
+            'INSERT INTO categories (name, emoji, order_priority) VALUES (?, ?, ?)',
+            [name.trim(), emoji || null, order_priority || 0]
         );
 
         res.status(201).json({
             id: result.lastID,
-            name: name.trim()
+            name: name.trim(),
+            emoji: emoji || null,
+            order_priority: order_priority || 0
         });
     } catch (error) {
         console.error('Ошибка при создании категории:', error);
@@ -494,7 +529,7 @@ router.post('/categories', authenticateToken, async (req, res) => {
 // Редактирование категории
 router.put('/categories/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
-    const { name } = req.body;
+    const { name, order_priority, emoji } = req.body;
 
     if (!name || name.trim() === '') {
         return res.status(400).json({ error: 'Название категории обязательно' });
@@ -502,14 +537,13 @@ router.put('/categories/:id', authenticateToken, async (req, res) => {
 
     try {
         await query(
-            'UPDATE categories SET name = ? WHERE id = ?',
-            [name.trim(), id]
+            'UPDATE categories SET name = ?, order_priority = ?, emoji = ? WHERE id = ?',
+            [name.trim(), order_priority || 0, emoji || null, id]
         );
 
-        res.json({
-            id: parseInt(id),
-            name: name.trim()
-        });
+        const updatedCategory = await query('SELECT * FROM categories WHERE id = ?', [id]);
+
+        res.json(updatedCategory[0]);
     } catch (error) {
         console.error('Ошибка при обновлении категории:', error);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
@@ -533,7 +567,9 @@ router.delete('/categories/:id', authenticateToken, async (req, res) => {
             });
         }
 
+        // Удаляем категорию из базы данных
         await query('DELETE FROM categories WHERE id = ?', [id]);
+
         res.json({ message: 'Категория удалена' });
     } catch (error) {
         console.error('Ошибка при удалении категории:', error);
@@ -548,7 +584,7 @@ router.get('/products', authenticateToken, async (req, res) => {
             SELECT p.*, c.name as category_name
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id
-            ORDER BY p.name
+            ORDER BY p.order_priority ASC, p.name ASC
         `);
         res.json(products);
     } catch (error) {
@@ -559,7 +595,7 @@ router.get('/products', authenticateToken, async (req, res) => {
 
 // Создание нового товара
 router.post('/products', authenticateToken, upload.single('image'), async (req, res) => {
-    const { name, description, price, weight, category_id, active } = req.body;
+    const { name, description, price, network_price, weight, category_id, active, order_priority } = req.body;
 
     if (!name || !price || !category_id) {
         return res.status(400).json({
@@ -571,9 +607,9 @@ router.post('/products', authenticateToken, upload.single('image'), async (req, 
         const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
         
         const result = await query(
-            `INSERT INTO products (name, description, price, weight, category_id, active, image)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [name, description, price, weight || null, category_id, active ? 1 : 0, imageUrl]
+            `INSERT INTO products (name, description, price, network_price, weight, category_id, active, image, order_priority)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [name, description, price, network_price || null, weight || null, category_id, active ? 1 : 0, imageUrl, order_priority || 0]
         );
 
         res.status(201).json({
@@ -581,10 +617,12 @@ router.post('/products', authenticateToken, upload.single('image'), async (req, 
             name,
             description,
             price,
+            network_price,
             weight,
             category_id,
             active: active ? 1 : 0,
-            image: imageUrl
+            image: imageUrl,
+            order_priority: order_priority || 0
         });
     } catch (error) {
         console.error('Ошибка при создании товара:', error);
@@ -595,7 +633,7 @@ router.post('/products', authenticateToken, upload.single('image'), async (req, 
 // Редактирование товара
 router.put('/products/:id', authenticateToken, upload.single('image'), async (req, res) => {
     const { id } = req.params;
-    const { name, description, price, weight, category_id, active } = req.body;
+    const { name, description, price, network_price, weight, category_id, active, available, discontinued, order_priority } = req.body;
 
     if (!name || !price || !category_id) {
         return res.status(400).json({
@@ -609,11 +647,15 @@ router.put('/products/:id', authenticateToken, upload.single('image'), async (re
             SET name = ?, 
                 description = ?, 
                 price = ?, 
+                network_price = ?,
                 weight = ?,
                 category_id = ?,
-                active = ?
+                active = ?,
+                available = ?,
+                discontinued = ?,
+                order_priority = ?
         `;
-        let params = [name, description, price, weight || null, category_id, active ? 1 : 0];
+        let params = [name, description, price, network_price || null, weight || null, category_id, active ? 1 : 0, available ? 1 : 0, discontinued ? 1 : 0, order_priority || 0];
 
         // Если загружен новый файл, добавляем его в запрос
         if (req.file) {
@@ -638,6 +680,32 @@ router.put('/products/:id', authenticateToken, upload.single('image'), async (re
         res.json(updatedProduct[0]);
     } catch (error) {
         console.error('Ошибка при обновлении товара:', error);
+        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    }
+});
+
+// Обновление статуса товара
+router.patch('/products/:id/status', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { available, discontinued } = req.body;
+
+    try {
+        await query(
+            'UPDATE products SET available = ?, discontinued = ? WHERE id = ?',
+            [available ? 1 : 0, discontinued ? 1 : 0, id]
+        );
+
+        const updatedProduct = await query(
+            `SELECT p.*, c.name as category_name
+             FROM products p
+             LEFT JOIN categories c ON p.category_id = c.id
+             WHERE p.id = ?`,
+            [id]
+        );
+
+        res.json(updatedProduct[0]);
+    } catch (error) {
+        console.error('Ошибка при обновлении статуса товара:', error);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
     }
 });

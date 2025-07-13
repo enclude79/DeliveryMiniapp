@@ -18,7 +18,7 @@ router.use((req, res, next) => {
 router.get('/', async (req, res) => {
     try {
         const { category_id } = req.query;
-        let sql = 'SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.active = 1';
+        let sql = 'SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.active = 1 AND (p.discontinued IS NULL OR p.discontinued = 0)';
         const params = [];
         
         if (category_id) {
@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
             params.push(category_id);
         }
         
-        sql += ' ORDER BY p.name';
+        sql += ' ORDER BY p.order_priority ASC, p.name ASC';
         console.log(`[PRODUCTS API] Executing SQL:`, sql, 'Params:', params);
         const products = await query(sql, params);
         console.log(`[PRODUCTS API] Found ${products.length} products`);
@@ -41,7 +41,7 @@ router.get('/', async (req, res) => {
 router.get('/categories', async (req, res) => {
     try {
         console.log('[PRODUCTS API] Getting categories');
-        const categories = await query('SELECT * FROM categories ORDER BY name');
+        const categories = await query('SELECT * FROM categories ORDER BY order_priority ASC, name ASC');
         console.log(`[PRODUCTS API] Found ${categories.length} categories:`, categories.map(c => c.name));
         res.json(categories);
     } catch (error) {
@@ -56,7 +56,7 @@ router.get('/category/:id', async (req, res) => {
         const { id } = req.params;
         console.log(`[PRODUCTS API] Getting products for category ID: ${id}`);
         
-        const sql = 'SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.category_id = ? AND p.active = 1 ORDER BY p.name';
+        const sql = 'SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.category_id = ? AND p.active = 1 ORDER BY p.order_priority ASC, p.name ASC';
         const products = await query(sql, [id]);
         
         console.log(`[PRODUCTS API] Found ${products.length} products for category ${id}`);

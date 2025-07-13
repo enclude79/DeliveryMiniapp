@@ -80,6 +80,74 @@ function query(sql, params = []) {
     });
 }
 
+// Миграция статусов заказов из app_settings в order_statuses
+async function migrateOrderStatuses() {
+    try {
+        // Проверяем, есть ли уже данные в таблице order_statuses
+        const existingStatuses = await query('SELECT COUNT(*) as count FROM order_statuses');
+        if (existingStatuses[0].count > 0) {
+            console.log('[DB] Order statuses already migrated');
+            return;
+        }
+
+        console.log('[DB] Migrating order statuses...');
+
+        // Получаем текущие статусы из app_settings
+        const [statusesSetting] = await query(
+            'SELECT setting_value FROM app_settings WHERE setting_key = ?',
+            ['order_statuses']
+        );
+
+        let statuses = ['pending', 'в_обработке', 'собирается', 'в_доставке', 'доставлен', 'отменен'];
+        if (statusesSetting) {
+            try {
+                statuses = JSON.parse(statusesSetting.setting_value);
+            } catch (e) {
+                console.error('[DB] Error parsing order statuses, using defaults:', e);
+            }
+        }
+
+        // Определяем свойства для каждого статуса
+        const statusConfig = {
+            'pending': { name: '⏳ Ожидает подтверждения', color: '#F59E0B', description: 'Заказ получен и ожидает подтверждения' },
+            'в_обработке': { name: '🔄 В обработке', color: '#3B82F6', description: 'Заказ обрабатывается менеджером' },
+            'собирается': { name: '📦 Собирается', color: '#8B5CF6', description: 'Заказ собирается на складе' },
+            'в_доставке': { name: '🚚 В доставке', color: '#F59E0B', description: 'Заказ передан в доставку' },
+            'доставлен': { name: '✅ Доставлен', color: '#10B981', description: 'Заказ успешно доставлен', is_final: true },
+            'отменен': { name: '❌ Отменен', color: '#EF4444', description: 'Заказ отменен', is_final: true }
+        };
+
+        // Создаем записи в новой таблице
+        for (let i = 0; i < statuses.length; i++) {
+            const statusKey = statuses[i];
+            const config = statusConfig[statusKey] || { 
+                name: statusKey, 
+                color: '#6B7280', 
+                description: `Статус: ${statusKey}` 
+            };
+
+            await query(`
+                INSERT INTO order_statuses 
+                (key, name, description, order_priority, color, is_active, is_final) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `, [
+                statusKey,
+                config.name,
+                config.description,
+                i + 1, // Очередность начинается с 1
+                config.color,
+                1, // Все статусы активны по умолчанию
+                config.is_final ? 1 : 0
+            ]);
+        }
+
+        console.log(`[DB] Migrated ${statuses.length} order statuses successfully`);
+    } catch (error) {
+        console.error('[DB] Error migrating order statuses:', error);
+        throw error;
+    }
+}
+
 async function initDatabase() {
     try {
         // Создание таблицы администраторов
@@ -100,6 +168,16 @@ async function initDatabase() {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        // Добавление поля emoji для категорий
+        try {
+            await query('ALTER TABLE categories ADD COLUMN emoji TEXT');
+        } catch (e) { /* столбец уже существует */ }
+
+        // Добавление поля order_priority для категорий
+        try {
+            await query('ALTER TABLE categories ADD COLUMN order_priority INTEGER DEFAULT 0');
+        } catch (e) { /* столбец уже существует */ }
 
         // Создание таблицы продуктов
         await query(`
@@ -151,6 +229,34 @@ async function initDatabase() {
         try {
             await query('ALTER TABLE products ADD COLUMN weight REAL');
         } catch (e) { /* столбец уже существует */ }
+        try {
+            await query('ALTER TABLE products ADD COLUMN available INTEGER DEFAULT 1');
+        } catch (e) { /* столбец уже существует */ }
+        try {
+            await query('ALTER TABLE products ADD COLUMN discontinued INTEGER DEFAULT 0');
+        } catch (e) { /* столбец уже существует */ }
+        try {
+            await query('ALTER TABLE products ADD COLUMN network_price REAL');
+        } catch (e) { /* столбец уже существует */ }
+        try {
+            await query('ALTER TABLE products ADD COLUMN order_priority INTEGER DEFAULT 0');
+        } catch (e) { /* столбец уже существует */ }
+
+        // Добавление поля operator_message для заказов
+        try {
+            await query('ALTER TABLE orders ADD COLUMN operator_message TEXT');
+        } catch (e) { /* столбец уже существует */ }
+
+        // Добавление новых столбцов в таблицу user_addresses для админских координат
+        try {
+            await query('ALTER TABLE user_addresses ADD COLUMN admin_latitude REAL');
+        } catch (e) { /* столбец уже существует */ }
+        try {
+            await query('ALTER TABLE user_addresses ADD COLUMN admin_longitude REAL');
+        } catch (e) { /* столбец уже существует */ }
+        try {
+            await query('ALTER TABLE user_addresses ADD COLUMN admin_coordinate_comment TEXT');
+        } catch (e) { /* столбец уже существует */ }
 
         // Создание таблицы адресов пользователей
         await query(`
@@ -200,6 +306,67 @@ async function initDatabase() {
                 FOREIGN KEY (product_id) REFERENCES products (id)
             )
         `);
+
+        // Создание таблицы настроек приложения
+        await query(`
+            CREATE TABLE IF NOT EXISTS app_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                setting_key TEXT UNIQUE NOT NULL,
+                setting_value TEXT NOT NULL,
+                description TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Создание таблицы статусов заказов
+        await query(`
+            CREATE TABLE IF NOT EXISTS order_statuses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT,
+                order_priority INTEGER NOT NULL,
+                color TEXT DEFAULT '#6B7280',
+                is_active BOOLEAN DEFAULT 1,
+                is_final BOOLEAN DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Создание индекса для быстрого поиска по очередности
+        await query(`
+            CREATE INDEX IF NOT EXISTS idx_order_statuses_priority 
+            ON order_statuses(order_priority)
+        `);
+
+        // Инициализация настроек по умолчанию
+        const settingsDefaults = [
+            {
+                key: 'critical_order_status',
+                value: 'собирается',
+                description: 'Критический статус заказа, после которого отмена невозможна'
+            },
+            {
+                key: 'order_statuses',
+                value: JSON.stringify(['pending', 'в_обработке', 'собирается', 'в_доставке', 'доставлен', 'отменен']),
+                description: 'Доступные статусы заказов'
+            }
+        ];
+
+        for (const setting of settingsDefaults) {
+            const existing = await query('SELECT id FROM app_settings WHERE setting_key = ?', [setting.key]);
+            if (existing.length === 0) {
+                await query(
+                    'INSERT INTO app_settings (setting_key, setting_value, description) VALUES (?, ?, ?)',
+                    [setting.key, setting.value, setting.description]
+                );
+            }
+        }
+
+        // Миграция статусов заказов в новую таблицу
+        await migrateOrderStatuses();
 
         // Создание администратора по умолчанию
         const adminExists = await query('SELECT id FROM admins WHERE username = ?', [process.env.ADMIN_USERNAME]);

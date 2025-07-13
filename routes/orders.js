@@ -194,4 +194,157 @@ router.get('/user/:telegram_id', async (req, res) => {
     }
 });
 
+// Получить детали заказа
+router.get('/:id/details', async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log(`[ORDERS API] Getting order details for order: ${id}`);
+        
+        // Получаем основную информацию о заказе
+        const [order] = await query(`
+            SELECT o.*, u.first_name, u.last_name, u.username, u.telegram_id
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            WHERE o.id = ?
+        `, [id]);
+        
+        if (!order) {
+            return res.status(404).json({ error: 'Заказ не найден' });
+        }
+        
+        // Получаем товары заказа из order_items (если есть)
+        const orderItems = await query(`
+            SELECT oi.*, p.name as product_name, p.image, p.description
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            WHERE oi.order_id = ?
+        `, [id]);
+        
+        // Если нет записей в order_items, парсим JSON из поля items
+        let items = [];
+        if (orderItems.length > 0) {
+            items = orderItems.map(item => ({
+                id: item.product_id,
+                name: item.product_name,
+                price: item.price,
+                quantity: item.quantity,
+                image: item.image,
+                description: item.description
+            }));
+        } else if (order.items) {
+            try {
+                items = JSON.parse(order.items);
+            } catch (e) {
+                console.error('[ORDERS API] Error parsing items JSON:', e);
+                items = [];
+            }
+        }
+        
+        const orderDetails = {
+            id: order.id,
+            user: {
+                id: order.user_id,
+                telegram_id: order.telegram_id,
+                first_name: order.first_name,
+                last_name: order.last_name,
+                username: order.username
+            },
+            items: items,
+            total: order.total,
+            address: order.address,
+            status: order.status,
+            comment: order.comment,
+            operator_message: order.operator_message,
+            created_at: order.created_at
+        };
+        
+        console.log(`[ORDERS API] Order details retrieved for order ${id}`);
+        res.json(orderDetails);
+    } catch (error) {
+        console.error('[ORDERS API] Ошибка получения деталей заказа:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Отменить заказ
+router.put('/:id/cancel', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { user_id } = req.body;
+        
+        console.log(`[ORDERS API] Cancelling order ${id} by user ${user_id}`);
+        
+        // Получаем заказ и проверяем принадлежность пользователю
+        const [order] = await query(`
+            SELECT o.*, u.telegram_id
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            WHERE o.id = ? AND u.telegram_id = ?
+        `, [id, user_id]);
+        
+        if (!order) {
+            return res.status(404).json({ error: 'Заказ не найден или не принадлежит пользователю' });
+        }
+        
+        // Получаем критический статус из настроек
+        const [criticalStatusSetting] = await query(
+            'SELECT setting_value FROM app_settings WHERE setting_key = ?',
+            ['critical_order_status']
+        );
+        
+        const criticalStatus = criticalStatusSetting ? criticalStatusSetting.setting_value : 'собирается';
+        
+        // Получаем информацию о текущем статусе заказа
+        const [currentStatusInfo] = await query(
+            'SELECT * FROM order_statuses WHERE key = ?',
+            [order.status]
+        );
+        
+        // Получаем информацию о критическом статусе
+        const [criticalStatusInfo] = await query(
+            'SELECT * FROM order_statuses WHERE key = ?',
+            [criticalStatus]
+        );
+        
+        if (!currentStatusInfo) {
+            console.error(`[ORDERS API] Current status not found: ${order.status}`);
+            return res.status(400).json({ error: 'Неизвестный статус заказа' });
+        }
+        
+        if (!criticalStatusInfo) {
+            console.error(`[ORDERS API] Critical status not found: ${criticalStatus}`);
+            return res.status(400).json({ error: 'Неизвестный критический статус' });
+        }
+        
+        // Проверяем, можно ли отменить заказ по очередности
+        if (currentStatusInfo.order_priority >= criticalStatusInfo.order_priority && order.status !== 'отменен') {
+            return res.status(400).json({ 
+                error: 'Заказ нельзя отменить на данном этапе',
+                current_status: order.status,
+                current_priority: currentStatusInfo.order_priority,
+                critical_status: criticalStatus,
+                critical_priority: criticalStatusInfo.order_priority
+            });
+        }
+        
+        if (order.status === 'отменен') {
+            return res.status(400).json({ error: 'Заказ уже отменен' });
+        }
+        
+        // Отменяем заказ
+        await query('UPDATE orders SET status = ? WHERE id = ?', ['отменен', id]);
+        
+        console.log(`[ORDERS API] Order ${id} cancelled successfully`);
+        res.json({ 
+            success: true, 
+            message: 'Заказ успешно отменен',
+            order_id: id,
+            new_status: 'отменен'
+        });
+    } catch (error) {
+        console.error('[ORDERS API] Ошибка отмены заказа:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
 module.exports = router; 

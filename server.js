@@ -14,6 +14,8 @@ const orderRoutes = require('./routes/orders');
 const miniappRoutes = require('./routes/miniapp');
 const userRoutes = require('./routes/users');
 const addressRoutes = require('./routes/addresses');
+const settingsRoutes = require('./routes/settings');
+const orderStatusRoutes = require('./routes/order-statuses');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -111,6 +113,8 @@ app.use('/orders', orderRoutes);
 app.use('/miniapp', miniappRoutes);
 app.use('/users', userRoutes);
 app.use('/addresses', addressRoutes);
+app.use('/settings', settingsRoutes);
+app.use('/api/admin/order-statuses', orderStatusRoutes);
 
 // Роут для тестового Mini App
 app.get('/test', (req, res) => {
@@ -264,7 +268,7 @@ async function startServer() {
     }
 }
 
-startServer();
+startServer(); 
 
 // ===== МОНИТОРИНГ И СТАБИЛЬНОСТЬ =====
 

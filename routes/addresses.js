@@ -176,13 +176,14 @@ router.put('/:addressId', async (req, res) => {
             logAddresses('INFO', `Сброшен флаг is_default для других адресов пользователя`);
         }
         
-        // Обновляем адрес
+        // Обновляем все поля включая адрес и координаты (если переданы)
         const result = await query(
             `UPDATE user_addresses 
-             SET name = ?, latitude = ?, longitude = ?, full_address = ?, entrance = ?, 
-                 floor = ?, apartment = ?, intercom = ?, comment = ?, is_default = ?, updated_at = CURRENT_TIMESTAMP 
+             SET name = ?, entrance = ?, floor = ?, apartment = ?, intercom = ?, comment = ?, 
+                 is_default = ?, updated_at = CURRENT_TIMESTAMP, full_address = ?,
+                 latitude = COALESCE(?, latitude), longitude = COALESCE(?, longitude)
              WHERE id = ?`,
-            [name, latitude, longitude, full_address, entrance, floor, apartment, intercom, comment, is_default ? 1 : 0, addressId]
+            [name, entrance, floor, apartment, intercom, comment, is_default ? 1 : 0, full_address, latitude, longitude, addressId]
         );
         
         if (result.changes === 0) {
@@ -190,13 +191,19 @@ router.put('/:addressId', async (req, res) => {
             return res.status(404).json({ error: 'Адрес не найден' });
         }
         
-        logAddresses('SUCCESS', `Адрес обновлен: ${addressId}`);
+        logAddresses('SUCCESS', `Адрес обновлен: ${addressId}`, { changes: result.changes });
         
         // Возвращаем обновленный адрес
         const updatedAddress = await query(
             'SELECT * FROM user_addresses WHERE id = ?',
             [addressId]
         );
+        
+        logAddresses('DEBUG', `Адрес после обновления:`, { 
+            id: updatedAddress[0]?.id, 
+            full_address: updatedAddress[0]?.full_address,
+            updated_at: updatedAddress[0]?.updated_at
+        });
         
         res.json(updatedAddress[0]);
     } catch (error) {
@@ -354,6 +361,57 @@ router.delete('/address/:addressId', async (req, res) => {
         res.json({ success: true, message: 'Адрес удален' });
     } catch (error) {
         logAddresses('ERROR', 'Ошибка при удалении адреса', { error: error.message });
+        res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// PUT /addresses/admin/:addressId - обновить админские координаты (только для админов)
+router.put('/admin/:addressId', async (req, res) => {
+    try {
+        const { addressId } = req.params;
+        const { admin_latitude, admin_longitude, admin_coordinate_comment } = req.body;
+        
+        logAddresses('PUT', `Обновление админских координат для адреса ID: ${addressId}`, {
+            admin_latitude,
+            admin_longitude,
+            admin_coordinate_comment
+        });
+        
+        // Проверяем существование адреса
+        const address = await query(
+            'SELECT * FROM user_addresses WHERE id = ?',
+            [addressId]
+        );
+        
+        if (address.length === 0) {
+            logAddresses('ERROR', `Адрес не найден: ${addressId}`);
+            return res.status(404).json({ error: 'Адрес не найден' });
+        }
+        
+        // Обновляем только админские поля
+        const result = await query(
+            `UPDATE user_addresses 
+             SET admin_latitude = ?, admin_longitude = ?, admin_coordinate_comment = ?, updated_at = CURRENT_TIMESTAMP 
+             WHERE id = ?`,
+            [admin_latitude, admin_longitude, admin_coordinate_comment, addressId]
+        );
+        
+        if (result.changes === 0) {
+            logAddresses('ERROR', `Не удалось обновить админские координаты: ${addressId}`);
+            return res.status(404).json({ error: 'Адрес не найден' });
+        }
+        
+        logAddresses('SUCCESS', `Админские координаты обновлены для адреса: ${addressId}`);
+        
+        // Возвращаем обновленный адрес
+        const updatedAddress = await query(
+            'SELECT * FROM user_addresses WHERE id = ?',
+            [addressId]
+        );
+        
+        res.json(updatedAddress[0]);
+    } catch (error) {
+        logAddresses('ERROR', 'Ошибка при обновлении админских координат', { error: error.message });
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });

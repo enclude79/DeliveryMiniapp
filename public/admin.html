@@ -121,6 +121,35 @@
         .status.cancelled { background: #f8d7da; color: #721c24; }
         
         .hidden { display: none; }
+
+        .emoji-quick-select {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .emoji-option {
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .emoji-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .category-emoji-display {
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
         
         .order-card, .customer-card {
             margin-bottom: 1rem;
@@ -268,6 +297,12 @@
                         <li class="nav-item">
                             <a class="nav-link" href="#" data-page="security">🛡️ Безопасность</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="order-statuses">📊 Статусы заказов</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="settings">⚙️ Настройки</a>
+                        </li>
                     </ul>
                     <button id="logoutBtn" class="btn btn-outline-danger ms-auto">Выйти</button>
                 </div>
@@ -407,7 +442,7 @@
             <!-- Панель управления товарами -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
-                    <i class="fas fa-plus"></i> Добавить товар
+                    ➕ Добавить товар
                 </button>
                 
                 <!-- Фильтр по категориям -->
@@ -430,15 +465,18 @@
                                 <th>Название</th>
                                 <th>Описание</th>
                                 <th>Цена</th>
+                                <th>Цена в сети</th>
                                 <th>Вес</th>
                                 <th>Категория</th>
+                                <th>Очередность</th>
                                 <th>Статус</th>
+                                <th>Доступность</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
                         <tbody id="productsTableBody">
                             <tr>
-                                <td colspan="8" class="text-center">
+                                <td colspan="11" class="text-center">
                                     <div class="spinner-border" role="status">
                                         <span class="visually-hidden">Загрузка...</span>
                                     </div>
@@ -456,7 +494,32 @@
             <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
                 Добавить категорию
             </button>
-            <div id="categoriesList" class="row"></div>
+            
+            <!-- Таблица категорий -->
+            <div class="categories-table">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Эмодзи</th>
+                                <th>Название</th>
+                                <th>Очередность</th>
+                                <th>Дата создания</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Загрузка...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- Безопасность -->
@@ -525,6 +588,160 @@
                                         <tr>
                                             <td colspan="4" class="text-center">
                                                 <em>События будут отображаться здесь при обновлении статистики</em>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статусы заказов -->
+        <div id="order-statusesPage" style="display: none;">
+            <h2 class="mb-4">📊 Управление статусами заказов</h2>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5>📋 Список статусов</h5>
+                            <button class="btn btn-primary btn-sm" onclick="showAddStatusModal()">
+                                ➕ Добавить статус
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Очередность</th>
+                                            <th>Ключ</th>
+                                            <th>Название</th>
+                                            <th>Описание</th>
+                                            <th>Цвет</th>
+                                            <th>Финальный</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="statusesTableBody">
+                                        <tr>
+                                            <td colspan="7" class="text-center">
+                                                <div class="spinner-border" role="status">
+                                                    <span class="visually-hidden">Загрузка...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>ℹ️ Информация</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <h6>📝 Как работает очередность:</h6>
+                                <ul class="mb-0">
+                                    <li>Статусы с <strong>меньшей очередностью</strong> позволяют отмену заказа</li>
+                                    <li>Статусы с <strong>большей очередностью</strong> запрещают отмену</li>
+                                    <li>Критический статус устанавливается в настройках</li>
+                                    <li>Финальные статусы нельзя изменить</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <h6>⚠️ Внимание:</h6>
+                                <p class="mb-0">Нельзя удалить статус, который используется в заказах</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Настройки -->
+        <div id="settingsPage" style="display: none;">
+            <h2 class="mb-4">⚙️ Настройки системы</h2>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>🔧 Настройки заказов</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="criticalStatus" class="form-label">
+                                    <strong>Критический статус заказа</strong>
+                                </label>
+                                <select class="form-select" id="criticalStatus">
+                                    <option value="pending">⏳ Ожидает подтверждения</option>
+                                    <option value="в_обработке">🔄 В обработке</option>
+                                    <option value="собирается">📦 Собирается</option>
+                                    <option value="в_доставке">🚚 В доставке</option>
+                                    <option value="доставлен">✅ Доставлен</option>
+                                </select>
+                                <div class="form-text">
+                                    После достижения этого статуса пользователи не смогут отменить заказ
+                                </div>
+                            </div>
+                            
+                            <button class="btn btn-primary" onclick="saveCriticalStatus()">
+                                💾 Сохранить настройки
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>📊 Статистика заказов</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="orderStats">
+                                <div class="text-center">
+                                    <div class="spinner-border" role="status"></div>
+                                    <p>Загрузка статистики...</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-info btn-sm mt-2" onclick="loadOrderStats()">
+                                🔄 Обновить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>🔧 Все настройки системы</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Ключ</th>
+                                            <th>Значение</th>
+                                            <th>Описание</th>
+                                            <th>Обновлено</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="allSettings">
+                                        <tr>
+                                            <td colspan="4" class="text-center">
+                                                <em>Настройки будут загружены автоматически</em>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -645,11 +862,100 @@
                             <label class="form-label">Название категории</label>
                             <input type="text" class="form-control" name="name" required>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Очередность <small class="text-muted">(для сортировки)</small></label>
+                            <input type="number" class="form-control" name="order_priority" min="0" placeholder="0" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Эмодзи <small class="text-muted">(можно вставить копированием)</small></label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="emoji" placeholder="🍽️" maxlength="4">
+                                <button type="button" class="btn btn-outline-secondary" onclick="showEmojiPicker('addCategoryForm')">
+                                    😊 Выбрать
+                                </button>
+                            </div>
+                            <div class="form-text">Популярные эмодзи для еды:</div>
+                            <div class="emoji-quick-select mt-2">
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🍔')">🍔</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🍕')">🍕</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🍦')">🍦</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🥟')">🥟</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🍱')">🍱</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🥤')">🥤</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🍰')">🍰</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🥗')">🥗</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🍲')">🍲</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🥨')">🥨</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🥞')">🥞</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🍖')">🍖</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🍣')">🍣</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🍝')">🍝</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🥖')">🥖</span>
+                                <span class="emoji-option" onclick="selectEmoji('addCategoryForm', '🍽️')">🍽️</span>
+                            </div>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                     <button type="submit" form="addCategoryForm" class="btn btn-primary">Добавить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования категории -->
+    <div class="modal fade" id="editCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактировать категорию</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editCategoryForm">
+                        <input type="hidden" name="id">
+                        <div class="mb-3">
+                            <label class="form-label">Название категории</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Очередность <small class="text-muted">(для сортировки)</small></label>
+                            <input type="number" class="form-control" name="order_priority" min="0" placeholder="0" value="0">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Эмодзи <small class="text-muted">(можно вставить копированием)</small></label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="emoji" placeholder="🍽️" maxlength="4">
+                                <button type="button" class="btn btn-outline-secondary" onclick="showEmojiPicker('editCategoryForm')">
+                                    😊 Выбрать
+                                </button>
+                            </div>
+                            <div class="form-text">Популярные эмодзи для еды:</div>
+                            <div class="emoji-quick-select mt-2">
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🍔')">🍔</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🍕')">🍕</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🍦')">🍦</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🥟')">🥟</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🍱')">🍱</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🥤')">🥤</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🍰')">🍰</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🥗')">🥗</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🍲')">🍲</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🥨')">🥨</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🥞')">🥞</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🍖')">🍖</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🍣')">🍣</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🍝')">🍝</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🥖')">🥖</span>
+                                <span class="emoji-option" onclick="selectEmoji('editCategoryForm', '🍽️')">🍽️</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="editCategoryForm" class="btn btn-primary">Сохранить</button>
                 </div>
             </div>
         </div>
@@ -678,6 +984,10 @@
                             <input type="number" class="form-control" name="price" step="0.01" required>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">Цена в сети <small class="text-muted">(для маркетинга, будет показана зачеркнутой)</small></label>
+                            <input type="number" class="form-control" name="network_price" step="0.01" placeholder="Цена в сети">
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Вес (г)</label>
                             <input type="number" class="form-control" name="weight" step="1" placeholder="Вес в граммах">
                         </div>
@@ -686,6 +996,10 @@
                             <select class="form-control" name="category_id" required>
                                 <!-- Заполняется динамически -->
                             </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Очередность <small class="text-muted">(для сортировки в приложении)</small></label>
+                            <input type="number" class="form-control" name="order_priority" value="0" min="0" step="1" placeholder="Очередность">
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
@@ -725,7 +1039,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
                     <button type="button" class="btn btn-primary" id="editProductBtn">
-                        <i class="fas fa-edit"></i> Редактировать
+                        ✏️ Редактировать
                     </button>
                 </div>
             </div>
@@ -756,6 +1070,10 @@
                             <input type="number" class="form-control" name="price" step="0.01" required>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">Цена в сети <small class="text-muted">(для маркетинга, будет показана зачеркнутой)</small></label>
+                            <input type="number" class="form-control" name="network_price" step="0.01" placeholder="Цена в сети">
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Вес (г)</label>
                             <input type="number" class="form-control" name="weight" step="1" placeholder="Вес в граммах">
                         </div>
@@ -764,6 +1082,10 @@
                             <select class="form-control" name="category_id" required>
                                 <!-- Заполняется динамически -->
                             </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Очередность <small class="text-muted">(для сортировки в приложении)</small></label>
+                            <input type="number" class="form-control" name="order_priority" value="0" min="0" step="1" placeholder="Очередность">
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
@@ -783,6 +1105,107 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                     <button type="submit" form="editProductForm" class="btn btn-primary">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно добавления статуса -->
+    <div class="modal fade" id="addStatusModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">➕ Добавить статус заказа</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addStatusForm">
+                        <div class="mb-3">
+                            <label class="form-label">Ключ статуса</label>
+                            <input type="text" class="form-control" name="key" required placeholder="например: в_пути">
+                            <div class="form-text">Используется в коде, только латиница и символы</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Название</label>
+                            <input type="text" class="form-control" name="name" required placeholder="например: 🚚 В пути">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Описание</label>
+                            <textarea class="form-control" name="description" rows="2" placeholder="Описание статуса для администраторов"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Очередность</label>
+                            <input type="number" class="form-control" name="order_priority" required min="1" placeholder="1, 2, 3...">
+                            <div class="form-text">Чем больше число, тем позже в процессе заказа</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Цвет</label>
+                            <input type="color" class="form-control" name="color" value="#6B7280">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_final" id="addStatusFinal">
+                                <label class="form-check-label" for="addStatusFinal">
+                                    Финальный статус (завершает заказ)
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="addStatusForm" class="btn btn-primary">Добавить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования статуса -->
+    <div class="modal fade" id="editStatusModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">✏️ Редактировать статус заказа</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editStatusForm">
+                        <input type="hidden" name="id">
+                        <div class="mb-3">
+                            <label class="form-label">Ключ статуса</label>
+                            <input type="text" class="form-control" name="key" required>
+                            <div class="form-text">Используется в коде, только латиница и символы</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Название</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Описание</label>
+                            <textarea class="form-control" name="description" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Очередность</label>
+                            <input type="number" class="form-control" name="order_priority" required min="1">
+                            <div class="form-text">Чем больше число, тем позже в процессе заказа</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Цвет</label>
+                            <input type="color" class="form-control" name="color">
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_final" id="editStatusFinal">
+                                <label class="form-check-label" for="editStatusFinal">
+                                    Финальный статус (завершает заказ)
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" form="editStatusForm" class="btn btn-primary">Сохранить</button>
                 </div>
             </div>
         </div>

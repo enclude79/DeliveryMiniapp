@@ -354,7 +354,7 @@
 
             container.innerHTML = categories.map(category => `
                 <div class="category-card" onclick="showProducts(${category.id})">
-                    <span class="category-emoji">${emojis[category.name] || '🍽️'}</span>
+                    <span class="category-emoji">${category.emoji || emojis[category.name] || '🍽️'}</span>
                     <div class="category-name">${category.name}</div>
                 </div>
             `).join('');
