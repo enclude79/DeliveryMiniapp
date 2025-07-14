@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const path = require('path');
 const { query } = require('../database');
+const { cache } = require('../cache');
 
 const router = express.Router();
 
@@ -62,7 +63,12 @@ router.get('/', (req, res) => {
 // Получение категорий
 router.get('/categories', async (req, res) => {
     try {
-        const categories = await query('SELECT * FROM categories ORDER BY order_priority ASC, name ASC');
+        // Используем кэширование с TTL 10 минут
+        const categories = await cache.memoize('categories', async () => {
+            console.log('[MINIAPP API] Loading categories from database');
+            return await query('SELECT * FROM categories ORDER BY order_priority ASC, name ASC');
+        }, 10 * 60 * 1000);
+        
         res.json(categories);
     } catch (error) {
         console.error('Ошибка получения категорий:', error);

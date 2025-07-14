@@ -9,6 +9,56 @@ let filters = {
     customerId: ''
 };
 
+// Переменная для автообновления
+let autoRefreshInterval = null;
+
+// Функция для запуска автообновления
+function startAutoRefresh() {
+    // Останавливаем предыдущий интервал если есть
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+    
+    // Запускаем автообновление каждые 30 секунд
+    autoRefreshInterval = setInterval(() => {
+        console.log('Автообновление админки...');
+        const currentPage = document.querySelector('#mainContent > div[style*="display: block"]');
+        if (currentPage) {
+            const pageId = currentPage.id.replace('Page', '');
+            // Обновляем текущую страницу
+            switch(pageId) {
+                case 'orders':
+                    loadOrders();
+                    break;
+                case 'customers':
+                    loadCustomers();
+                    break;
+                case 'settings':
+                    loadSettings();
+                    break;
+                case 'order-statuses':
+                    loadOrderStatuses();
+                    break;
+            }
+        }
+    }, 30000); // 30 секунд
+}
+
+// Функция для остановки автообновления
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+}
+
+// Функция для сброса кэша
+function clearCache() {
+    console.log('Сброс кэша администратора');
+    cachedOrderStatuses = null;
+    cachedOrderStatusesTime = 0;
+}
+
 // Функции для работы с API
 async function apiCall(endpoint, method = 'GET', data = null) {
     const headers = {
@@ -156,6 +206,8 @@ async function handleLogin(e) {
 }
 
 function handleLogout() {
+    // Останавливаем автообновление при выходе
+    stopAutoRefresh();
     localStorage.removeItem('adminToken');
     location.reload();
 }
@@ -164,6 +216,9 @@ function handleLogout() {
 function showMainContent() {
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
+    
+    // Запускаем автообновление при входе в админку
+    startAutoRefresh();
 }
 
 function showPage(pageId) {
@@ -400,20 +455,21 @@ async function showOrderDetails(orderId) {
                         <thead>
                             <tr>
                                 <th>Товар</th>
-                                <th>Количество</th>
-                                <th>Цена</th>
+                                <th>Расчет</th>
                                 <th>Сумма</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${order.items ? order.items.map(item => `
+                            ${order.items ? order.items.map(item => {
+                                const unitPrice = item.price; // item.price уже цена за единицу
+                                const totalPrice = item.quantity * item.price;
+                                return `
                                 <tr>
                                     <td>${item.name}</td>
-                                    <td>${item.quantity}</td>
-                                    <td>${item.price} ₽</td>
-                                    <td><strong>${item.quantity * item.price} ₽</strong></td>
+                                    <td>${item.quantity} шт. × ${unitPrice} ₽</td>
+                                    <td><strong>${totalPrice} ₽</strong></td>
                                 </tr>
-                            `).join('') : '<tr><td colspan="4">Товары не найдены</td></tr>'}
+                                `}).join('') : '<tr><td colspan="3">Товары не найдены</td></tr>'}
                         </tbody>
                     </table>
                 </div>
@@ -459,6 +515,7 @@ async function showOrderDetails(orderId) {
                 const status = e.target.dataset.status;
                 try {
                     await apiCall(`/api/admin/orders/${orderId}/status`, 'PUT', { status });
+                    clearCache(); // Сбрасываем кэш после изменения статуса
                     showAlert(`Статус заказа обновлен на "${getStatusText(status)}"`, 'success');
                     modal.hide();
                     loadOrders();
@@ -680,15 +737,23 @@ function getStatusText(status) {
 
 // Кеш для статусов заказов
 let cachedOrderStatuses = null;
+let cachedOrderStatusesTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
 
 // Получить статусы заказов из API
 async function getOrderStatuses() {
-    if (cachedOrderStatuses) {
+    const now = Date.now();
+    
+    // Проверяем если кэш актуален
+    if (cachedOrderStatuses && (now - cachedOrderStatusesTime < CACHE_DURATION)) {
+        console.log('Используем кэшированные статусы заказов');
         return cachedOrderStatuses;
     }
     
     try {
+        console.log('Загружаем статусы заказов с сервера');
         cachedOrderStatuses = await apiCall('/api/admin/order-statuses');
+        cachedOrderStatusesTime = now;
         return cachedOrderStatuses;
     } catch (error) {
         console.error('Ошибка загрузки статусов заказов:', error);
@@ -1765,6 +1830,7 @@ async function handleAddStatus(e) {
         };
         
         await apiCall('/api/admin/order-statuses', 'POST', statusData);
+        clearCache(); // Сбрасываем кэш после добавления статуса
         
         // Закрываем модальное окно
         const modal = bootstrap.Modal.getInstance(document.getElementById('addStatusModal'));
@@ -1823,6 +1889,7 @@ async function handleEditStatus(e) {
         };
         
         await apiCall(`/api/admin/order-statuses/${statusId}`, 'PUT', statusData);
+        clearCache(); // Сбрасываем кэш после редактирования статуса
         
         // Закрываем модальное окно
         const modal = bootstrap.Modal.getInstance(document.getElementById('editStatusModal'));
@@ -1889,6 +1956,7 @@ async function deleteOrderStatus(statusId, statusKey) {
     
     try {
         await apiCall(`/api/admin/order-statuses/${statusId}`, 'DELETE');
+        clearCache(); // Сбрасываем кэш после удаления статуса
         
         // Обновляем таблицу
         loadOrderStatuses();

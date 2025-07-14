@@ -1,21 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../database');
+const { cache } = require('../cache');
 
 // Получить все настройки
 router.get('/', async (req, res) => {
     try {
-        const settings = await query('SELECT * FROM app_settings ORDER BY setting_key');
-        
-        // Преобразуем в удобный формат
-        const settingsMap = {};
-        settings.forEach(setting => {
-            settingsMap[setting.setting_key] = {
-                value: setting.setting_value,
-                description: setting.description,
-                updated_at: setting.updated_at
-            };
-        });
+        // Используем кэширование с TTL 5 минут
+        const settingsMap = await cache.memoize('all_settings', async () => {
+            console.log('[SETTINGS API] Loading all settings from database');
+            const settings = await query('SELECT * FROM app_settings ORDER BY setting_key');
+            
+            // Преобразуем в удобный формат
+            const settingsMap = {};
+            settings.forEach(setting => {
+                settingsMap[setting.setting_key] = {
+                    value: setting.setting_value,
+                    description: setting.description,
+                    updated_at: setting.updated_at
+                };
+            });
+            
+            return settingsMap;
+        }, 5 * 60 * 1000);
         
         res.json(settingsMap);
     } catch (error) {
@@ -28,13 +35,23 @@ router.get('/', async (req, res) => {
 router.get('/:key', async (req, res) => {
     try {
         const { key } = req.params;
-        const settings = await query('SELECT * FROM app_settings WHERE setting_key = ?', [key]);
         
-        if (settings.length === 0) {
+        // Используем кэширование с TTL 5 минут
+        const setting = await cache.memoize(`setting_${key}`, async () => {
+            console.log(`[SETTINGS API] Loading setting ${key} from database`);
+            const settings = await query('SELECT * FROM app_settings WHERE setting_key = ?', [key]);
+            
+            if (settings.length === 0) {
+                return null;
+            }
+            
+            return settings[0];
+        }, 5 * 60 * 1000);
+        
+        if (!setting) {
             return res.status(404).json({ error: 'Настройка не найдена' });
         }
         
-        const setting = settings[0];
         res.json({
             key: setting.setting_key,
             value: setting.setting_value,
@@ -69,6 +86,10 @@ router.put('/:key', async (req, res) => {
             'UPDATE app_settings SET setting_value = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE setting_key = ?',
             [value, description || null, key]
         );
+        
+        // Сбрасываем кэш настроек
+        cache.delete('all_settings');
+        cache.delete(`setting_${key}`);
         
         res.json({ 
             success: true, 
@@ -105,6 +126,9 @@ router.post('/', async (req, res) => {
             [key, value, description || null]
         );
         
+        // Сбрасываем кэш настроек
+        cache.delete('all_settings');
+        
         res.status(201).json({ 
             success: true, 
             message: 'Настройка создана',
@@ -132,6 +156,10 @@ router.delete('/:key', async (req, res) => {
         
         // Удаляем настройку
         await query('DELETE FROM app_settings WHERE setting_key = ?', [key]);
+        
+        // Сбрасываем кэш настроек
+        cache.delete('all_settings');
+        cache.delete(`setting_${key}`);
         
         res.json({ 
             success: true, 

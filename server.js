@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const https = require('https');
 const cors = require('cors');
+const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
 const morgan = require('morgan');
@@ -87,8 +88,44 @@ app.use((req, res, next) => {
 
 // 5. Стандартные middleware
 app.use(cors());
+
+// Включаем gzip сжатие для всех ответов
+app.use(compression({
+    level: 6,
+    threshold: 1024, // Сжимать файлы больше 1KB
+    filter: (req, res) => {
+        // Сжимать JS, CSS, HTML, JSON, XML, SVG
+        const contentType = res.getHeader('content-type') || '';
+        return compression.filter(req, res) || 
+               contentType.includes('javascript') ||
+               contentType.includes('css') ||
+               contentType.includes('html') ||
+               contentType.includes('json') ||
+               contentType.includes('xml') ||
+               contentType.includes('svg');
+    }
+}));
+
 app.use(express.json({ limit: '5mb' })); // Уменьшили лимит для безопасности
-app.use(express.static('public'));
+
+// Настроенное кэширование статических файлов
+app.use(express.static('public', {
+    maxAge: '1d', // Кэш на 1 день для большинства файлов
+    setHeaders: (res, path) => {
+        // Кэширование изображений на 7 дней
+        if (path.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+            res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 дней
+        }
+        // Кэширование JS/CSS на 1 день с валидацией
+        else if (path.match(/\.(js|css)$/i)) {
+            res.setHeader('Cache-Control', 'public, max-age=86400, must-revalidate'); // 1 день
+        }
+        // HTML файлы - минимальное кэширование
+        else if (path.match(/\.html$/i)) {
+            res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate'); // 1 час
+        }
+    }
+}));
 
 // Создаем директорию для загрузок, если её нет
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
@@ -115,6 +152,24 @@ app.use('/users', userRoutes);
 app.use('/addresses', addressRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/api/admin/order-statuses', orderStatusRoutes);
+
+// Эндпоинт для статистики кэша (только для разработки/администрирования)
+app.get('/cache/stats', (req, res) => {
+    try {
+        const { cache } = require('./cache');
+        const stats = cache.getStats();
+        res.json({
+            cache_info: stats,
+            server_memory: {
+                rss: `${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB`,
+                heapUsed: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+                heapTotal: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)}MB`
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Ошибка получения статистики кэша' });
+    }
+});
 
 // Роут для тестового Mini App
 app.get('/test', (req, res) => {

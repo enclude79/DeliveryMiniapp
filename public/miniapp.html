@@ -1552,16 +1552,18 @@
                     
                     <div class="order-items">
                         <h4>🛍️ Товары в заказе:</h4>
-                        ${orderDetails.items.map(item => `
+                        ${orderDetails.items.map(item => {
+                            const unitPrice = item.price; // item.price уже цена за единицу
+                            const totalPrice = item.quantity * item.price;
+                            return `
                             <div class="order-item-detail">
                                 ${item.image ? `<img src="${item.image}" alt="${item.name}" class="order-item-image">` : ''}
                                 <div class="order-item-info">
                                     <div class="order-item-name">${item.name}</div>
-                                    <div class="order-item-quantity">${item.quantity} шт.</div>
+                                    <div class="order-item-quantity">${item.quantity} шт. × ${unitPrice} ₽ = ${totalPrice} ₽</div>
                                 </div>
-                                <div class="order-item-price">${item.price} ₽</div>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                     
                     <div class="order-summary">

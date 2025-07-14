@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { query } = require('../database');
+const { cache } = require('../cache');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -492,7 +493,12 @@ router.put('/orders/:id/status', authenticateToken, async (req, res) => {
 // Получение списка категорий
 router.get('/categories', authenticateToken, async (req, res) => {
     try {
-        const categories = await query('SELECT * FROM categories ORDER BY order_priority ASC, name ASC');
+        // Используем кэширование с TTL 10 минут
+        const categories = await cache.memoize('categories', async () => {
+            console.log('[ADMIN API] Loading categories from database');
+            return await query('SELECT * FROM categories ORDER BY order_priority ASC, name ASC');
+        }, 10 * 60 * 1000);
+        
         res.json(categories);
     } catch (error) {
         console.error('Ошибка при получении категорий:', error);
@@ -513,6 +519,9 @@ router.post('/categories', authenticateToken, async (req, res) => {
             'INSERT INTO categories (name, emoji, order_priority) VALUES (?, ?, ?)',
             [name.trim(), emoji || null, order_priority || 0]
         );
+
+        // Сбрасываем кэш категорий после создания
+        cache.delete('categories');
 
         res.status(201).json({
             id: result.lastID,
@@ -540,6 +549,9 @@ router.put('/categories/:id', authenticateToken, async (req, res) => {
             'UPDATE categories SET name = ?, order_priority = ?, emoji = ? WHERE id = ?',
             [name.trim(), order_priority || 0, emoji || null, id]
         );
+
+        // Сбрасываем кэш категорий после обновления
+        cache.delete('categories');
 
         const updatedCategory = await query('SELECT * FROM categories WHERE id = ?', [id]);
 
@@ -569,6 +581,9 @@ router.delete('/categories/:id', authenticateToken, async (req, res) => {
 
         // Удаляем категорию из базы данных
         await query('DELETE FROM categories WHERE id = ?', [id]);
+
+        // Сбрасываем кэш категорий после удаления
+        cache.delete('categories');
 
         res.json({ message: 'Категория удалена' });
     } catch (error) {

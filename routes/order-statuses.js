@@ -1,15 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const { query } = require('../database');
+const { cache } = require('../cache');
 
 // Получить все статусы заказов
 router.get('/', async (req, res) => {
     try {
-        const statuses = await query(`
-            SELECT * FROM order_statuses 
-            WHERE is_active = 1 
-            ORDER BY order_priority ASC
-        `);
+        // Используем кэширование с TTL 10 минут
+        const statuses = await cache.memoize('order_statuses', async () => {
+            console.log('[ORDER STATUSES API] Loading statuses from database');
+            return await query(`
+                SELECT * FROM order_statuses 
+                WHERE is_active = 1 
+                ORDER BY order_priority ASC
+            `);
+        }, 10 * 60 * 1000);
         
         res.json(statuses);
     } catch (error) {
@@ -74,6 +79,9 @@ router.post('/', async (req, res) => {
             is_final ? 1 : 0
         ]);
         
+        // Сбрасываем кэш статусов
+        cache.delete('order_statuses');
+        
         // Получаем созданный статус
         const [newStatus] = await query('SELECT * FROM order_statuses WHERE id = ?', [result.lastID]);
         
@@ -126,6 +134,9 @@ router.put('/:id', async (req, res) => {
             WHERE id = ?
         `, [key, name, description, order_priority, color, is_active, is_final, id]);
         
+        // Сбрасываем кэш статусов
+        cache.delete('order_statuses');
+        
         // Получаем обновленный статус
         const [updatedStatus] = await query('SELECT * FROM order_statuses WHERE id = ?', [id]);
         
@@ -157,6 +168,9 @@ router.delete('/:id', async (req, res) => {
         
         // Удаляем статус
         await query('DELETE FROM order_statuses WHERE id = ?', [id]);
+        
+        // Сбрасываем кэш статусов
+        cache.delete('order_statuses');
         
         res.json({ 
             success: true, 

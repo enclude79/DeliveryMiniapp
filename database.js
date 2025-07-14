@@ -148,6 +148,52 @@ async function migrateOrderStatuses() {
     }
 }
 
+// Создание индексов для оптимизации производительности
+async function createIndexes() {
+    try {
+        console.log('📊 Создание индексов для оптимизации...');
+        
+        // Индексы для таблицы orders
+        await query('CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id)');
+        await query('CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)');
+        await query('CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)');
+        await query('CREATE INDEX IF NOT EXISTS idx_orders_user_created ON orders(user_id, created_at)');
+        
+        // Индексы для таблицы products
+        await query('CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id)');
+        await query('CREATE INDEX IF NOT EXISTS idx_products_active ON products(active)');
+        await query('CREATE INDEX IF NOT EXISTS idx_products_category_active ON products(category_id, active)');
+        await query('CREATE INDEX IF NOT EXISTS idx_products_order_priority ON products(order_priority)');
+        
+        // Индексы для таблицы users
+        await query('CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id)');
+        await query('CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)');
+        
+        // Индексы для таблицы order_items
+        await query('CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)');
+        await query('CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id)');
+        
+        // Индексы для таблицы categories
+        await query('CREATE INDEX IF NOT EXISTS idx_categories_order_priority ON categories(order_priority)');
+        
+        // Индексы для таблицы app_settings
+        await query('CREATE INDEX IF NOT EXISTS idx_app_settings_key ON app_settings(setting_key)');
+        
+        // Индексы для таблицы order_statuses
+        await query('CREATE INDEX IF NOT EXISTS idx_order_statuses_key ON order_statuses(key)');
+        await query('CREATE INDEX IF NOT EXISTS idx_order_statuses_priority ON order_statuses(order_priority)');
+        await query('CREATE INDEX IF NOT EXISTS idx_order_statuses_active ON order_statuses(is_active)');
+        
+        // Индексы для таблицы user_addresses
+        await query('CREATE INDEX IF NOT EXISTS idx_user_addresses_user_id ON user_addresses(user_id)');
+        
+        console.log('✅ Индексы созданы успешно');
+    } catch (error) {
+        console.error('❌ Ошибка создания индексов:', error);
+        throw error;
+    }
+}
+
 async function initDatabase() {
     try {
         // Создание таблицы администраторов
@@ -367,6 +413,9 @@ async function initDatabase() {
 
         // Миграция статусов заказов в новую таблицу
         await migrateOrderStatuses();
+
+        // Создание индексов для оптимизации производительности
+        await createIndexes();
 
         // Создание администратора по умолчанию
         const adminExists = await query('SELECT id FROM admins WHERE username = ?', [process.env.ADMIN_USERNAME]);
