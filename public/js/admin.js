@@ -513,13 +513,40 @@ async function showOrderDetails(orderId) {
         modalBody.querySelectorAll('.status-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
                 const status = e.target.dataset.status;
+                const statusText = getStatusText(status);
+                const currentStatus = getStatusText(order.status);
+                
+                // Подтверждение для критических изменений статуса
+                const criticalStatuses = ['отменен', 'доставлен'];
+                const needConfirmation = criticalStatuses.includes(status) || 
+                                       (order.status === 'доставлен' && status !== 'доставлен') ||
+                                       (order.status === 'отменен' && status !== 'отменен');
+                
+                if (needConfirmation) {
+                    const confirmMessage = `Вы уверены, что хотите изменить статус заказа #${orderId}?\n\n` +
+                                         `С "${currentStatus}" на "${statusText}"\n\n` +
+                                         `Это действие может повлиять на уведомления клиента.`;
+                    
+                    if (!confirm(confirmMessage)) {
+                        return;
+                    }
+                }
+                
                 try {
+                    // Показываем индикатор загрузки на кнопке
+                    const originalText = e.target.innerHTML;
+                    e.target.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Обновление...';
+                    e.target.disabled = true;
+                    
                     await apiCall(`/api/admin/orders/${orderId}/status`, 'PUT', { status });
                     clearCache(); // Сбрасываем кэш после изменения статуса
-                    showAlert(`Статус заказа обновлен на "${getStatusText(status)}"`, 'success');
+                    showAlert(`✅ Статус заказа #${orderId} обновлен на "${statusText}"`, 'success');
                     modal.hide();
                     loadOrders();
                 } catch (error) {
+                    // Восстанавливаем кнопку при ошибке
+                    e.target.innerHTML = originalText;
+                    e.target.disabled = false;
                     showAlert('Ошибка обновления статуса: ' + error.message, 'danger');
                 }
             });
@@ -774,15 +801,20 @@ async function getStatusButtons(order) {
     
     return statuses.map(status => {
         const isCurrentStatus = order.status === status.key;
-        const isDisabled = isCurrentStatus || 
-                          (status.is_final && order.status !== status.key) ||
-                          (order.status === 'отменен' && status.key !== 'отменен') ||
-                          (order.status === 'доставлен' && status.key !== 'доставлен');
         
-        return `<button class="btn btn-sm btn-outline-${getStatusColor(status.key)} status-btn" 
+        // Администратор может установить любой статус, кроме текущего
+        const isDisabled = isCurrentStatus;
+        
+        // Визуально выделяем текущий статус
+        const buttonClass = isCurrentStatus ? 
+            `btn btn-sm btn-${getStatusColor(status.key)} status-btn` : 
+            `btn btn-sm btn-outline-${getStatusColor(status.key)} status-btn`;
+        
+        return `<button class="${buttonClass}" 
                 data-status="${status.key}" 
-                ${isDisabled ? 'disabled' : ''}>
-            ${status.name}
+                ${isDisabled ? 'disabled' : ''}
+                title="${isCurrentStatus ? 'Текущий статус' : 'Изменить статус на: ' + status.name}">
+            ${isCurrentStatus ? '✓ ' : ''}${status.name}
         </button>`;
     }).join('');
 }
