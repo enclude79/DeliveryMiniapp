@@ -1,0 +1,305 @@
+pipeline {
+    agent any
+    
+    environment {
+        APP_PATH = '/home/enclude/delivery-app'
+        AUTOMATION_PATH = '/home/enclude/automation'
+        GITHUB_TOKEN = 'YOUR_GITHUB_TOKEN_HERE'
+        GITHUB_REPO = 'https://github.com/enclude79/DeliveryMiniapp.git'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    echo '🔍 Проверяем репозиторий...'
+                    
+                    // Очищаем рабочую директорию
+                    cleanWs()
+                    
+                    // Клонируем репозиторий с токеном
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: '*/develop']],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [
+                            [$class: 'CleanBeforeCheckout'],
+                            [$class: 'CleanCheckout']
+                        ],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[
+                            url: GITHUB_REPO.replace('https://', "https://${GITHUB_TOKEN}@"),
+                            credentialsId: ''
+                        ]]
+                    ])
+                }
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    echo '📦 Устанавливаем зависимости...'
+                    
+                    dir(APP_PATH) {
+                        sh '''
+                            if [ -f package.json ]; then
+                                npm ci --production
+                                echo "✅ Зависимости установлены"
+                            else
+                                echo "⚠️ package.json не найден"
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Database Schema Check') {
+            steps {
+                script {
+                    echo '🗄️ Проверяем схему базы данных...'
+                    
+                    dir(AUTOMATION_PATH) {
+                        sh '''
+                            cd dashboard
+                            node -e "
+                                const DatabaseManager = require('../scripts/database-manager');
+                                const dbManager = new DatabaseManager();
+                                
+                                dbManager.compareSchemas().then(result => {
+                                    if (result.success) {
+                                        console.log('✅ Схема БД проверена');
+                                        console.log('Найдено различий:', result.summary.totalDifferences);
+                                        if (result.summary.totalDifferences > 0) {
+                                            console.log('⚠️ Требуются миграции');
+                                            process.exit(1);
+                                        }
+                                    } else {
+                                        console.error('❌ Ошибка проверки схемы:', result.error);
+                                        process.exit(1);
+                                    }
+                                });
+                            "
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                script {
+                    echo '🧪 Запускаем тесты...'
+                    
+                    dir(APP_PATH) {
+                        sh '''
+                            if [ -f package.json ] && grep -q '"test"' package.json; then
+                                npm test
+                                echo "✅ Тесты пройдены"
+                            else
+                                echo "⚠️ Тесты не настроены, пропускаем"
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                script {
+                    echo '🔒 Проверяем безопасность...'
+                    
+                    dir(APP_PATH) {
+                        sh '''
+                            if [ -f package.json ]; then
+                                # Проверяем уязвимости в зависимостях
+                                if command -v npm-audit &> /dev/null; then
+                                    npm audit --audit-level moderate || echo "⚠️ Найдены уязвимости"
+                                else
+                                    echo "⚠️ npm audit недоступен"
+                                fi
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                script {
+                    echo '🔨 Собираем приложение...'
+                    
+                    dir(APP_PATH) {
+                        sh '''
+                            if [ -f package.json ] && grep -q '"build"' package.json; then
+                                npm run build
+                                echo "✅ Приложение собрано"
+                            else
+                                echo "ℹ️ Сборка не требуется"
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Production') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                script {
+                    echo '🚀 Развертываем в продакшн...'
+                    
+                    dir(AUTOMATION_PATH) {
+                        sh '''
+                            cd dashboard
+                            node -e "
+                                const DeploymentOrchestrator = require('../scripts/deployment-orchestrator');
+                                const orchestrator = new DeploymentOrchestrator();
+                                
+                                orchestrator.performFullDeployment().then(result => {
+                                    if (result.success) {
+                                        console.log('✅ Развертывание завершено успешно');
+                                        console.log('ID развертывания:', result.deploymentId);
+                                        console.log('Выполнено шагов:', result.summary.successfulSteps);
+                                    } else {
+                                        console.error('❌ Ошибка развертывания:', result.error);
+                                        process.exit(1);
+                                    }
+                                });
+                            "
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Health Check') {
+            steps {
+                script {
+                    echo '🏥 Проверяем здоровье приложения...'
+                    
+                    sh '''
+                        # Ждем немного для запуска сервиса
+                        sleep 10
+                        
+                        # Проверяем HTTP порт
+                        if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+                            echo "✅ HTTP сервис работает"
+                        else
+                            echo "❌ HTTP сервис недоступен"
+                            exit 1
+                        fi
+                        
+                        # Проверяем HTTPS порт
+                        if curl -f -k https://localhost:3443/health > /dev/null 2>&1; then
+                            echo "✅ HTTPS сервис работает"
+                        else
+                            echo "❌ HTTPS сервис недоступен"
+                            exit 1
+                        fi
+                    '''
+                }
+            }
+        }
+        
+        stage('Post-Deployment Tests') {
+            steps {
+                script {
+                    echo '🧪 Выполняем пост-развертывательные тесты...'
+                    
+                    dir(APP_PATH) {
+                        sh '''
+                            if [ -f test/post-deployment.js ]; then
+                                node test/post-deployment.js
+                                echo "✅ Пост-развертывательные тесты пройдены"
+                            else
+                                echo "ℹ️ Пост-развертывательные тесты не настроены"
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            script {
+                echo '📊 Собираем отчеты...'
+                
+                // Сохраняем артефакты
+                archiveArtifacts artifacts: '**/logs/*.log', allowEmptyArchive: true
+                archiveArtifacts artifacts: '**/backup/*.db', allowEmptyArchive: true
+                
+                // Публикуем отчеты
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'coverage',
+                    reportFiles: 'index.html',
+                    reportName: 'Coverage Report'
+                ])
+            }
+        }
+        
+        success {
+            script {
+                echo '✅ Pipeline выполнен успешно!'
+                
+                // Отправляем уведомление об успехе
+                emailext (
+                    subject: "✅ DeliveryMiniapp: Развертывание успешно завершено",
+                    body: """
+                        <h2>🚀 Развертывание DeliveryMiniapp завершено успешно</h2>
+                        <p><strong>Build:</strong> ${env.BUILD_NUMBER}</p>
+                        <p><strong>Branch:</strong> ${env.GIT_BRANCH}</p>
+                        <p><strong>Commit:</strong> ${env.GIT_COMMIT}</p>
+                        <p><strong>Время:</strong> ${new Date().toString()}</p>
+                        <br>
+                        <p>Приложение доступно по адресам:</p>
+                        <ul>
+                            <li>HTTP: http://localhost:3000</li>
+                            <li>HTTPS: https://localhost:3443</li>
+                        </ul>
+                    """,
+                    recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+                )
+            }
+        }
+        
+        failure {
+            script {
+                echo '❌ Pipeline завершился с ошибкой!'
+                
+                // Отправляем уведомление об ошибке
+                emailext (
+                    subject: "❌ DeliveryMiniapp: Ошибка развертывания",
+                    body: """
+                        <h2>🚨 Ошибка развертывания DeliveryMiniapp</h2>
+                        <p><strong>Build:</strong> ${env.BUILD_NUMBER}</p>
+                        <p><strong>Branch:</strong> ${env.GIT_BRANCH}</p>
+                        <p><strong>Commit:</strong> ${env.GIT_COMMIT}</p>
+                        <p><strong>Время:</strong> ${new Date().toString()}</p>
+                        <br>
+                        <p>Проверьте логи для получения дополнительной информации.</p>
+                        <p><a href="${env.BUILD_URL}">Ссылка на сборку</a></p>
+                    """,
+                    recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+                )
+            }
+        }
+        
+        cleanup {
+            script {
+                echo '🧹 Очищаем рабочую директорию...'
+                cleanWs()
+            }
+        }
+    }
+} 

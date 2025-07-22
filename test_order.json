@@ -1,0 +1,23 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Мороженное",
+      "price": 90,
+      "quantity": 2
+    },
+    {
+      "id": 2,
+      "name": "Пельмени", 
+      "price": 120,
+      "quantity": 1
+    }
+  ],
+  "total": 300,
+  "user_id": 123456789,
+  "user_data": {
+    "first_name": "Тест",
+    "last_name": "Пользователь",
+    "username": "testuser"
+  }
+} 

@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 DeliveryMiniapp - Автоматизация развертывания</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .header {
+            position: relative;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .environment-selector {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .environment-selector label {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-right: 15px;
+        }
+
+        .environment-selector select {
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .environment-selector select:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--card-color);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 15px;
+            background: var(--card-color);
+            color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .card-description {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-execute {
+            flex: 1;
+            background: linear-gradient(135deg, var(--card-color), var(--card-color-dark));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-execute:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn-help {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-help:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .logs-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .logs-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .logs-content {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #e0e0e0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border: 1px solid #333;
+        }
+
+        .logs-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .logs-content::-webkit-scrollbar-track {
+            background: #2d2d2d;
+            border-radius: 4px;
+        }
+
+        .logs-content::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .logs-content::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        #helpTitle {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        #helpContent {
+            color: #666;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            z-index: 1001;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #f44336, #da190b);
+        }
+
+        .notification.warning {
+            background: linear-gradient(135deg, #ff9800, #e68900);
+        }
+
+        @media (max-width: 768px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+
+        /* Цветовые схемы для карточек */
+        .card[data-type="compare"] {
+            --card-color: #2196F3;
+            --card-color-dark: #1976D2;
+        }
+
+        .card[data-type="merge"] {
+            --card-color: #4CAF50;
+            --card-color-dark: #388E3C;
+        }
+
+        .card[data-type="backup"] {
+            --card-color: #FF9800;
+            --card-color-dark: #F57C00;
+        }
+
+        .card[data-type="migrate"] {
+            --card-color: #F44336;
+            --card-color-dark: #D32F2F;
+        }
+
+        .card[data-type="server"] {
+            --card-color: #9C27B0;
+            --card-color-dark: #7B1FA2;
+        }
+
+        .card[data-type="test"] {
+            --card-color: #00BCD4;
+            --card-color-dark: #0097A7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 DeliveryMiniapp</h1>
+            <p>Панель автоматизации развертывания</p>
+            <button class="logout-btn" onclick="logout()">🚪 Выйти</button>
+        </div>
+
+        <div class="environment-selector">
+            <label for="envSelect">Выберите среду:</label>
+            <select id="envSelect" onchange="updateEnvironment()">
+                <option value="development">Development</option>
+                <option value="staging">Staging</option>
+                <option value="production">Production</option>
+            </select>
+        </div>
+
+        <div class="cards-grid">
+            <!-- Карточка сравнения схем БД -->
+            <div class="card" data-type="compare">
+                <div class="card-icon">🔍</div>
+                <div class="card-title">Сравнить схемы БД</div>
+                <div class="card-description">Сравнить структуру prod и dev, создать миграции</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="compareSchemas()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('compare')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка слияния веток -->
+            <div class="card" data-type="merge">
+                <div class="card-icon">🔄</div>
+                <div class="card-title">Слияние веток</div>
+                <div class="card-description">Выполнить merge из dev в main</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="mergeBranches()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('merge')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка бэкапа БД -->
+            <div class="card" data-type="backup">
+                <div class="card-icon">💾</div>
+                <div class="card-title">Бэкап БД prod</div>
+                <div class="card-description">Создать резервную копию продакшн БД</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="createBackup()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('backup')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка миграций -->
+            <div class="card" data-type="migrate">
+                <div class="card-icon">🔧</div>
+                <div class="card-title">Применить миграции</div>
+                <div class="card-description">Выполнить миграции к prod БД</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="runMigrations()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('migrate')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка запуска сервера -->
+            <div class="card" data-type="server">
+                <div class="card-icon">🖥️</div>
+                <div class="card-title">Запустить сервер</div>
+                <div class="card-description" id="server-description">Перезапустить development сервер</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="startEnvironment()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('server')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка тестирования -->
+            <div class="card" data-type="test">
+                <div class="card-icon">🧪</div>
+                <div class="card-title">Запустить тесты</div>
+                <div class="card-description">Выполнить автоматические тесты</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="runTests()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('test')">?</button>
+                </div>
+            </div>
+
+
+        </div>
+
+        <div class="logs-section">
+            <h3>📋 Логи операций</h3>
+            <div class="logs-content" id="logs-content">
+                Загрузка логов...
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно справки -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeHelp()">&times;</span>
+            <h2 id="helpTitle">Справка</h2>
+            <div id="helpContent">
+                Выберите раздел для получения справки.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let currentEnv = 'development';
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            // Автоматическое обновление логов запускается в startLogsPolling()
+            
+            // Инициализируем описание карточки сервера
+            const serverDescription = document.getElementById('server-description');
+            if (serverDescription) {
+                serverDescription.textContent = `Перезапустить ${currentEnv} сервер`;
+            }
+        });
+
+        function updateEnvironment() {
+            currentEnv = document.getElementById('envSelect').value;
+            showNotification(`Среда изменена на: ${currentEnv}`, 'success');
+            
+            // Обновляем описание карточки сервера
+            const serverDescription = document.getElementById('server-description');
+            if (serverDescription) {
+                serverDescription.textContent = `Перезапустить ${currentEnv} сервер`;
+            }
+        }
+
+        function getSelectedEnv() {
+            return currentEnv;
+        }
+
+        // Функции для карточек
+        async function compareSchemas() {
+            showNotification('Сравнение схем БД...', 'warning');
+            try {
+                const res = await apiCall('/api/database/compare-schemas');
+                const data = await res.json();
+                if (data.success) {
+                    // Формируем детальный отчет
+                    let report = '📊 ОТЧЕТ О СРАВНЕНИИ СХЕМ БД\n\n';
+                    
+                    // Статистика
+                    report += `📈 СТАТИСТИКА:\n`;
+                    report += `• Production: ${data.production.tables} таблиц\n`;
+                    report += `• Development: ${data.development.tables} таблиц\n\n`;
+                    
+                    if (data.hasDifferences) {
+                        report += `⚠️ ОБНАРУЖЕНЫ РАЗЛИЧИЯ:\n\n`;
+                        
+                        // Новые таблицы
+                        if (data.differences.tables.added.length > 0) {
+                            report += `🆕 НОВЫЕ ТАБЛИЦЫ:\n`;
+                            data.differences.tables.added.forEach(table => {
+                                report += `  • ${table}\n`;
+                            });
+                            report += '\n';
+                        }
+                        
+                        // Удаленные таблицы
+                        if (data.differences.tables.removed.length > 0) {
+                            report += `🗑️ УДАЛЕННЫЕ ТАБЛИЦЫ:\n`;
+                            data.differences.tables.removed.forEach(table => {
+                                report += `  • ${table}\n`;
+                            });
+                            report += '\n';
+                        }
+                        
+                        // Новые колонки
+                        if (data.differences.columns.added.length > 0) {
+                            report += `➕ НОВЫЕ КОЛОНКИ:\n`;
+                            data.differences.columns.added.forEach(item => {
+                                report += `  • Таблица "${item.table}": ${item.columns.join(', ')}\n`;
+                            });
+                            report += '\n';
+                        }
+                        
+                        // Удаленные колонки
+                        if (data.differences.columns.removed.length > 0) {
+                            report += `➖ УДАЛЕННЫЕ КОЛОНКИ:\n`;
+                            data.differences.columns.removed.forEach(item => {
+                                report += `  • Таблица "${item.table}": ${item.columns.join(', ')}\n`;
+                            });
+                            report += '\n';
+                        }
+                        
+                        showNotification('Обнаружены различия в схемах БД', 'warning');
+                    } else {
+                        report += `✅ СХЕМЫ БД ИДЕНТИЧНЫ\n`;
+                        showNotification('Схемы БД идентичны', 'success');
+                    }
+                    
+                    // Показываем отчет в модальном окне
+                    showReportModal('Сравнение схем БД', report);
+                    
+                } else {
+                    showNotification('Ошибка сравнения: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+
+
+        async function mergeBranches() {
+            showNotification('Выполнение слияния веток...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/step/2', 'POST', { env: currentEnv });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Ветки успешно слиты', 'success');
+                } else {
+                    showNotification('Ошибка слияния: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function createBackup() {
+            showNotification('Создание бэкапа...', 'warning');
+            try {
+                const res = await apiCall('/api/database/backup', 'POST', { env: currentEnv });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Бэкап успешно создан', 'success');
+                } else {
+                    showNotification('Ошибка создания бэкапа: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function runMigrations() {
+            showNotification('Применение миграций...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/step/4', 'POST', { env: currentEnv });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Миграции успешно применены', 'success');
+                } else {
+                    showNotification('Ошибка миграций: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function startEnvironment() {
+            showNotification('Запуск сервера...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/environments/start', 'POST', { env: currentEnv });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Сервер успешно запущен', 'success');
+                } else {
+                    showNotification('Ошибка запуска: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function runTests() {
+            showNotification('Запуск тестов...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/run-tests', 'POST', { env: currentEnv });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Тесты успешно выполнены', 'success');
+                } else {
+                    showNotification('Ошибка тестов: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function loadLogs() {
+            try {
+                const res = await apiCall('/api/deployment/logs');
+                const data = await res.json();
+                if (data.success && data.logs) {
+                    // Правильно отображаем логи
+                    const logsContainer = document.getElementById('logs-content');
+                    if (Array.isArray(data.logs)) {
+                        // Если логи - это массив объектов
+                        const logsText = data.logs.map(log => {
+                            if (typeof log === 'object' && log !== null) {
+                                return `${log.timestamp || ''} [${log.level || 'INFO'}] ${log.message || JSON.stringify(log)}`;
+                            }
+                            return String(log);
+                        }).join('\n');
+                        logsContainer.textContent = logsText;
+                    } else if (typeof data.logs === 'string') {
+                        // Если логи - это строка
+                        logsContainer.textContent = data.logs;
+                    } else {
+                        // Если логи - это объект или что-то другое
+                        logsContainer.textContent = JSON.stringify(data.logs, null, 2);
+                    }
+                }
+            } catch (e) {
+                console.error('Ошибка загрузки логов:', e);
+                document.getElementById('logs-content').textContent = 'Ошибка загрузки логов: ' + e.message;
+            }
+        }
+
+        // Система справки
+        const helpContent = {
+            'compare': {
+                title: 'Сравнение схем БД',
+                content: `
+                    <strong>Что делает:</strong> Сравнивает структуру базы данных production и development.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Анализирует схему prod БД<br>
+                    2. Анализирует схему dev БД<br>
+                    3. Выявляет различия<br>
+                    4. Создает SQL миграции<br><br>
+                    <strong>Результат:</strong> Отчет о различиях и готовые миграции.
+                `
+            },
+            'merge': {
+                title: 'Слияние веток',
+                content: `
+                    <strong>Что делает:</strong> Выполняет merge изменений из ветки dev в main.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Проверяет статус Git репозитория<br>
+                    2. Выполняет merge dev → main<br>
+                    3. Разрешает конфликты (если есть)<br>
+                    4. Создает коммит слияния<br><br>
+                    <strong>Результат:</strong> Код из dev перенесен в main.
+                `
+            },
+            'backup': {
+                title: 'Создание бэкапа БД',
+                content: `
+                    <strong>Что делает:</strong> Создает резервную копию базы данных production.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Создает бэкап с временной меткой<br>
+                    2. Проверяет целостность бэкапа<br>
+                    3. Сохраняет в папку backup/<br><br>
+                    <strong>Безопасность:</strong> Бэкап создается перед любыми критическими операциями автоматически.
+                `
+            },
+            'migrate': {
+                title: 'Применение миграций',
+                content: `
+                    <strong>Что делает:</strong> Применяет SQL миграции к базе данных.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Проверяет доступные миграции<br>
+                    2. Создает бэкап перед применением<br>
+                    3. Выполняет SQL скрипты<br>
+                    4. Проверяет результат<br><br>
+                    <strong>Результат:</strong> Структура БД обновлена согласно миграциям.
+                `
+            },
+            'server': {
+                title: 'Запуск сервера',
+                content: `
+                    <strong>Что делает:</strong> Перезапускает сервер приложения.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Останавливает текущий сервис<br>
+                    2. Проверяет конфигурацию<br>
+                    3. Запускает сервис заново<br>
+                    4. Проверяет health check<br><br>
+                    <strong>Результат:</strong> Сервер работает с обновленным кодом.
+                `
+            },
+            'test': {
+                title: 'Запуск тестов',
+                content: `
+                    <strong>Что делает:</strong> Выполняет автоматические тесты приложения.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Запуск unit тестов<br>
+                    2. Запуск integration тестов<br>
+                    3. Проверка покрытия кода<br>
+                    4. Генерация отчета<br><br>
+                    <strong>Результат:</strong> Отчет о прохождении тестов.
+                `
+            },
+
+        };
+
+        function showHelp(topic) {
+            const modal = document.getElementById('helpModal');
+            const title = document.getElementById('helpTitle');
+            const content = document.getElementById('helpContent');
+
+            if (helpContent[topic]) {
+                title.textContent = helpContent[topic].title;
+                content.innerHTML = helpContent[topic].content;
+                modal.style.display = 'block';
+            } else {
+                title.textContent = 'Справка не найдена';
+                content.innerHTML = 'Описание для этого раздела не найдено.';
+                modal.style.display = 'block';
+            }
+        }
+
+        function closeHelp() {
+            const modal = document.getElementById('helpModal');
+            modal.style.display = 'none';
+        }
+
+        function showReportModal(title, content) {
+            const modal = document.getElementById('helpModal');
+            const modalTitle = document.getElementById('helpTitle');
+            const modalContent = document.getElementById('helpContent');
+            
+            modalTitle.textContent = title;
+            modalContent.innerHTML = `<pre style="white-space: pre-wrap; font-family: monospace; background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto;">${content}</pre>`;
+            modal.style.display = 'block';
+        }
+
+        // Система уведомлений
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Закрытие модального окна при клике вне его
+        window.onclick = function(event) {
+            const modal = document.getElementById('helpModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Автоматическое обновление логов с настраиваемым интервалом
+        let logsInterval;
+        async function startLogsPolling() {
+            // Загружаем конфигурацию с сервера
+            try {
+                const configResponse = await apiCall('/api/config');
+                const config = await configResponse.json();
+                window.LOGS_POLLING_INTERVAL = config.logsPollingInterval;
+                console.log(`📊 Конфигурация загружена: интервал обновления ${config.logsPollingInterval/1000} сек`);
+            } catch (error) {
+                console.warn('⚠️ Не удалось загрузить конфигурацию, используем значения по умолчанию');
+                window.LOGS_POLLING_INTERVAL = 30000;
+            }
+            
+            loadLogs();
+            const interval = window.LOGS_POLLING_INTERVAL || 30000;
+            logsInterval = setInterval(loadLogs, interval);
+            console.log(`📊 Логи будут обновляться каждые ${interval/1000} секунд`);
+        }
+
+        function stopLogsPolling() {
+            if (logsInterval) {
+                clearInterval(logsInterval);
+            }
+        }
+
+        // Проверка аутентификации
+        function checkAuth() {
+            const token = localStorage.getItem('dashboard_token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Функция выхода
+        function logout() {
+            localStorage.removeItem('dashboard_token');
+            localStorage.removeItem('dashboard_user');
+            window.location.href = '/login.html';
+        }
+
+        // Добавляем токен к API запросам
+        function apiCall(url, method = 'GET', data = null) {
+            const token = localStorage.getItem('dashboard_token');
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            return fetch(url, options);
+        }
+
+        // Проверяем аутентификацию при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Сразу проверяем токен
+            const token = localStorage.getItem('dashboard_token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            // Проверяем валидность токена
+            fetch('/api/auth/verify', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    localStorage.removeItem('dashboard_token');
+                    localStorage.removeItem('dashboard_user');
+                    window.location.href = '/login.html';
+                    return;
+                }
+                // Токен валиден, запускаем dashboard
+                startLogsPolling();
+            })
+            .catch(error => {
+                console.error('Ошибка проверки токена:', error);
+                localStorage.removeItem('dashboard_token');
+                localStorage.removeItem('dashboard_user');
+                window.location.href = '/login.html';
+            });
+        });
+
+        // Делаем функции глобальными для работы с onclick (в самом конце)
+        window.currentEnv = currentEnv;
+        window.updateEnvironment = updateEnvironment;
+        window.getSelectedEnv = getSelectedEnv;
+        window.compareSchemas = compareSchemas;
+        window.mergeBranches = mergeBranches;
+        window.createBackup = createBackup;
+        window.runMigrations = runMigrations;
+        window.startEnvironment = startEnvironment;
+        window.runTests = runTests;
+        window.loadLogs = loadLogs;
+        window.logout = logout;
+        window.showHelp = showHelp;
+        window.closeHelp = closeHelp;
+        window.showNotification = showNotification;
+        window.showReportModal = showReportModal;
+        window.apiCall = apiCall;
+    </script>
+</body>
+</html> 

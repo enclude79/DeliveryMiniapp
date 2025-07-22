@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диагностика Telegram WebApp</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+            color: #333;
+        }
+        .diagnostic-section {
+            background: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .success { border-left-color: #28a745; }
+        .warning { border-left-color: #ffc107; }
+        .error { border-left-color: #dc3545; }
+        .code-block {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        h1, h2 { color: #333; }
+        .button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Диагностика Telegram WebApp</h1>
+    
+    <div class="diagnostic-section">
+        <h2>📱 Основная информация</h2>
+        <div id="basic-info"></div>
+    </div>
+    
+    <div class="diagnostic-section">
+        <h2>🤖 Telegram WebApp API</h2>
+        <div id="telegram-api-info"></div>
+    </div>
+    
+    <div class="diagnostic-section">
+        <h2>👤 Данные пользователя</h2>
+        <div id="user-data"></div>
+    </div>
+    
+    <div class="diagnostic-section">
+        <h2>🔧 Тесты</h2>
+        <button class="button" onclick="testUserCreation()">Тест создания пользователя</button>
+        <button class="button" onclick="testAlert()">Тест Telegram Alert</button>
+        <button class="button" onclick="goToMainApp()">Перейти к основному приложению</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        console.log('🚀 Диагностика запущена');
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            runDiagnostics();
+        });
+        
+        function runDiagnostics() {
+            // Основная информация
+            const basicInfo = [
+                `URL: ${window.location.href}`,
+                `User-Agent: ${navigator.userAgent}`,
+                `Referrer: ${document.referrer || 'Нет'}`,
+                `Screen: ${screen.width}x${screen.height}`,
+                `Timestamp: ${new Date().toISOString()}`
+            ];
+            document.getElementById('basic-info').innerHTML = 
+                '<div class="code-block">' + basicInfo.join('\n') + '</div>';
+            
+            // Telegram API диагностика
+            let telegramInfo = '';
+            let userDataInfo = '';
+            
+            if (typeof window.Telegram !== 'undefined') {
+                telegramInfo += '✅ window.Telegram: Доступен\n';
+                
+                if (window.Telegram.WebApp) {
+                    const tg = window.Telegram.WebApp;
+                    telegramInfo += '✅ Telegram.WebApp: Доступен\n';
+                    telegramInfo += `Version: ${tg.version || 'НЕТ'}\n`;
+                    telegramInfo += `Platform: ${tg.platform || 'НЕТ'}\n`;
+                    telegramInfo += `Is Expanded: ${tg.isExpanded || 'НЕТ'}\n`;
+                    telegramInfo += `Color Scheme: ${tg.colorScheme || 'НЕТ'}\n`;
+                    
+                    // initData
+                    if (tg.initData) {
+                        telegramInfo += `\n📝 InitData: ЕСТЬ (${tg.initData.length} символов)\n`;
+                        telegramInfo += `InitData: ${tg.initData}\n`;
+                        
+                        // Парсим initData
+                        try {
+                            const urlParams = new URLSearchParams(tg.initData);
+                            telegramInfo += '\n🔍 Parsed InitData:\n';
+                            for (const [key, value] of urlParams.entries()) {
+                                telegramInfo += `  ${key}: ${value}\n`;
+                            }
+                            
+                            const userParam = urlParams.get('user');
+                            if (userParam) {
+                                const user = JSON.parse(decodeURIComponent(userParam));
+                                userDataInfo += `✅ ПОЛЬЗОВАТЕЛЬ НАЙДЕН В INITDATA:\n`;
+                                userDataInfo += `ID: ${user.id}\n`;
+                                userDataInfo += `First Name: ${user.first_name}\n`;
+                                userDataInfo += `Last Name: ${user.last_name || 'НЕТ'}\n`;
+                                userDataInfo += `Username: ${user.username || 'НЕТ'}\n`;
+                                userDataInfo += `Language: ${user.language_code || 'НЕТ'}\n`;
+                                
+                                // Сохраняем для тестов
+                                window.diagnosticUser = user;
+                            } else {
+                                userDataInfo += '❌ Параметр user НЕ НАЙДЕН в initData\n';
+                            }
+                        } catch (e) {
+                            telegramInfo += `❌ Ошибка парсинга initData: ${e.message}\n`;
+                        }
+                    } else {
+                        telegramInfo += '\n❌ InitData: ОТСУТСТВУЕТ\n';
+                    }
+                    
+                    // initDataUnsafe
+                    if (tg.initDataUnsafe) {
+                        telegramInfo += `\n📝 InitDataUnsafe: ЕСТЬ\n`;
+                        telegramInfo += `InitDataUnsafe: ${JSON.stringify(tg.initDataUnsafe, null, 2)}\n`;
+                        
+                        if (tg.initDataUnsafe.user) {
+                            const user = tg.initDataUnsafe.user;
+                            userDataInfo += `\n✅ ПОЛЬЗОВАТЕЛЬ НАЙДЕН В INITDATAUNSAFE:\n`;
+                            userDataInfo += `ID: ${user.id}\n`;
+                            userDataInfo += `First Name: ${user.first_name}\n`;
+                            userDataInfo += `Last Name: ${user.last_name || 'НЕТ'}\n`;
+                            userDataInfo += `Username: ${user.username || 'НЕТ'}\n`;
+                            userDataInfo += `Language: ${user.language_code || 'НЕТ'}\n`;
+                            
+                            // Сохраняем для тестов
+                            window.diagnosticUser = user;
+                        } else {
+                            userDataInfo += '\n❌ Пользователь НЕ НАЙДЕН в initDataUnsafe\n';
+                        }
+                    } else {
+                        telegramInfo += '\n❌ InitDataUnsafe: ОТСУТСТВУЕТ\n';
+                    }
+                    
+                    // Настройка WebApp
+                    try {
+                        tg.ready();
+                        tg.expand();
+                        telegramInfo += '\n✅ WebApp.ready() и WebApp.expand() выполнены\n';
+                    } catch (e) {
+                        telegramInfo += `\n❌ Ошибка инициализации WebApp: ${e.message}\n`;
+                    }
+                    
+                } else {
+                    telegramInfo += '❌ Telegram.WebApp: НЕ ДОСТУПЕН\n';
+                }
+            } else {
+                telegramInfo += '❌ window.Telegram: НЕ ДОСТУПЕН\n';
+            }
+            
+            if (!userDataInfo) {
+                userDataInfo = '❌ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ НЕ НАЙДЕНЫ\nЭто означает, что приложение будет использовать demo_user';
+            }
+            
+            document.getElementById('telegram-api-info').innerHTML = 
+                '<div class="code-block">' + telegramInfo + '</div>';
+            document.getElementById('user-data').innerHTML = 
+                '<div class="code-block">' + userDataInfo + '</div>';
+        }
+        
+        async function testUserCreation() {
+            const resultDiv = document.getElementById('test-results');
+            resultDiv.innerHTML = '<div class="code-block">Тестируем создание пользователя...</div>';
+            
+            try {
+                let userData = {
+                    telegram_id: 'demo_user',
+                    first_name: 'Демо',
+                    last_name: 'Пользователь',
+                    username: 'demo_user'
+                };
+                
+                if (window.diagnosticUser) {
+                    userData = {
+                        telegram_id: window.diagnosticUser.id.toString(),
+                        first_name: window.diagnosticUser.first_name || '',
+                        last_name: window.diagnosticUser.last_name || '',
+                        username: window.diagnosticUser.username || ''
+                    };
+                }
+                
+                console.log('Отправляем данные пользователя:', userData);
+                
+                const response = await fetch('/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    resultDiv.innerHTML = `<div class="code-block success">✅ УСПЕХ!\nПользователь создан/обновлен:\n${JSON.stringify(user, null, 2)}</div>`;
+                } else {
+                    const error = await response.text();
+                    resultDiv.innerHTML = `<div class="code-block error">❌ ОШИБКА!\nОтвет сервера: ${response.status}\n${error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="code-block error">❌ ИСКЛЮЧЕНИЕ!\n${error.message}</div>`;
+            }
+        }
+        
+        function testAlert() {
+            if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
+                window.Telegram.WebApp.showAlert('🎉 Telegram Alert работает!');
+            } else {
+                alert('🎉 Обычный Alert работает!');
+            }
+        }
+        
+        function goToMainApp() {
+            window.location.href = '/app';
+        }
+        
+        console.log('✅ Диагностика готова');
+    </script>
+</body>
+</html> 

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Перенаправление на HTTP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        .button {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 10px;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #45a049;
+        }
+        .warning {
+            background: #ff9800;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Automation Dashboard</h1>
+        
+        <div class="warning">
+            ⚠️ <strong>Внимание!</strong> Dashboard работает только по HTTP
+        </div>
+        
+        <p>Для доступа к dashboard используйте HTTP протокол:</p>
+        
+        <a href="http://89.169.182.9:3003" class="button">
+            🔓 Открыть Dashboard (HTTP)
+        </a>
+        
+        <br><br>
+        
+        <p><strong>Учетные данные:</strong></p>
+        <p>Логин: <code>dev_admin</code></p>
+        <p>Пароль: <code>FwzwC-tGw7</code></p>
+        
+        <br>
+        
+        <p><small>Если браузер не открывает ссылку, скопируйте и вставьте вручную:</small></p>
+        <code style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; display: block; margin: 10px 0;">
+            http://89.169.182.9:3003
+        </code>
+    </div>
+
+    <script>
+        // Автоматическое перенаправление на HTTP
+        if (window.location.protocol === 'https:') {
+            const httpUrl = 'http://' + window.location.host + window.location.pathname;
+            window.location.href = httpUrl;
+        }
+        
+        // Если пользователь нажал кнопку
+        document.querySelector('.button').addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = 'http://89.169.182.9:3003';
+        });
+    </script>
+</body>
+</html> 

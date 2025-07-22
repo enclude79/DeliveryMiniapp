@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Диагностика кнопок Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-btn:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Диагностика кнопок Dashboard</h1>
+    
+    <div class="test-section">
+        <h2>1. Проверка загрузки функций</h2>
+        <button class="test-btn" onclick="checkFunctions()">Проверить функции</button>
+        <div id="functions-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Проверка аутентификации</h2>
+        <button class="test-btn" onclick="checkAuth()">Проверить токен</button>
+        <div id="auth-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Тест API вызовов</h2>
+        <button class="test-btn" onclick="testAPI()">Тест API</button>
+        <div id="api-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Тест кнопок dashboard</h2>
+        <button class="test-btn" onclick="testCompareSchemas()">Тест Сравнение схем</button>
+        <button class="test-btn" onclick="testMergeBranches()">Тест Слияние веток</button>
+        <button class="test-btn" onclick="testCreateBackup()">Тест Создание бэкапа</button>
+        <div id="buttons-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Новая активная кнопка "Сравнить схемы БД"</h2>
+        <button class="test-btn" onclick="executeCompareSchemas()" style="background: #28a745; font-weight: bold;">🔍 Сравнить схемы БД</button>
+        <div id="new-compare-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Консоль браузера</h2>
+        <p>Откройте консоль браузера (F12) и проверьте ошибки JavaScript</p>
+        <button class="test-btn" onclick="showConsoleInfo()">Показать информацию для консоли</button>
+        <div id="console-result" class="result"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : 'ℹ️';
+            console.log(`${prefix} [${timestamp}] ${message}`);
+        }
+
+        function updateResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = content;
+            element.className = `result ${type}`;
+        }
+
+        function checkFunctions() {
+            log('Проверка функций dashboard...');
+            let result = '<h3>Проверка функций:</h3><ul>';
+            
+            const functions = [
+                'compareSchemas', 'mergeBranches', 'createBackup', 
+                'runMigrations', 'startEnvironment', 'runTests',
+                'loadLogs', 'logout', 'showHelp', 'closeHelp',
+                'showNotification', 'showReportModal', 'apiCall'
+            ];
+
+            let allFound = true;
+            functions.forEach(func => {
+                if (typeof window[func] === 'function') {
+                    result += `<li>✅ ${func} - определена</li>`;
+                    log(`${func} - определена`, 'success');
+                } else {
+                    result += `<li>❌ ${func} - НЕ определена</li>`;
+                    log(`${func} - НЕ определена`, 'error');
+                    allFound = false;
+                }
+            });
+
+            result += '</ul>';
+            if (allFound) {
+                result += '<p><strong>✅ Все функции найдены!</strong></p>';
+                updateResult('functions-result', result, 'success');
+            } else {
+                result += '<p><strong>❌ Некоторые функции отсутствуют!</strong></p>';
+                updateResult('functions-result', result, 'error');
+            }
+        }
+
+        function checkAuth() {
+            log('Проверка аутентификации...');
+            const token = localStorage.getItem('dashboard_token');
+            const user = localStorage.getItem('dashboard_user');
+            
+            let result = '<h3>Проверка токена:</h3>';
+            
+            if (token) {
+                result += `<p>✅ Токен найден: ${token.substring(0, 20)}...</p>`;
+                log('Токен найден', 'success');
+            } else {
+                result += '<p>❌ Токен НЕ найден!</p>';
+                log('Токен НЕ найден', 'error');
+            }
+
+            if (user) {
+                result += `<p>✅ Пользователь: ${user}</p>`;
+                log('Пользователь найден', 'success');
+            } else {
+                result += '<p>❌ Пользователь НЕ найден!</p>';
+                log('Пользователь НЕ найден', 'error');
+            }
+
+            updateResult('auth-result', result, token ? 'success' : 'error');
+        }
+
+        async function testAPI() {
+            log('Тестирование API...');
+            const token = localStorage.getItem('dashboard_token');
+            
+            if (!token) {
+                updateResult('api-result', '<p>❌ Нет токена для тестирования API</p>', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/config', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateResult('api-result', 
+                        `<p>✅ API работает!</p><pre>${JSON.stringify(data, null, 2)}</pre>`, 
+                        'success');
+                    log('API работает', 'success');
+                } else {
+                    updateResult('api-result', 
+                        `<p>❌ API ошибка: ${response.status} ${response.statusText}</p>`, 
+                        'error');
+                    log(`API ошибка: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                updateResult('api-result', 
+                    `<p>❌ Ошибка сети: ${error.message}</p>`, 
+                    'error');
+                log(`Ошибка сети: ${error.message}`, 'error');
+            }
+        }
+
+        function testCompareSchemas() {
+            log('Тест функции compareSchemas...');
+            if (typeof window.compareSchemas === 'function') {
+                try {
+                    window.compareSchemas();
+                    updateResult('buttons-result', 
+                        '<p>✅ Функция compareSchemas вызвана успешно</p>', 
+                        'success');
+                    log('compareSchemas вызвана', 'success');
+                } catch (error) {
+                    updateResult('buttons-result', 
+                        `<p>❌ Ошибка в compareSchemas: ${error.message}</p>`, 
+                        'error');
+                    log(`Ошибка в compareSchemas: ${error.message}`, 'error');
+                }
+            } else {
+                updateResult('buttons-result', 
+                    '<p>❌ Функция compareSchemas не найдена</p>', 
+                    'error');
+                log('compareSchemas не найдена', 'error');
+            }
+        }
+
+        function testMergeBranches() {
+            log('Тест функции mergeBranches...');
+            if (typeof window.mergeBranches === 'function') {
+                try {
+                    window.mergeBranches();
+                    updateResult('buttons-result', 
+                        '<p>✅ Функция mergeBranches вызвана успешно</p>', 
+                        'success');
+                    log('mergeBranches вызвана', 'success');
+                } catch (error) {
+                    updateResult('buttons-result', 
+                        `<p>❌ Ошибка в mergeBranches: ${error.message}</p>`, 
+                        'error');
+                    log(`Ошибка в mergeBranches: ${error.message}`, 'error');
+                }
+            } else {
+                updateResult('buttons-result', 
+                    '<p>❌ Функция mergeBranches не найдена</p>', 
+                    'error');
+                log('mergeBranches не найдена', 'error');
+            }
+        }
+
+        function testCreateBackup() {
+            log('Тест функции createBackup...');
+            if (typeof window.createBackup === 'function') {
+                try {
+                    window.createBackup();
+                    updateResult('buttons-result', 
+                        '<p>✅ Функция createBackup вызвана успешно</p>', 
+                        'success');
+                    log('createBackup вызвана', 'success');
+                } catch (error) {
+                    updateResult('buttons-result', 
+                        `<p>❌ Ошибка в createBackup: ${error.message}</p>`, 
+                        'error');
+                    log(`Ошибка в createBackup: ${error.message}`, 'error');
+                }
+            } else {
+                updateResult('buttons-result', 
+                    '<p>❌ Функция createBackup не найдена</p>', 
+                    'error');
+                log('createBackup не найдена', 'error');
+            }
+        }
+
+        async function executeCompareSchemas() {
+            log('🔍 Выполнение сравнения схем БД...');
+            updateResult('new-compare-result', '<p>🔄 Выполняется сравнение схем БД...</p>', 'info');
+            
+            try {
+                const token = localStorage.getItem('dashboard_token');
+                if (!token) {
+                    updateResult('new-compare-result', '<p>❌ Токен аутентификации не найден</p>', 'error');
+                    log('Токен не найден', 'error');
+                    return;
+                }
+
+                const response = await fetch('/api/database/compare-schemas', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    let report = '<h3>📊 ОТЧЕТ О СРАВНЕНИИ СХЕМ БД</h3>';
+                    
+                    // Статистика
+                    report += '<p><strong>📈 СТАТИСТИКА:</strong></p>';
+                    report += `<p>• Production: ${data.production.tables} таблиц</p>`;
+                    report += `<p>• Development: ${data.development.tables} таблиц</p><br>`;
+                    
+                    if (data.hasDifferences) {
+                        report += '<p><strong>⚠️ ОБНАРУЖЕНЫ РАЗЛИЧИЯ:</strong></p>';
+                        
+                        // Новые таблицы
+                        if (data.differences.tables.added.length > 0) {
+                            report += '<p><strong>🆕 НОВЫЕ ТАБЛИЦЫ:</strong></p>';
+                            data.differences.tables.added.forEach(table => {
+                                report += `<p>• ${table}</p>`;
+                            });
+                        }
+                        
+                        // Удаленные таблицы
+                        if (data.differences.tables.removed.length > 0) {
+                            report += '<p><strong>🗑️ УДАЛЕННЫЕ ТАБЛИЦЫ:</strong></p>';
+                            data.differences.tables.removed.forEach(table => {
+                                report += `<p>• ${table}</p>`;
+                            });
+                        }
+                        
+                        // Новые колонки
+                        if (data.differences.columns.added.length > 0) {
+                            report += '<p><strong>➕ НОВЫЕ КОЛОНКИ:</strong></p>';
+                            data.differences.columns.added.forEach(item => {
+                                report += `<p>• Таблица "${item.table}": ${item.columns.join(', ')}</p>`;
+                            });
+                        }
+                        
+                        // Удаленные колонки
+                        if (data.differences.columns.removed.length > 0) {
+                            report += '<p><strong>➖ УДАЛЕННЫЕ КОЛОНКИ:</strong></p>';
+                            data.differences.columns.removed.forEach(item => {
+                                report += `<p>• Таблица "${item.table}": ${item.columns.join(', ')}</p>`;
+                            });
+                        }
+                        
+                        log('Обнаружены различия в схемах БД', 'warning');
+                    } else {
+                        report += '<p><strong>✅ СХЕМЫ БД ИДЕНТИЧНЫ</strong></p>';
+                        log('Схемы БД идентичны', 'success');
+                    }
+                    
+                    updateResult('new-compare-result', report, 'success');
+                    log('Сравнение схем БД завершено успешно', 'success');
+                    
+                } else {
+                    updateResult('new-compare-result', 
+                        `<p>❌ Ошибка сравнения: ${data.error}</p>`, 
+                        'error');
+                    log(`Ошибка сравнения: ${data.error}`, 'error');
+                }
+                
+            } catch (error) {
+                updateResult('new-compare-result', 
+                    `<p>❌ Ошибка выполнения: ${error.message}</p>`, 
+                    'error');
+                log(`Ошибка выполнения: ${error.message}`, 'error');
+            }
+        }
+
+        function showConsoleInfo() {
+            const info = `
+                <h3>Информация для консоли браузера:</h3>
+                <p>1. Откройте консоль (F12 → Console)</p>
+                <p>2. Проверьте наличие ошибок JavaScript</p>
+                <p>3. Выполните команды:</p>
+                <pre>
+// Проверка функций
+typeof compareSchemas
+typeof mergeBranches
+typeof createBackup
+
+// Проверка токена
+localStorage.getItem('dashboard_token')
+
+// Проверка API
+fetch('/api/config', {
+    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('dashboard_token') }
+}).then(r => r.json()).then(console.log)
+                </pre>
+            `;
+            updateResult('console-result', info);
+        }
+
+        // Автоматическая проверка при загрузке
+        window.addEventListener('load', function() {
+            log('Страница диагностики загружена');
+            setTimeout(() => {
+                checkFunctions();
+                checkAuth();
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 

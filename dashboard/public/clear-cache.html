@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧹 Очистка кэша - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .message {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin: 10px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .steps {
+            text-align: left;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .steps ol {
+            margin-left: 20px;
+        }
+
+        .steps li {
+            margin: 10px 0;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🧹</div>
+        <h1>Очистка кэша браузера</h1>
+        
+        <div class="message">
+            <p>Проблема с SSL решена! Теперь нужно очистить кэш браузера.</p>
+        </div>
+
+        <div class="steps">
+            <h3>📋 Пошаговая инструкция:</h3>
+            <ol>
+                <li><strong>Chrome/Edge:</strong> Ctrl+Shift+Delete → "Все время" → "Кэшированные изображения и файлы" → "Удалить данные"</li>
+                <li><strong>Firefox:</strong> Ctrl+Shift+Delete → "Все" → "Кэш" → "Удалить сейчас"</li>
+                <li><strong>Safari:</strong> Cmd+Option+E (очистить кэш)</li>
+            </ol>
+        </div>
+
+        <button class="button" onclick="clearCacheAndRedirect()">🔄 Очистить и перейти на Dashboard</button>
+        <button class="button" onclick="forceRedirect()">🚀 Принудительный переход</button>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        function showStatus(message, isError = false) {
+            const status = document.getElementById('status');
+            status.className = `status ${isError ? 'error' : 'success'}`;
+            status.textContent = message;
+        }
+
+        function clearCacheAndRedirect() {
+            showStatus('🧹 Очищаем кэш...');
+            
+            // Пытаемся очистить кэш через Service Worker
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+
+            // Очищаем localStorage и sessionStorage
+            localStorage.clear();
+            sessionStorage.clear();
+
+            setTimeout(() => {
+                showStatus('✅ Кэш очищен! Перенаправляем...');
+                setTimeout(() => {
+                    forceRedirect();
+                }, 1000);
+            }, 2000);
+        }
+
+        function forceRedirect() {
+            showStatus('🚀 Перенаправляем на Dashboard...');
+            
+            // Принудительно переходим на HTTP
+            const dashboardUrl = 'http://89.169.182.9:3003/';
+            
+            // Добавляем timestamp для обхода кэша
+            const timestamp = new Date().getTime();
+            const urlWithTimestamp = `${dashboardUrl}?nocache=${timestamp}`;
+            
+            // Пробуем несколько способов перенаправления
+            try {
+                // Способ 1: Обычный редирект
+                window.location.href = urlWithTimestamp;
+            } catch (e) {
+                try {
+                    // Способ 2: Замена текущей страницы
+                    window.location.replace(urlWithTimestamp);
+                } catch (e2) {
+                    // Способ 3: Открытие в новом окне
+                    window.open(urlWithTimestamp, '_blank');
+                }
+            }
+        }
+
+        // Автоматическая очистка при загрузке страницы
+        window.addEventListener('load', function() {
+            // Очищаем кэш изображений и стилей
+            const links = document.querySelectorAll('link[rel="stylesheet"]');
+            links.forEach(link => {
+                link.href = link.href + '?nocache=' + new Date().getTime();
+            });
+
+            showStatus('✅ Страница загружена. Готово к очистке кэша!');
+        });
+
+        // Обработка ошибок
+        window.addEventListener('error', function(e) {
+            showStatus('⚠️ Ошибка: ' + e.message, true);
+        });
+    </script>
+</body>
+</html> 

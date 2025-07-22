@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Тест кнопок Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .test-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .test-btn:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Тест кнопок Dashboard</h1>
+
+    <div>
+        <h3>Тестируем кнопки:</h3>
+        <button class="test-btn" onclick="testLogout()">🚪 Тест Выйти</button>
+        <button class="test-btn" onclick="testCompareSchemas()">🔍 Тест Сравнение схем</button>
+        <button class="test-btn" onclick="testMergeBranches()">🔄 Тест Слияние веток</button>
+        <button class="test-btn" onclick="testCreateBackup()">💾 Тест Создание бэкапа</button>
+        <button class="test-btn" onclick="testRunMigrations()">📦 Тест Миграции</button>
+        <button class="test-btn" onclick="testStartEnvironment()">🚀 Тест Сервер</button>
+        <button class="test-btn" onclick="testRunTests()">🧪 Тест Тесты</button>
+        <button class="test-btn" onclick="testShowHelp()">❓ Тест Справка</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        // Глобальные переменные
+        let currentEnv = 'development';
+        let logsInterval;
+
+        // Функции dashboard (копируем из index.html)
+        function updateEnvironment(env) {
+            currentEnv = env;
+            console.log(`🌍 Среда изменена на: ${env}`);
+            showNotification(`Среда изменена на ${env}`, 'success');
+        }
+
+        function getSelectedEnv() {
+            return currentEnv;
+        }
+
+        function compareSchemas() {
+            console.log('🔍 Сравнение схем БД...');
+            showNotification('Сравнение схем БД запущено', 'info');
+            
+            apiCall('/api/database/compare-schemas', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Сравнение схем БД завершено', 'success');
+                })
+                .catch(error => {
+                    console.error('Ошибка сравнения схем:', error);
+                    showNotification('Ошибка сравнения схем БД', 'error');
+                });
+        }
+
+        function mergeBranches() {
+            console.log('🔄 Слияние веток...');
+            showNotification('Слияние веток запущено', 'info');
+            
+            apiCall('/api/deployment/step/2', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Слияние веток завершено', 'success');
+                })
+                .catch(error => {
+                    console.error('Ошибка слияния веток:', error);
+                    showNotification('Ошибка слияния веток', 'error');
+                });
+        }
+
+        function createBackup() {
+            console.log('💾 Создание бэкапа...');
+            showNotification('Создание бэкапа запущено', 'info');
+            
+            apiCall('/api/database/backup', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Бэкап создан успешно', 'success');
+                })
+                .catch(error => {
+                    console.error('Ошибка создания бэкапа:', error);
+                    showNotification('Ошибка создания бэкапа', 'error');
+                });
+        }
+
+        function runMigrations() {
+            console.log('📦 Запуск миграций...');
+            showNotification('Миграции запущены', 'info');
+            
+            apiCall('/api/deployment/step/2', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Миграции завершены', 'success');
+                })
+                .catch(error => {
+                    console.error('Ошибка миграций:', error);
+                    showNotification('Ошибка миграций', 'error');
+                });
+        }
+
+        function startEnvironment() {
+            console.log('🚀 Запуск сервера...');
+            showNotification('Сервер запускается', 'info');
+            
+            apiCall('/api/deployment/environments/start', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Сервер запущен', 'success');
+                })
+                .catch(error => {
+                    console.error('Ошибка запуска сервера:', error);
+                    showNotification('Ошибка запуска сервера', 'error');
+                });
+        }
+
+        function runTests() {
+            console.log('🧪 Запуск тестов...');
+            showNotification('Тесты запущены', 'info');
+            
+            apiCall('/api/deployment/run-tests', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Тесты завершены', 'success');
+                })
+                .catch(error => {
+                    console.error('Ошибка тестов:', error);
+                    showNotification('Ошибка тестов', 'error');
+                });
+        }
+
+        function loadLogs() {
+            console.log('📋 Загрузка логов...');
+            showNotification('Логи загружаются', 'info');
+            
+            apiCall('/api/deployment/logs')
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Логи загружены', 'success');
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки логов:', error);
+                    showNotification('Ошибка загрузки логов', 'error');
+                });
+        }
+
+        function logout() {
+            console.log('🚪 Выход из системы...');
+            localStorage.removeItem('dashboard_token');
+            localStorage.removeItem('dashboard_user');
+            window.location.href = '/login.html';
+        }
+
+        function showHelp(section) {
+            console.log('❓ Показать справку:', section);
+            showNotification('Справка показана', 'info');
+        }
+
+        function closeHelp() {
+            console.log('❌ Закрыть справку');
+            showNotification('Справка закрыта', 'info');
+        }
+
+        function showNotification(message, type = 'info') {
+            console.log(`📢 Уведомление [${type}]: ${message}`);
+            log(`📢 ${message}`, type);
+        }
+
+        function showReportModal(title, content) {
+            console.log('📊 Показать модальное окно:', title);
+            showNotification(`Модальное окно: ${title}`, 'info');
+        }
+
+        // Добавляем токен к API запросам
+        function apiCall(url, method = 'GET', data = null) {
+            const token = localStorage.getItem('dashboard_token');
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            };
+
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+
+            return fetch(url, options);
+        }
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+        }
+
+        // Проверяем функции
+        function testLogout() {
+            log('=== ТЕСТ КНОПКИ "ВЫЙТИ" ===', 'info');
+            if (typeof window.logout === 'function') {
+                log('✅ Функция logout определена', 'success');
+                try {
+                    window.logout();
+                    log('✅ Функция logout выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения logout: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция logout НЕ определена', 'error');
+            }
+        }
+
+        function testCompareSchemas() {
+            log('=== ТЕСТ КНОПКИ "СРАВНЕНИЕ СХЕМ" ===', 'info');
+            if (typeof window.compareSchemas === 'function') {
+                log('✅ Функция compareSchemas определена', 'success');
+                try {
+                    window.compareSchemas();
+                    log('✅ Функция compareSchemas выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения compareSchemas: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция compareSchemas НЕ определена', 'error');
+            }
+        }
+
+        function testMergeBranches() {
+            log('=== ТЕСТ КНОПКИ "СЛИЯНИЕ ВЕТОК" ===', 'info');
+            if (typeof window.mergeBranches === 'function') {
+                log('✅ Функция mergeBranches определена', 'success');
+                try {
+                    window.mergeBranches();
+                    log('✅ Функция mergeBranches выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения mergeBranches: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция mergeBranches НЕ определена', 'error');
+            }
+        }
+
+        function testCreateBackup() {
+            log('=== ТЕСТ КНОПКИ "СОЗДАНИЕ БЭКАПА" ===', 'info');
+            if (typeof window.createBackup === 'function') {
+                log('✅ Функция createBackup определена', 'success');
+                try {
+                    window.createBackup();
+                    log('✅ Функция createBackup выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения createBackup: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция createBackup НЕ определена', 'error');
+            }
+        }
+
+        function testRunMigrations() {
+            log('=== ТЕСТ КНОПКИ "МИГРАЦИИ" ===', 'info');
+            if (typeof window.runMigrations === 'function') {
+                log('✅ Функция runMigrations определена', 'success');
+                try {
+                    window.runMigrations();
+                    log('✅ Функция runMigrations выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения runMigrations: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция runMigrations НЕ определена', 'error');
+            }
+        }
+
+        function testStartEnvironment() {
+            log('=== ТЕСТ КНОПКИ "СЕРВЕР" ===', 'info');
+            if (typeof window.startEnvironment === 'function') {
+                log('✅ Функция startEnvironment определена', 'success');
+                try {
+                    window.startEnvironment();
+                    log('✅ Функция startEnvironment выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения startEnvironment: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция startEnvironment НЕ определена', 'error');
+            }
+        }
+
+        function testRunTests() {
+            log('=== ТЕСТ КНОПКИ "ТЕСТЫ" ===', 'info');
+            if (typeof window.runTests === 'function') {
+                log('✅ Функция runTests определена', 'success');
+                try {
+                    window.runTests();
+                    log('✅ Функция runTests выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения runTests: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция runTests НЕ определена', 'error');
+            }
+        }
+
+        function testShowHelp() {
+            log('=== ТЕСТ КНОПКИ "СПРАВКА" ===', 'info');
+            if (typeof window.showHelp === 'function') {
+                log('✅ Функция showHelp определена', 'success');
+                try {
+                    window.showHelp('test');
+                    log('✅ Функция showHelp выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения showHelp: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция showHelp НЕ определена', 'error');
+            }
+        }
+
+        // Тестовые функции для кнопок
+        function testLogout() {
+            log('=== ТЕСТ КНОПКИ "ВЫЙТИ" ===', 'info');
+            if (typeof window.logout === 'function') {
+                log('✅ Функция logout определена', 'success');
+                try {
+                    window.logout();
+                    log('✅ Функция logout выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения logout: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция logout НЕ определена', 'error');
+            }
+        }
+
+        function testCompareSchemas() {
+            log('=== ТЕСТ КНОПКИ "СРАВНЕНИЕ СХЕМ" ===', 'info');
+            if (typeof window.compareSchemas === 'function') {
+                log('✅ Функция compareSchemas определена', 'success');
+                try {
+                    window.compareSchemas();
+                    log('✅ Функция compareSchemas выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения compareSchemas: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция compareSchemas НЕ определена', 'error');
+            }
+        }
+
+        function testMergeBranches() {
+            log('=== ТЕСТ КНОПКИ "СЛИЯНИЕ ВЕТОК" ===', 'info');
+            if (typeof window.mergeBranches === 'function') {
+                log('✅ Функция mergeBranches определена', 'success');
+                try {
+                    window.mergeBranches();
+                    log('✅ Функция mergeBranches выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения mergeBranches: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция mergeBranches НЕ определена', 'error');
+            }
+        }
+
+        function testCreateBackup() {
+            log('=== ТЕСТ КНОПКИ "СОЗДАНИЕ БЭКАПА" ===', 'info');
+            if (typeof window.createBackup === 'function') {
+                log('✅ Функция createBackup определена', 'success');
+                try {
+                    window.createBackup();
+                    log('✅ Функция createBackup выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения createBackup: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция createBackup НЕ определена', 'error');
+            }
+        }
+
+        function testRunMigrations() {
+            log('=== ТЕСТ КНОПКИ "МИГРАЦИИ" ===', 'info');
+            if (typeof window.runMigrations === 'function') {
+                log('✅ Функция runMigrations определена', 'success');
+                try {
+                    window.runMigrations();
+                    log('✅ Функция runMigrations выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения runMigrations: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция runMigrations НЕ определена', 'error');
+            }
+        }
+
+        function testStartEnvironment() {
+            log('=== ТЕСТ КНОПКИ "СЕРВЕР" ===', 'info');
+            if (typeof window.startEnvironment === 'function') {
+                log('✅ Функция startEnvironment определена', 'success');
+                try {
+                    window.startEnvironment();
+                    log('✅ Функция startEnvironment выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения startEnvironment: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция startEnvironment НЕ определена', 'error');
+            }
+        }
+
+        function testRunTests() {
+            log('=== ТЕСТ КНОПКИ "ТЕСТЫ" ===', 'info');
+            if (typeof window.runTests === 'function') {
+                log('✅ Функция runTests определена', 'success');
+                try {
+                    window.runTests();
+                    log('✅ Функция runTests выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения runTests: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция runTests НЕ определена', 'error');
+            }
+        }
+
+        function testShowHelp() {
+            log('=== ТЕСТ КНОПКИ "СПРАВКА" ===', 'info');
+            if (typeof window.showHelp === 'function') {
+                log('✅ Функция showHelp определена', 'success');
+                try {
+                    window.showHelp();
+                    log('✅ Функция showHelp выполнена', 'success');
+                } catch (e) {
+                    log(`❌ Ошибка выполнения showHelp: ${e.message}`, 'error');
+                }
+            } else {
+                log('❌ Функция showHelp НЕ определена', 'error');
+            }
+        }
+
+        // Делаем функции глобальными для работы с onclick
+        window.currentEnv = currentEnv;
+        window.updateEnvironment = updateEnvironment;
+        window.getSelectedEnv = getSelectedEnv;
+        window.compareSchemas = compareSchemas;
+        window.mergeBranches = mergeBranches;
+        window.createBackup = createBackup;
+        window.runMigrations = runMigrations;
+        window.startEnvironment = startEnvironment;
+        window.runTests = runTests;
+        window.loadLogs = loadLogs;
+        window.logout = logout;
+        window.showHelp = showHelp;
+        window.closeHelp = closeHelp;
+        window.showNotification = showNotification;
+        window.showReportModal = showReportModal;
+        window.apiCall = apiCall;
+
+        // Загружаем функции из основного dashboard
+        window.addEventListener('load', function() {
+            log('🚀 Страница загружена, начинаем тесты...', 'info');
+            
+            // Проверяем доступность функций
+            const functions = [
+                'logout', 'compareSchemas', 'mergeBranches', 'createBackup',
+                'runMigrations', 'startEnvironment', 'runTests', 'showHelp'
+            ];
+
+            functions.forEach(funcName => {
+                if (typeof window[funcName] === 'function') {
+                    log(`✅ ${funcName} доступна`, 'success');
+                } else {
+                    log(`❌ ${funcName} НЕ доступна`, 'error');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
