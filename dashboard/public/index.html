@@ -625,13 +625,13 @@
                     🚀 WORKFLOW: DEVELOPMENT → STAGING → PRODUCTION
                 </h3>
                 
-                <!-- Карточка синхронизации Development -->
+                <!-- Карточка фиксации Development -->
                 <div class="card" data-type="sync-development">
-                    <div class="card-icon">🔄</div>
-                    <div class="card-title">Синхронизация Development</div>
-                    <div class="card-description">Получить изменения из develop ветки в development контур</div>
+                    <div class="card-icon">💾</div>
+                    <div class="card-title">Фиксация Development</div>
+                    <div class="card-description">Зафиксировать изменения Development контура в GitHub develop ветку</div>
                     <div class="card-actions">
-                        <button class="btn-execute" onclick="syncDevelopment()">Выполнить</button>
+                        <button class="btn-execute" onclick="syncDevelopment()">Зафиксировать</button>
                         <button class="btn-help" onclick="showHelp('sync-development')">?</button>
                     </div>
                 </div>
@@ -1118,16 +1118,18 @@
                 `
             },
             'sync-development': {
-                title: 'Синхронизация Development',
+                title: 'Фиксация Development',
                 content: `
-                    <strong>Что делает:</strong> Получает изменения из develop ветки в development контур.<br><br>
+                    <strong>Что делает:</strong> Зафиксировать изменения Development контура в GitHub develop ветку.<br><br>
                     <strong>Процесс:</strong><br>
-                    1. Проверяет существование develop ветки<br>
-                    2. Переключается на develop ветку<br>
-                    3. Получает последние изменения<br>
-                    4. Копирует файлы в development контур<br>
-                    5. Запускает тесты в development<br><br>
-                    <strong>Результат:</strong> Development контур синхронизирован с develop веткой.
+                    1. Переходит в Development контур<br>
+                    2. Инициализирует Git репозиторий (если нужно)<br>
+                    3. Переключается на develop ветку<br>
+                    4. Добавляет все изменения в staging<br>
+                    5. Создает коммит с изменениями<br>
+                    6. Отправляет изменения в GitHub<br>
+                    7. Запускает тесты в development<br><br>
+                    <strong>Результат:</strong> Изменения Development контура зафиксированы в GitHub develop ветке.
                 `
             },
             'test-staging': {
@@ -1312,14 +1314,14 @@
 
         // НОВЫЕ ФУНКЦИИ ДЛЯ WORKFLOW DEVELOPMENT → STAGING → PRODUCTION
 
-        // Синхронизация Development контура
+        // Фиксация Development контура
         async function syncDevelopment() {
-            showNotification('🔄 Синхронизация Development контура...', 'warning');
+            showNotification('💾 Фиксация изменений Development контура...', 'warning');
             try {
                 const res = await apiCall('/api/deployment/workflow/sync-development', 'POST');
                 const data = await res.json();
                 if (data.success) {
-                    let report = '📊 ОТЧЕТ О СИНХРОНИЗАЦИИ DEVELOPMENT\n\n';
+                    let report = '📊 ОТЧЕТ О ФИКСАЦИИ DEVELOPMENT\n\n';
                     report += `✅ ${data.message}\n\n`;
                     
                     if (data.changes && data.changes.length > 0) {
@@ -1340,8 +1342,8 @@
                         report += `• Сообщение: ${data.testResult.message}\n`;
                     }
                     
-                    showReportModal('Синхронизация Development', report);
-                    showNotification('✅ Development контур синхронизирован', 'success');
+                    showReportModal('Фиксация Development', report);
+                    showNotification('✅ Изменения Development зафиксированы в GitHub', 'success');
                 } else {
                     showNotification('❌ Ошибка синхронизации: ' + data.error, 'error');
                 }

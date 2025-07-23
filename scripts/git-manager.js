@@ -474,34 +474,67 @@ Thumbs.db
   }
 
   /**
-   * Синхронизация Development контура
+   * Фиксация изменений Development контура в GitHub
    * @returns {Promise<{success: boolean, error: string, changes: Array}>}
    */
   async syncDevelopment() {
     try {
-      process.chdir(this.repoPath);
+      const developmentPath = '/home/enclude/automation/development';
       
-      // 1. Проверяем существование develop ветки
-      if (!await this.branchExists('develop')) {
-        throw new Error('Ветка develop не существует. Создайте её: git checkout -b develop');
+      // 1. Переходим в development контур
+      process.chdir(developmentPath);
+      
+      // 2. Проверяем, является ли это Git репозиторием
+      const isGitRepo = await this.isGitRepository();
+      if (!isGitRepo) {
+        // Инициализируем Git репозиторий в development
+        await execAsync('git init');
+        await execAsync('git remote add origin https://github.com/enclude79/DeliveryMiniapp.git');
+        await execAsync('git config user.name "DeliveryMiniapp Development"');
+        await execAsync('git config user.email "development@deliveryvlg.xyz');
       }
       
-      // 2. Переключаемся на develop
-      await execAsync('git checkout develop');
-      await execAsync('git pull origin develop');
+      // 3. Проверяем существование develop ветки
+      if (!await this.branchExists('develop')) {
+        await execAsync('git checkout -b develop');
+      } else {
+        await execAsync('git checkout develop');
+        await execAsync('git pull origin develop');
+      }
       
-      // 3. Копируем изменения в development контур
-      const developmentPath = '/home/enclude/automation/development';
-      const { stdout: copyOutput } = await execAsync(`cp -r ${this.repoPath}/* ${developmentPath}/`);
+      // 4. Добавляем все изменения в staging
+      await execAsync('git add .');
       
-      // 4. Запускаем тесты в development
+      // 5. Проверяем, есть ли изменения для коммита
+      const { stdout: status } = await execAsync('git status --porcelain');
+      
+      if (!status.trim()) {
+        return {
+          success: true,
+          changes: ['Нет изменений для фиксации'],
+          message: 'Development контур: нет изменений для коммита'
+        };
+      }
+      
+      // 6. Создаем коммит
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      await execAsync(`git commit -m "Development changes - ${timestamp}"`);
+      
+      // 7. Пушим изменения в GitHub
+      await execAsync('git push origin develop');
+      
+      // 8. Запускаем тесты в development
       const testResult = await this.runDevelopmentTests();
       
       return {
         success: true,
-        changes: ['Файлы синхронизированы с develop веткой'],
+        changes: [
+          'Изменения зафиксированы в develop ветке',
+          'Изменения отправлены в GitHub',
+          'Development сервер протестирован'
+        ],
         testResult: testResult,
-        message: 'Development контур успешно синхронизирован'
+        message: 'Изменения Development контура успешно зафиксированы в GitHub'
       };
       
     } catch (error) {
@@ -520,23 +553,63 @@ Thumbs.db
     try {
       process.chdir(this.repoPath);
       
-      // 1. Копируем Production в Staging
+      // 1. Копируем Production в Staging (исключая проблемные папки)
       const stagingPath = '/home/enclude/automation/staging';
       const productionPath = '/home/enclude/automation/production';
       
-      await execAsync(`cp -r ${productionPath}/* ${stagingPath}/`);
+      // Очищаем staging (кроме node_modules и важных файлов)
+      await execAsync(`find ${stagingPath} -maxdepth 1 -not -name node_modules -not -name .git -not -name logs -not -name backup -not -name '*.db' -not -name staging -exec rm -rf {} +`);
+      
+      // Копируем файлы из production (исключая node_modules)
+      const { stdout: prodFiles } = await execAsync(`find ${productionPath} -maxdepth 1 -not -name node_modules -not -name .git -not -name logs -not -name backup -not -name '*.db'`);
+      
+      const prodFilesList = prodFiles.trim().split('\n').filter(f => f && f !== productionPath);
+      
+      for (const file of prodFilesList) {
+        const fileName = file.split('/').pop();
+        if (fileName) {
+          try {
+            await execAsync(`cp -r "${file}" "${stagingPath}/${fileName}"`);
+          } catch (copyError) {
+            console.log(`Предупреждение: не удалось скопировать ${fileName} из production: ${copyError.message}`);
+          }
+        }
+      }
       
       // 2. Переключаемся на develop для получения изменений
       await execAsync('git checkout develop');
       await execAsync('git pull origin develop');
       
-      // 3. Копируем изменения develop в staging
-      await execAsync(`cp -r ${this.repoPath}/* ${stagingPath}/`);
+      // 3. Копируем изменения develop в staging (исключая node_modules)
+      const { stdout: devFiles } = await execAsync(`find ${this.repoPath} -maxdepth 1 -not -name node_modules -not -name .git -not -name logs -not -name backup -not -name '*.db'`);
       
-      // 4. Генерируем SQL миграции
+      const devFilesList = devFiles.trim().split('\n').filter(f => f && f !== this.repoPath);
+      
+      for (const file of devFilesList) {
+        const fileName = file.split('/').pop();
+        if (fileName) {
+          try {
+            await execAsync(`cp -r "${file}" "${stagingPath}/${fileName}"`);
+          } catch (copyError) {
+            console.log(`Предупреждение: не удалось скопировать ${fileName} из develop: ${copyError.message}`);
+          }
+        }
+      }
+      
+      // 4. Перезапускаем staging сервер
+      try {
+        await execAsync('cd /home/enclude/automation/staging && npm install');
+        await execAsync('cd /home/enclude/automation/staging && pkill -f "node.*staging" || true');
+        await execAsync('cd /home/enclude/automation/staging && nohup npm start > logs/staging.log 2>&1 &');
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Ждем запуска
+      } catch (restartError) {
+        console.log(`Предупреждение: не удалось перезапустить staging сервер: ${restartError.message}`);
+      }
+      
+      // 5. Генерируем SQL миграции
       const migrations = await this.generateMigrations();
       
-      // 5. Запускаем тесты в staging
+      // 6. Запускаем тесты в staging
       const testResult = await this.runStagingTests();
       
       return {
