@@ -91,6 +91,25 @@ delivery.db
 delivery-staging.db
 delivery-dev.db
 
+# Media files and uploads
+public/uploads/
+*/public/uploads/
+staging/public/uploads/
+development/public/uploads/
+production/public/uploads/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.mp4
+*.avi
+*.mov
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+
 # Backup files
 *.backup
 *.bak
@@ -100,6 +119,12 @@ delivery-dev.db
 ssl/*.crt
 ssl/*.key
 ssl/*.pem
+*/ssl/*.crt
+*/ssl/*.key
+*/ssl/*.pem
+staging/ssl/
+development/ssl/
+production/ssl/
 !ssl/.gitkeep
 
 # Build outputs
