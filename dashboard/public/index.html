@@ -99,9 +99,26 @@
 
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 25px;
             margin-bottom: 30px;
+        }
+
+        /* Исправление layout для workflow секции */
+        .workflow-section {
+            margin-top: 40px;
+        }
+
+        .workflow-section .cards-grid {
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        }
+
+        .rollback-section {
+            margin-top: 30px;
+        }
+
+        .rollback-section .cards-grid {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         }
 
         .card {
@@ -113,6 +130,9 @@
             border: 1px solid rgba(255,255,255,0.2);
             position: relative;
             overflow: hidden;
+            min-height: 200px; /* Фиксированная минимальная высота */
+            display: flex;
+            flex-direction: column;
         }
 
         .card::before {
@@ -156,6 +176,7 @@
             font-size: 0.95rem;
             line-height: 1.5;
             margin-bottom: 20px;
+            flex-grow: 1; /* Растягивает описание для выравнивания */
         }
 
         .card-actions {
@@ -166,7 +187,7 @@
 
         .btn-execute {
             flex: 1;
-            background: linear-gradient(135deg, var(--card-color), var(--card-color-dark));
+            background: linear-gradient(135deg, #007bff, #0056b3);
             color: white;
             border: none;
             border-radius: 10px;
@@ -177,17 +198,110 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            position: relative;
+            overflow: hidden;
         }
 
         .btn-execute:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+            background: linear-gradient(135deg, #0056b3, #004085);
+        }
+
+        .btn-execute:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        /* Специальные стили для workflow кнопок */
+        .workflow-section .btn-execute {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .workflow-section .btn-execute:hover {
+            background: linear-gradient(135deg, #1e7e34, #155724);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        /* Стили для кнопок отката */
+        .rollback-section .btn-execute {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+
+        .rollback-section .btn-execute:hover {
+            background: linear-gradient(135deg, #c82333, #a71e2a);
+            box-shadow: 0 8px 20px rgba(220, 53, 69, 0.4);
+        }
+
+        /* Адаптивные стили для мобильных устройств */
+        @media (max-width: 768px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .workflow-section .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .rollback-section .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                min-height: 180px;
+                padding: 20px;
+            }
+
+            .card-title {
+                font-size: 1.2rem;
+            }
+
+            .card-description {
+                font-size: 0.9rem;
+            }
+
+            .btn-execute {
+                padding: 10px 16px;
+                font-size: 0.9rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .workflow-section h3 {
+                font-size: 1.3rem !important;
+            }
+
+            .rollback-section h4 {
+                font-size: 1.1rem !important;
+            }
+        }
+
+        /* Стили для планшетов */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+
+            .workflow-section .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .rollback-section .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         .btn-help {
             width: 40px;
             height: 40px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #6c757d, #495057);
             color: white;
             border: none;
             border-radius: 50%;
@@ -198,6 +312,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-help:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+            background: linear-gradient(135deg, #495057, #343a40);
         }
 
         .btn-help:hover {
@@ -500,7 +621,7 @@
 
             <!-- НОВЫЙ РАЗДЕЛ: WORKFLOW DEVELOPMENT → STAGING → PRODUCTION -->
             <div class="workflow-section">
-                <h3 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin: 30px 0 20px 0;">
+                <h3 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin: 30px 0 20px 0; text-align: center; font-size: 1.5rem;">
                     🚀 WORKFLOW: DEVELOPMENT → STAGING → PRODUCTION
                 </h3>
                 
@@ -538,19 +659,19 @@
                 </div>
 
                 <!-- Карточка полного workflow -->
-                <div class="card" data-type="full-workflow" style="background: linear-gradient(135deg, #007bff, #28a745); color: white;">
-                    <div class="card-icon">⚡</div>
+                <div class="card" data-type="full-workflow" style="background: linear-gradient(135deg, #007bff, #28a745); color: white; grid-column: 1 / -1;">
+                    <div class="card-icon" style="background: rgba(255,255,255,0.2);">⚡</div>
                     <div class="card-title">Полный Workflow</div>
                     <div class="card-description">Выполнить весь процесс: Development → Staging → Production</div>
                     <div class="card-actions">
-                        <button class="btn-execute" onclick="performFullWorkflow()" style="background: #fff; color: #007bff; font-weight: bold;">🚀 Запустить</button>
+                        <button class="btn-execute" onclick="performFullWorkflow()" style="background: #fff; color: #007bff; font-weight: bold; box-shadow: 0 4px 12px rgba(255,255,255,0.3);">🚀 Запустить</button>
                         <button class="btn-help" onclick="showHelp('full-workflow')" style="background: rgba(255,255,255,0.2);">?</button>
                     </div>
                 </div>
 
                 <!-- Карточки отката -->
-                <div class="rollback-section" style="margin-top: 20px;">
-                    <h4 style="color: #dc3545; margin-bottom: 15px;">🔄 Откат изменений</h4>
+                <div class="rollback-section" style="margin-top: 30px;">
+                    <h4 style="color: #dc3545; margin-bottom: 20px; text-align: center; font-size: 1.3rem; border-bottom: 2px solid #dc3545; padding-bottom: 10px;">🔄 Откат изменений</h4>
                     
                     <!-- Карточка отката Staging -->
                     <div class="card" data-type="rollback-staging" style="border: 2px solid #dc3545;">
