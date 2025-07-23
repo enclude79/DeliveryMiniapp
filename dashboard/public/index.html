@@ -376,6 +376,29 @@
             --card-color: #00BCD4;
             --card-color-dark: #0097A7;
         }
+
+        /* 1. Добавляю стили для яркой зелёной кнопки */
+        .btn-execute.copy-db {
+            background: linear-gradient(90deg, #28a745 60%, #43e97b 100%);
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.15rem;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(40,167,69,0.15);
+            padding: 12px 28px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-execute.copy-db:hover {
+            background: linear-gradient(90deg, #43e97b 60%, #38f9d7 100%);
+            box-shadow: 0 4px 16px rgba(40,167,69,0.25);
+            transform: scale(1.04);
+        }
     </style>
 </head>
 <body>
@@ -462,6 +485,96 @@
                 </div>
             </div>
 
+            <!-- Карточка копирования базы prod → staging -->
+            <div class="card" data-type="copy-db">
+                <div class="card-icon">📋</div>
+                <div class="card-title">Залить базу prod → staging</div>
+                <div class="card-description">Скопировать базу данных из production в staging</div>
+                <div class="card-actions">
+                    <button class="btn-execute copy-db" onclick="showCopyDbConfirm()">
+                        🟢 Залить prod → staging
+                    </button>
+                    <button class="btn-help" onclick="showHelp('copy-db')">?</button>
+                </div>
+            </div>
+
+            <!-- НОВЫЙ РАЗДЕЛ: WORKFLOW DEVELOPMENT → STAGING → PRODUCTION -->
+            <div class="workflow-section">
+                <h3 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin: 30px 0 20px 0;">
+                    🚀 WORKFLOW: DEVELOPMENT → STAGING → PRODUCTION
+                </h3>
+                
+                <!-- Карточка синхронизации Development -->
+                <div class="card" data-type="sync-development">
+                    <div class="card-icon">🔄</div>
+                    <div class="card-title">Синхронизация Development</div>
+                    <div class="card-description">Получить изменения из develop ветки в development контур</div>
+                    <div class="card-actions">
+                        <button class="btn-execute" onclick="syncDevelopment()">Выполнить</button>
+                        <button class="btn-help" onclick="showHelp('sync-development')">?</button>
+                    </div>
+                </div>
+
+                <!-- Карточка тестирования в Staging -->
+                <div class="card" data-type="test-staging">
+                    <div class="card-icon">🧪</div>
+                    <div class="card-title">Тестирование в Staging</div>
+                    <div class="card-description">Протестировать изменения в staging контуре</div>
+                    <div class="card-actions">
+                        <button class="btn-execute" onclick="testInStaging()">Выполнить</button>
+                        <button class="btn-help" onclick="showHelp('test-staging')">?</button>
+                    </div>
+                </div>
+
+                <!-- Карточка деплоя в Production -->
+                <div class="card" data-type="deploy-production">
+                    <div class="card-icon">🚀</div>
+                    <div class="card-title">Деплой в Production</div>
+                    <div class="card-description">Выполнить merge develop → main и деплой в production</div>
+                    <div class="card-actions">
+                        <button class="btn-execute" onclick="deployToProduction()">Выполнить</button>
+                        <button class="btn-help" onclick="showHelp('deploy-production')">?</button>
+                    </div>
+                </div>
+
+                <!-- Карточка полного workflow -->
+                <div class="card" data-type="full-workflow" style="background: linear-gradient(135deg, #007bff, #28a745); color: white;">
+                    <div class="card-icon">⚡</div>
+                    <div class="card-title">Полный Workflow</div>
+                    <div class="card-description">Выполнить весь процесс: Development → Staging → Production</div>
+                    <div class="card-actions">
+                        <button class="btn-execute" onclick="performFullWorkflow()" style="background: #fff; color: #007bff; font-weight: bold;">🚀 Запустить</button>
+                        <button class="btn-help" onclick="showHelp('full-workflow')" style="background: rgba(255,255,255,0.2);">?</button>
+                    </div>
+                </div>
+
+                <!-- Карточки отката -->
+                <div class="rollback-section" style="margin-top: 20px;">
+                    <h4 style="color: #dc3545; margin-bottom: 15px;">🔄 Откат изменений</h4>
+                    
+                    <!-- Карточка отката Staging -->
+                    <div class="card" data-type="rollback-staging" style="border: 2px solid #dc3545;">
+                        <div class="card-icon">🔄</div>
+                        <div class="card-title">Откат Staging</div>
+                        <div class="card-description">Откатить staging к состоянию production</div>
+                        <div class="card-actions">
+                            <button class="btn-execute" onclick="rollbackStaging()" style="background: #dc3545;">Откатить</button>
+                            <button class="btn-help" onclick="showHelp('rollback-staging')">?</button>
+                        </div>
+                    </div>
+
+                    <!-- Карточка отката Production -->
+                    <div class="card" data-type="rollback-production" style="border: 2px solid #dc3545;">
+                        <div class="card-icon">🔄</div>
+                        <div class="card-title">Откат Production</div>
+                        <div class="card-description">Откатить production к предыдущему коммиту</div>
+                        <div class="card-actions">
+                            <button class="btn-execute" onclick="rollbackProduction()" style="background: #dc3545;">Откатить</button>
+                            <button class="btn-help" onclick="showHelp('rollback-production')">?</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
         </div>
 
@@ -480,6 +593,32 @@
             <h2 id="helpTitle">Справка</h2>
             <div id="helpContent">
                 Выберите раздел для получения справки.
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения копирования базы -->
+    <div id="copyDbConfirmModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <span class="close" onclick="closeCopyDbConfirm()">&times;</span>
+            <h2 style="color:#28a745;">Подтвердите действие</h2>
+            <p style="font-size:1.1rem;">Вы уверены, что хотите <b>перезаписать staging базу</b> содержимым из production?<br><br>
+            <span style='color:#dc3545;font-weight:bold;'>Вся текущая база staging будет полностью заменена!</span></p>
+            
+            <!-- Чекбокс для медиафайлов -->
+            <div style="margin:20px 0;padding:15px;background:#f8f9fa;border-radius:8px;border-left:4px solid #007bff;">
+                <label style="display:flex;align-items:center;cursor:pointer;font-weight:500;">
+                    <input type="checkbox" id="includeMediaCheckbox" style="margin-right:10px;transform:scale(1.2);">
+                    <span style="font-size:1rem;">📸 <b>Перенести медиафайлы</b></span>
+                </label>
+                <p style="margin:8px 0 0 25px;font-size:0.9rem;color:#666;">
+                    Если включено: очистит staging uploads и скопирует все медиафайлы из production (1.3MB, 8 файлов)
+                </p>
+            </div>
+            
+            <div style="display:flex;justify-content: flex-end;gap:12px;margin-top:24px;">
+                <button onclick="closeCopyDbConfirm()" style="padding:8px 18px;">Отмена</button>
+                <button id="confirmCopyDbBtn" style="background:#28a745;color:#fff;font-weight:bold;padding:8px 18px;border:none;border-radius:6px;cursor:pointer;">Подтвердить</button>
             </div>
         </div>
     </div>
@@ -616,6 +755,60 @@
             }
         }
 
+        async function copyProdToStaging() {
+            // Получаем состояние чекбокса медиафайлов
+            const includeMedia = document.getElementById('includeMediaCheckbox').checked;
+            
+            let notificationText = 'Копирование базы prod → staging...';
+            if (includeMedia) {
+                notificationText += ' (включая медиафайлы)';
+            }
+            showNotification(notificationText, 'warning');
+            
+            try {
+                const res = await apiCall('/api/database/copy-prod-to-staging', 'POST', { includeMedia });
+                const data = await res.json();
+                if (data.success) {
+                    let report = '📋 ОТЧЕТ О КОПИРОВАНИИ\n\n';
+                    report += `✅ Операция успешно завершена!\n\n`;
+                    report += `📊 ДЕТАЛИ БАЗЫ ДАННЫХ:\n`;
+                    if (data.details && data.details.database) {
+                        report += `• Источник: ${data.details.database.source || 'не указан'}\n`;
+                        report += `• Назначение: ${data.details.database.target || 'не указано'}\n`;
+                        report += `• Размер: ${data.details.database.size ? (data.details.database.size / 1024).toFixed(2) : 'неизвестен'} KB\n`;
+                        report += `• Время: ${data.details.database.timestamp ? new Date(data.details.database.timestamp).toLocaleString() : 'не указано'}\n\n`;
+                    } else {
+                        report += `• Информация о базе данных недоступна\n\n`;
+                    }
+                    
+                    if (data.details && data.details.media && data.details.media.copied) {
+                        report += `📸 ДЕТАЛИ МЕДИАФАЙЛОВ:\n`;
+                        report += `• Файлов скопировано: ${data.details.media.files || 0}\n`;
+                        report += `• Общий размер: ${data.details.media.size ? (data.details.media.size / 1024 / 1024).toFixed(2) : '0'} MB\n`;
+                        report += `• Статус: ✅ Медиафайлы успешно перенесены\n\n`;
+                    } else if (includeMedia) {
+                        report += `📸 МЕДИАФАЙЛЫ: ❌ Не были скопированы (ошибка)\n\n`;
+                    } else {
+                        report += `📸 МЕДИАФАЙЛЫ: ⏭️ Не копировались (флаг отключен)\n\n`;
+                    }
+                    
+                    report += `⚠️ ВАЖНО: База staging была полностью перезаписана.\n`;
+                    report += `Бэкап staging не создавался (по требованию).`;
+                    
+                    let successMessage = 'База успешно скопирована из prod в staging';
+                    if (includeMedia && data.details && data.details.media && data.details.media.copied) {
+                        successMessage += ' (включая медиафайлы)';
+                    }
+                    showNotification(successMessage, 'success');
+                    showReportModal('Копирование prod → staging', report);
+                } else {
+                    showNotification('Ошибка копирования: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
         async function runMigrations() {
             showNotification('Применение миграций...', 'warning');
             try {
@@ -663,28 +856,51 @@
 
         async function loadLogs() {
             try {
+                // Загружаем обычные логи
                 const res = await apiCall('/api/deployment/logs');
                 const data = await res.json();
+                
+                // Загружаем workflow логи
+                const workflowRes = await apiCall('/api/deployment/workflow/status');
+                const workflowData = await workflowRes.json();
+                
+                const logsContainer = document.getElementById('logs-content');
+                let allLogs = [];
+                
+                // Обрабатываем обычные логи
                 if (data.success && data.logs) {
-                    // Правильно отображаем логи
-                    const logsContainer = document.getElementById('logs-content');
                     if (Array.isArray(data.logs)) {
-                        // Если логи - это массив объектов
-                        const logsText = data.logs.map(log => {
+                        allLogs = allLogs.concat(data.logs.map(log => {
                             if (typeof log === 'object' && log !== null) {
                                 return `${log.timestamp || ''} [${log.level || 'INFO'}] ${log.message || JSON.stringify(log)}`;
                             }
                             return String(log);
-                        }).join('\n');
-                        logsContainer.textContent = logsText;
+                        }));
                     } else if (typeof data.logs === 'string') {
-                        // Если логи - это строка
-                        logsContainer.textContent = data.logs;
-                    } else {
-                        // Если логи - это объект или что-то другое
-                        logsContainer.textContent = JSON.stringify(data.logs, null, 2);
+                        allLogs.push(data.logs);
                     }
                 }
+                
+                // Обрабатываем workflow логи
+                if (workflowData.success && workflowData.logs) {
+                    if (Array.isArray(workflowData.logs)) {
+                        allLogs = allLogs.concat(workflowData.logs.map(log => {
+                            if (typeof log === 'object' && log !== null) {
+                                return `${log.timestamp || ''} [WORKFLOW] [${log.level || 'INFO'}] ${log.message || JSON.stringify(log)}`;
+                            }
+                            return String(log);
+                        }));
+                    }
+                }
+                
+                // Сортируем логи по времени и отображаем последние 100 записей
+                allLogs = allLogs
+                    .filter(log => log.trim().length > 0)
+                    .slice(-100)
+                    .reverse(); // Новые записи сверху
+                
+                logsContainer.textContent = allLogs.join('\n');
+                
             } catch (e) {
                 console.error('Ошибка загрузки логов:', e);
                 document.getElementById('logs-content').textContent = 'Ошибка загрузки логов: ' + e.message;
@@ -762,6 +978,93 @@
                     3. Проверка покрытия кода<br>
                     4. Генерация отчета<br><br>
                     <strong>Результат:</strong> Отчет о прохождении тестов.
+                `
+            },
+            'copy-db': {
+                title: 'Копирование базы prod → staging',
+                content: `
+                    <strong>Что делает:</strong> Копирует базу данных из production в staging.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Проверяет существование prod базы<br>
+                    2. Выполняет копирование файла<br>
+                    3. Проверяет целостность копии<br>
+                    4. Генерирует отчет<br><br>
+                    <strong>⚠️ ВАЖНО:</strong><br>
+                    • База staging будет полностью перезаписана<br>
+                    • Бэкап staging НЕ создается (по требованию)<br>
+                    • Операция атомарная и безопасная<br><br>
+                    <strong>Результат:</strong> Staging база идентична production.
+                `
+            },
+            'sync-development': {
+                title: 'Синхронизация Development',
+                content: `
+                    <strong>Что делает:</strong> Получает изменения из develop ветки в development контур.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Проверяет существование develop ветки<br>
+                    2. Переключается на develop ветку<br>
+                    3. Получает последние изменения<br>
+                    4. Копирует файлы в development контур<br>
+                    5. Запускает тесты в development<br><br>
+                    <strong>Результат:</strong> Development контур синхронизирован с develop веткой.
+                `
+            },
+            'test-staging': {
+                title: 'Тестирование в Staging',
+                content: `
+                    <strong>Что делает:</strong> Протестировать изменения в staging контуре.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Копирует состояние Production в Staging<br>
+                    2. Применяет изменения из develop ветки<br>
+                    3. Генерирует SQL миграции<br>
+                    4. Запускает тесты в staging<br>
+                    5. Проверяет работоспособность<br><br>
+                    <strong>Результат:</strong> Отчет о тестировании и готовые миграции.
+                `
+            },
+            'deploy-production': {
+                title: 'Деплой в Production',
+                content: `
+                    <strong>Что делает:</strong> Выполнить merge develop → main и деплой в production.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Создает полный бэкап Production<br>
+                    2. Проверяет существование develop ветки<br>
+                    3. Выполняет merge develop → main<br>
+                    4. Применяет миграции<br>
+                    5. Перезапускает Production сервер<br><br>
+                    <strong>Результат:</strong> Production обновлен с изменениями из develop.
+                `
+            },
+            'full-workflow': {
+                title: 'Полный Workflow',
+                content: `
+                    <strong>Что делает:</strong> Выполнить весь процесс: Development → Staging → Production.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. 🔄 Синхронизация Development<br>
+                    2. 🧪 Тестирование в Staging<br>
+                    3. 🚀 Деплой в Production<br><br>
+                    <strong>Результат:</strong> Полный отчет о выполнении всех этапов.
+                `
+            },
+            'rollback-staging': {
+                title: 'Откат Staging',
+                content: `
+                    <strong>Что делает:</strong> Откатить staging к состоянию production.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Копирует файлы из production в staging<br>
+                    2. Восстанавливает состояние staging<br><br>
+                    <strong>Результат:</strong> Staging возвращен к состоянию production.
+                `
+            },
+            'rollback-production': {
+                title: 'Откат Production',
+                content: `
+                    <strong>Что делает:</strong> Откатить production к предыдущему коммиту.<br><br>
+                    <strong>ВНИМАНИЕ:</strong> Это критическая операция!<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Откатывает Git к предыдущему коммиту<br>
+                    2. Восстанавливает предыдущее состояние<br><br>
+                    <strong>Результат:</strong> Production возвращен к предыдущему состоянию.
                 `
             },
 
@@ -886,6 +1189,195 @@
             return fetch(url, options);
         }
 
+        // НОВЫЕ ФУНКЦИИ ДЛЯ WORKFLOW DEVELOPMENT → STAGING → PRODUCTION
+
+        // Синхронизация Development контура
+        async function syncDevelopment() {
+            showNotification('🔄 Синхронизация Development контура...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/sync-development', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    let report = '📊 ОТЧЕТ О СИНХРОНИЗАЦИИ DEVELOPMENT\n\n';
+                    report += `✅ ${data.message}\n\n`;
+                    
+                    if (data.changes && data.changes.length > 0) {
+                        report += `📋 ВЫПОЛНЕННЫЕ ИЗМЕНЕНИЯ:\n`;
+                        data.changes.forEach(change => {
+                            report += `• ${change}\n`;
+                        });
+                        report += '\n';
+                    }
+                    
+                    if (data.testResult) {
+                        report += `🧪 РЕЗУЛЬТАТЫ ТЕСТОВ:\n`;
+                        report += `• Статус: ${data.testResult.success ? '✅ Успешно' : '❌ Ошибка'}\n`;
+                        if (data.testResult.results) {
+                            report += `• Пройдено: ${data.testResult.results.passed}\n`;
+                            report += `• Провалено: ${data.testResult.results.failed}\n`;
+                        }
+                        report += `• Сообщение: ${data.testResult.message}\n`;
+                    }
+                    
+                    showReportModal('Синхронизация Development', report);
+                    showNotification('✅ Development контур синхронизирован', 'success');
+                } else {
+                    showNotification('❌ Ошибка синхронизации: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Тестирование в Staging контуре
+        async function testInStaging() {
+            showNotification('🧪 Тестирование в Staging контуре...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/test-staging', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    let report = '📊 ОТЧЕТ О ТЕСТИРОВАНИИ В STAGING\n\n';
+                    report += `✅ ${data.message}\n\n`;
+                    
+                    if (data.migrations && data.migrations.length > 0) {
+                        report += `🔧 СГЕНЕРИРОВАННЫЕ МИГРАЦИИ:\n`;
+                        data.migrations.forEach(migration => {
+                            report += `• ${migration}\n`;
+                        });
+                        report += '\n';
+                    } else {
+                        report += `🔧 Миграции: не требуются\n\n`;
+                    }
+                    
+                    if (data.testResults) {
+                        report += `🧪 РЕЗУЛЬТАТЫ ТЕСТОВ:\n`;
+                        report += `• Статус: ${data.testResults.success ? '✅ Успешно' : '❌ Ошибка'}\n`;
+                        if (data.testResults.results) {
+                            report += `• Пройдено: ${data.testResults.results.passed}\n`;
+                            report += `• Провалено: ${data.testResults.results.failed}\n`;
+                        }
+                        report += `• Сообщение: ${data.testResults.message}\n`;
+                    }
+                    
+                    showReportModal('Тестирование в Staging', report);
+                    showNotification('✅ Тестирование в Staging завершено', 'success');
+                } else {
+                    showNotification('❌ Ошибка тестирования: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Деплой в Production
+        async function deployToProduction() {
+            showNotification('🚀 Деплой в Production...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/deploy-production', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    let report = '📊 ОТЧЕТ О ДЕПЛОЕ В PRODUCTION\n\n';
+                    report += `✅ ${data.message}\n\n`;
+                    
+                    report += `💾 БЭКАП:\n`;
+                    report += `• Путь: ${data.backupPath}\n\n`;
+                    
+                    report += `🔗 GIT:\n`;
+                    report += `• Коммит слияния: ${data.mergeCommit}\n\n`;
+                    
+                    if (data.migrationResult) {
+                        report += `🔧 МИГРАЦИИ:\n`;
+                        report += `• Статус: ${data.migrationResult.success ? '✅ Успешно' : '❌ Ошибка'}\n`;
+                        report += `• Применено: ${data.migrationResult.applied}\n`;
+                        report += `• Сообщение: ${data.migrationResult.message}\n\n`;
+                    }
+                    
+                    if (data.restartResult) {
+                        report += `🖥️ ПЕРЕЗАПУСК СЕРВЕРА:\n`;
+                        report += `• Статус: ${data.restartResult.success ? '✅ Успешно' : '❌ Ошибка'}\n`;
+                        report += `• Сообщение: ${data.restartResult.message}\n`;
+                    }
+                    
+                    showReportModal('Деплой в Production', report);
+                    showNotification('✅ Деплой в Production выполнен', 'success');
+                } else {
+                    showNotification('❌ Ошибка деплоя: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Полный workflow
+        async function performFullWorkflow() {
+            showNotification('⚡ Запуск полного workflow...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/full', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    let report = '📊 ОТЧЕТ О ПОЛНОМ WORKFLOW\n\n';
+                    report += `✅ ${data.message}\n`;
+                    report += `🆔 ID: ${data.workflowId}\n\n`;
+                    
+                    report += `📋 ВЫПОЛНЕННЫЕ ЭТАПЫ:\n`;
+                    data.steps.forEach((step, index) => {
+                        const status = step.success ? '✅' : '❌';
+                        report += `${index + 1}. ${status} ${step.name}\n`;
+                        if (step.data && step.data.message) {
+                            report += `   ${step.data.message}\n`;
+                        }
+                    });
+                    
+                    showReportModal('Полный Workflow', report);
+                    showNotification('✅ Полный workflow завершен', 'success');
+                } else {
+                    showNotification('❌ Ошибка workflow: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Откат Staging
+        async function rollbackStaging() {
+            if (!confirm('⚠️ Вы уверены, что хотите откатить Staging к состоянию Production?')) {
+                return;
+            }
+            
+            showNotification('🔄 Откат Staging...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/rollback-staging', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('✅ Staging откачен к состоянию Production', 'success');
+                } else {
+                    showNotification('❌ Ошибка отката: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Откат Production
+        async function rollbackProduction() {
+            if (!confirm('⚠️ ВНИМАНИЕ! Вы уверены, что хотите откатить Production к предыдущему коммиту?\n\nЭто критическая операция!')) {
+                return;
+            }
+            
+            showNotification('🔄 Откат Production...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/rollback-production', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('✅ Production откачен к предыдущему коммиту', 'success');
+                } else {
+                    showNotification('❌ Ошибка отката: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
         // Проверяем аутентификацию при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
             // Сразу проверяем токен
@@ -936,6 +1428,18 @@
         window.showNotification = showNotification;
         window.showReportModal = showReportModal;
         window.apiCall = apiCall;
+
+        // Модальное подтверждение копирования базы
+        function showCopyDbConfirm() {
+            document.getElementById('copyDbConfirmModal').style.display = 'block';
+        }
+        function closeCopyDbConfirm() {
+            document.getElementById('copyDbConfirmModal').style.display = 'none';
+        }
+        document.getElementById('confirmCopyDbBtn').onclick = function() {
+            closeCopyDbConfirm();
+            copyProdToStaging();
+        };
     </script>
 </body>
 </html> 

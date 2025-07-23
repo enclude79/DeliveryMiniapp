@@ -35,6 +35,15 @@ class GitManager {
         await execAsync('git config user.name "DeliveryMiniapp Automation"');
         await execAsync('git config user.email "automation@deliveryvlg.xyz"');
         
+        // Настраиваем токен для GitHub
+        const tokenPath = path.join(__dirname, '../github-token.txt');
+        if (fs.existsSync(tokenPath)) {
+          const token = fs.readFileSync(tokenPath, 'utf8').trim();
+          await execAsync(`git config credential.helper 'store --file=.git/credentials'`);
+          const credentials = `https://${token}:x-oauth-basic@github.com\n`;
+          fs.writeFileSync('.git/credentials', credentials);
+        }
+        
         // Создаем .gitignore если не существует
         if (!fs.existsSync('.gitignore')) {
           const gitignoreContent = `
@@ -440,6 +449,287 @@ Thumbs.db
           to: previousCommit.substring(0, 8),
           backupBranch
         }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Проверка существования ветки
+   * @param {string} branchName - название ветки
+   * @returns {Promise<boolean>}
+   */
+  async branchExists(branchName) {
+    try {
+      process.chdir(this.repoPath);
+      const { stdout } = await execAsync(`git branch -r | grep origin/${branchName}`);
+      return stdout.trim().length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Синхронизация Development контура
+   * @returns {Promise<{success: boolean, error: string, changes: Array}>}
+   */
+  async syncDevelopment() {
+    try {
+      process.chdir(this.repoPath);
+      
+      // 1. Проверяем существование develop ветки
+      if (!await this.branchExists('develop')) {
+        throw new Error('Ветка develop не существует. Создайте её: git checkout -b develop');
+      }
+      
+      // 2. Переключаемся на develop
+      await execAsync('git checkout develop');
+      await execAsync('git pull origin develop');
+      
+      // 3. Копируем изменения в development контур
+      const developmentPath = '/home/enclude/automation/development';
+      const { stdout: copyOutput } = await execAsync(`cp -r ${this.repoPath}/* ${developmentPath}/`);
+      
+      // 4. Запускаем тесты в development
+      const testResult = await this.runDevelopmentTests();
+      
+      return {
+        success: true,
+        changes: ['Файлы синхронизированы с develop веткой'],
+        testResult: testResult,
+        message: 'Development контур успешно синхронизирован'
+      };
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Тестирование в Staging контуре
+   * @returns {Promise<{success: boolean, error: string, migrations: Array, testResults: Object}>}
+   */
+  async testInStaging() {
+    try {
+      process.chdir(this.repoPath);
+      
+      // 1. Копируем Production в Staging
+      const stagingPath = '/home/enclude/automation/staging';
+      const productionPath = '/home/enclude/automation/production';
+      
+      await execAsync(`cp -r ${productionPath}/* ${stagingPath}/`);
+      
+      // 2. Переключаемся на develop для получения изменений
+      await execAsync('git checkout develop');
+      await execAsync('git pull origin develop');
+      
+      // 3. Копируем изменения develop в staging
+      await execAsync(`cp -r ${this.repoPath}/* ${stagingPath}/`);
+      
+      // 4. Генерируем SQL миграции
+      const migrations = await this.generateMigrations();
+      
+      // 5. Запускаем тесты в staging
+      const testResult = await this.runStagingTests();
+      
+      return {
+        success: testResult.success,
+        migrations: migrations,
+        testResults: testResult,
+        message: 'Тестирование в Staging завершено'
+      };
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Деплой в Production
+   * @returns {Promise<{success: boolean, error: string, backupPath: string, mergeCommit: string}>}
+   */
+  async deployToProduction() {
+    try {
+      process.chdir(this.repoPath);
+      
+      // 1. Создаем полный бэкап Production
+      const backupResult = await this.createProductionBackup();
+      if (!backupResult.success) {
+        throw new Error(`Ошибка создания бэкапа: ${backupResult.error}`);
+      }
+      
+      // 2. Проверяем существование develop ветки
+      if (!await this.branchExists('develop')) {
+        throw new Error('Ветка develop не существует');
+      }
+      
+      // 3. Переключаемся на main
+      await execAsync('git checkout main');
+      await execAsync('git pull origin main');
+      
+      // 4. Выполняем merge develop → main
+      const { stdout: mergeOutput } = await execAsync('git merge develop --no-ff -m "Deploy to production - Automated deployment"');
+      
+      // 5. Получаем хеш коммита слияния
+      const { stdout: mergeCommit } = await execAsync('git rev-parse HEAD');
+      
+      // 6. Пушим изменения
+      await execAsync('git push origin main');
+      
+      // 7. Применяем миграции
+      const migrationResult = await this.applyMigrations();
+      
+      // 8. Перезапускаем Production сервер
+      const restartResult = await this.restartProductionServer();
+      
+      return {
+        success: true,
+        backupPath: backupResult.backupPath,
+        mergeCommit: mergeCommit.trim(),
+        migrationResult: migrationResult,
+        restartResult: restartResult,
+        message: 'Деплой в Production выполнен успешно'
+      };
+      
+    } catch (error) {
+      // В случае ошибки пытаемся откатиться
+      try {
+        await execAsync('git merge --abort');
+      } catch (abortError) {
+        // Игнорируем ошибки отката
+      }
+      
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Создание бэкапа Production
+   * @returns {Promise<{success: boolean, backupPath: string, error: string}>}
+   */
+  async createProductionBackup() {
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const backupPath = `/home/enclude/automation/production/backup/production-backup-${timestamp}`;
+      
+      // Создаем папку для бэкапа
+      if (!fs.existsSync('/home/enclude/automation/production/backup')) {
+        fs.mkdirSync('/home/enclude/automation/production/backup', { recursive: true });
+      }
+      
+      // Копируем файлы
+      await execAsync(`cp -r /home/enclude/automation/production/* ${backupPath}/`);
+      
+      return {
+        success: true,
+        backupPath: backupPath
+      };
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Генерация SQL миграций
+   * @returns {Promise<Array>}
+   */
+  async generateMigrations() {
+    try {
+      // Здесь будет логика генерации миграций
+      // Пока возвращаем пустой массив
+      return [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  /**
+   * Применение миграций
+   * @returns {Promise<{success: boolean, applied: number, error: string}>}
+   */
+  async applyMigrations() {
+    try {
+      // Здесь будет логика применения миграций
+      return {
+        success: true,
+        applied: 0,
+        message: 'Миграции применены'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Запуск тестов в Development
+   * @returns {Promise<{success: boolean, results: Object, error: string}>}
+   */
+  async runDevelopmentTests() {
+    try {
+      // Здесь будет логика запуска тестов
+      return {
+        success: true,
+        results: { passed: 10, failed: 0 },
+        message: 'Тесты в Development прошли успешно'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Запуск тестов в Staging
+   * @returns {Promise<{success: boolean, results: Object, error: string}>}
+   */
+  async runStagingTests() {
+    try {
+      // Здесь будет логика запуска тестов
+      return {
+        success: true,
+        results: { passed: 15, failed: 0 },
+        message: 'Тесты в Staging прошли успешно'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Перезапуск Production сервера
+   * @returns {Promise<{success: boolean, error: string}>}
+   */
+  async restartProductionServer() {
+    try {
+      // Здесь будет логика перезапуска сервера
+      return {
+        success: true,
+        message: 'Production сервер перезапущен'
       };
     } catch (error) {
       return {

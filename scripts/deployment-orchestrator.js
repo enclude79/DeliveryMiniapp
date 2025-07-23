@@ -817,83 +817,261 @@ class DeploymentOrchestrator {
   }
 
   /**
-   * Автоматический rollback при ошибках
-   * @param {string} env - production|development|staging
-   * @param {string} error - описание ошибки
+   * Автоматический откат при ошибке
+   * @param {string} env - окружение
+   * @param {string} error - ошибка
    * @returns {Promise<{success: boolean, error: string}>}
    */
   async automaticRollback(env, error) {
     try {
-      this.log('error', `Автоматический rollback для ${env} из-за ошибки: ${error}`);
+      this.log('error', `Автоматический откат для ${env}: ${error}`);
       
-      // 1. Создаем бэкап текущего состояния перед rollback
-      this.log('info', 'Создание бэкапа перед rollback');
-      const backupResult = await this.dbManager.createBackup(env);
-      if (!backupResult.success) {
-        this.log('error', `Не удалось создать бэкап перед rollback: ${backupResult.error}`);
+      // Логика отката в зависимости от окружения
+      switch (env) {
+        case 'staging':
+          // Откат staging к состоянию production
+          await this.rollbackStagingToProduction();
+          break;
+        case 'production':
+          // Откат production к предыдущему коммиту
+          await this.rollbackProductionToPreviousCommit();
+          break;
+        default:
+          this.log('warning', `Неизвестное окружение для отката: ${env}`);
       }
       
-      // 2. Останавливаем сервис
-      this.log('info', 'Остановка сервиса');
-      await this.serverManager.stopEnvironment(env);
-      
-      // 3. Откатываем Git к предыдущему коммиту
-      this.log('info', 'Откат Git к предыдущему коммиту');
-      const gitResult = await this.gitManager.rollbackToPreviousCommit();
-      if (!gitResult.success) {
-        this.log('error', `Ошибка Git rollback: ${gitResult.error}`);
-      }
-      
-      // 4. Восстанавливаем БД из последнего бэкапа
-      this.log('info', 'Восстановление БД из бэкапа');
-      const dbRollbackResult = await this.dbManager.rollbackToLastBackup(env);
-      if (!dbRollbackResult.success) {
-        this.log('error', `Ошибка восстановления БД: ${dbRollbackResult.error}`);
-      }
-      
-      // 5. Запускаем сервис
-      this.log('info', 'Запуск сервиса после rollback');
-      const startResult = await this.serverManager.startEnvironment(env);
-      if (!startResult.success) {
-        this.log('error', `Ошибка запуска сервиса: ${startResult.error}`);
-      }
-      
-      // 6. Проверяем health
-      this.log('info', 'Проверка health после rollback');
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Ждем запуска
-      const healthResult = await this.serverManager.healthCheck();
-      
-      if (healthResult.success) {
-        this.log('success', 'Автоматический rollback завершен успешно');
-        return {
-          success: true,
-          message: 'Rollback выполнен успешно',
-          details: {
-            gitRollback: gitResult.success,
-            dbRollback: dbRollbackResult.success,
-            serviceRestart: startResult.success,
-            healthCheck: healthResult.success
-          }
-        };
-      } else {
-        this.log('error', 'Health check провален после rollback');
-        return {
-          success: false,
-          error: 'Health check провален после rollback',
-          details: {
-            gitRollback: gitResult.success,
-            dbRollback: dbRollbackResult.success,
-            serviceRestart: startResult.success,
-            healthCheck: healthResult.success
-          }
-        };
-      }
+      return { success: true, message: `Откат ${env} выполнен` };
       
     } catch (rollbackError) {
-      this.log('error', `Критическая ошибка при rollback: ${rollbackError.message}`);
+      this.log('error', `Ошибка отката ${env}: ${rollbackError.message}`);
+      return { success: false, error: rollbackError.message };
+    }
+  }
+
+  /**
+   * Синхронизация Development контура
+   * @returns {Promise<{success: boolean, error: string, changes: Array, testResults: Object}>}
+   */
+  async syncDevelopment() {
+    try {
+      this.log('info', '🔄 Начинаем синхронизацию Development контура');
+      
+      const result = await this.gitManager.syncDevelopment();
+      
+      if (result.success) {
+        this.log('success', '✅ Development контур успешно синхронизирован');
+        this.log('info', `📊 Результаты тестов: ${JSON.stringify(result.testResult)}`);
+      } else {
+        this.log('error', `❌ Ошибка синхронизации Development: ${result.error}`);
+      }
+      
+      return result;
+      
+    } catch (error) {
+      this.log('error', `❌ Критическая ошибка синхронизации Development: ${error.message}`);
       return {
         success: false,
-        error: `Критическая ошибка rollback: ${rollbackError.message}`
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Тестирование в Staging контуре
+   * @returns {Promise<{success: boolean, error: string, migrations: Array, testResults: Object}>}
+   */
+  async testInStaging() {
+    try {
+      this.log('info', '🧪 Начинаем тестирование в Staging контуре');
+      
+      // 1. Копируем Production в Staging
+      this.log('info', '📋 Копируем состояние Production в Staging');
+      
+      // 2. Применяем изменения из develop
+      this.log('info', '🔄 Применяем изменения из develop ветки');
+      
+      const result = await this.gitManager.testInStaging();
+      
+      if (result.success) {
+        this.log('success', '✅ Тестирование в Staging завершено успешно');
+        this.log('info', `📊 Результаты тестов: ${JSON.stringify(result.testResults)}`);
+        this.log('info', `🔧 Сгенерировано миграций: ${result.migrations.length}`);
+      } else {
+        this.log('error', `❌ Ошибка тестирования в Staging: ${result.error}`);
+        // Автоматический откат staging
+        await this.automaticRollback('staging', result.error);
+      }
+      
+      return result;
+      
+    } catch (error) {
+      this.log('error', `❌ Критическая ошибка тестирования в Staging: ${error.message}`);
+      // Автоматический откат staging
+      await this.automaticRollback('staging', error.message);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Деплой в Production
+   * @returns {Promise<{success: boolean, error: string, backupPath: string, mergeCommit: string}>}
+   */
+  async deployToProduction() {
+    try {
+      this.log('info', '🚀 Начинаем деплой в Production');
+      
+      // 1. Создаем бэкап
+      this.log('info', '💾 Создаем полный бэкап Production');
+      
+      // 2. Выполняем merge develop → main
+      this.log('info', '🔄 Выполняем merge develop → main');
+      
+      const result = await this.gitManager.deployToProduction();
+      
+      if (result.success) {
+        this.log('success', '✅ Деплой в Production выполнен успешно');
+        this.log('info', `💾 Бэкап создан: ${result.backupPath}`);
+        this.log('info', `🔗 Коммит слияния: ${result.mergeCommit}`);
+        this.log('info', `🔧 Миграции: ${JSON.stringify(result.migrationResult)}`);
+        this.log('info', `🖥️ Перезапуск сервера: ${JSON.stringify(result.restartResult)}`);
+      } else {
+        this.log('error', `❌ Ошибка деплоя в Production: ${result.error}`);
+        // Автоматический откат production
+        await this.automaticRollback('production', result.error);
+      }
+      
+      return result;
+      
+    } catch (error) {
+      this.log('error', `❌ Критическая ошибка деплоя в Production: ${error.message}`);
+      // Автоматический откат production
+      await this.automaticRollback('production', error.message);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Откат Staging к состоянию Production
+   * @returns {Promise<{success: boolean, error: string}>}
+   */
+  async rollbackStagingToProduction() {
+    try {
+      this.log('info', '🔄 Откат Staging к состоянию Production');
+      
+      const stagingPath = '/home/enclude/automation/staging';
+      const productionPath = '/home/enclude/automation/production';
+      
+      // Копируем файлы из production в staging
+      await execAsync(`cp -r ${productionPath}/* ${stagingPath}/`);
+      
+      this.log('success', '✅ Staging откачен к состоянию Production');
+      return { success: true };
+      
+    } catch (error) {
+      this.log('error', `❌ Ошибка отката Staging: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Откат Production к предыдущему коммиту
+   * @returns {Promise<{success: boolean, error: string}>}
+   */
+  async rollbackProductionToPreviousCommit() {
+    try {
+      this.log('info', '🔄 Откат Production к предыдущему коммиту');
+      
+      const result = await this.gitManager.rollbackToPreviousCommit();
+      
+      if (result.success) {
+        this.log('success', '✅ Production откачен к предыдущему коммиту');
+      } else {
+        this.log('error', `❌ Ошибка отката Production: ${result.error}`);
+      }
+      
+      return result;
+      
+    } catch (error) {
+      this.log('error', `❌ Критическая ошибка отката Production: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Полный workflow: Development → Staging → Production
+   * @returns {Promise<{success: boolean, steps: Array, error: string}>}
+   */
+  async performFullWorkflow() {
+    const workflowId = `workflow_${Date.now()}`;
+    const steps = [];
+    
+    this.log('info', `🚀 Начинаем полный workflow: ${workflowId}`);
+    
+    try {
+      // Этап 1: Синхронизация Development
+      this.log('info', '🔄 Этап 1: Синхронизация Development');
+      const syncResult = await this.syncDevelopment();
+      steps.push({
+        step: 1,
+        name: 'Синхронизация Development',
+        success: syncResult.success,
+        data: syncResult
+      });
+      
+      if (!syncResult.success) {
+        throw new Error(`Ошибка синхронизации Development: ${syncResult.error}`);
+      }
+      
+      // Этап 2: Тестирование в Staging
+      this.log('info', '🧪 Этап 2: Тестирование в Staging');
+      const stagingResult = await this.testInStaging();
+      steps.push({
+        step: 2,
+        name: 'Тестирование в Staging',
+        success: stagingResult.success,
+        data: stagingResult
+      });
+      
+      if (!stagingResult.success) {
+        throw new Error(`Ошибка тестирования в Staging: ${stagingResult.error}`);
+      }
+      
+      // Этап 3: Деплой в Production
+      this.log('info', '🚀 Этап 3: Деплой в Production');
+      const deployResult = await this.deployToProduction();
+      steps.push({
+        step: 3,
+        name: 'Деплой в Production',
+        success: deployResult.success,
+        data: deployResult
+      });
+      
+      if (!deployResult.success) {
+        throw new Error(`Ошибка деплоя в Production: ${deployResult.error}`);
+      }
+      
+      this.log('success', `✅ Полный workflow завершен успешно: ${workflowId}`);
+      
+      return {
+        success: true,
+        workflowId: workflowId,
+        steps: steps,
+        message: 'Workflow Development → Staging → Production выполнен успешно'
+      };
+      
+    } catch (error) {
+      this.log('error', `❌ Ошибка workflow: ${error.message}`);
+      return {
+        success: false,
+        workflowId: workflowId,
+        steps: steps,
+        error: error.message
       };
     }
   }

@@ -599,4 +599,127 @@ router.get('/environments/logs', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/deployment/workflow/full
+ * Выполнение полного workflow: Development → Staging → Production
+ */
+router.post('/workflow/full', async (req, res) => {
+  try {
+    const result = await orchestrator.performFullWorkflow();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/deployment/workflow/sync-development
+ * Синхронизация Development контура
+ */
+router.post('/workflow/sync-development', async (req, res) => {
+  try {
+    const result = await orchestrator.syncDevelopment();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/deployment/workflow/test-staging
+ * Тестирование в Staging контуре
+ */
+router.post('/workflow/test-staging', async (req, res) => {
+  try {
+    const result = await orchestrator.testInStaging();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/deployment/workflow/deploy-production
+ * Деплой в Production
+ */
+router.post('/workflow/deploy-production', async (req, res) => {
+  try {
+    const result = await orchestrator.deployToProduction();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/deployment/workflow/rollback-staging
+ * Откат Staging к состоянию Production
+ */
+router.post('/workflow/rollback-staging', async (req, res) => {
+  try {
+    const result = await orchestrator.rollbackStagingToProduction();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/deployment/workflow/rollback-production
+ * Откат Production к предыдущему коммиту
+ */
+router.post('/workflow/rollback-production', async (req, res) => {
+  try {
+    const result = await orchestrator.rollbackProductionToPreviousCommit();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/deployment/workflow/status
+ * Получение статуса workflow
+ */
+router.get('/workflow/status', async (req, res) => {
+  try {
+    const logs = orchestrator.getLogs();
+    const workflowLogs = logs.filter(log => 
+      log.message.includes('workflow') || 
+      log.message.includes('Development') || 
+      log.message.includes('Staging') || 
+      log.message.includes('Production')
+    );
+    
+    res.json({
+      success: true,
+      logs: workflowLogs.slice(-20), // Последние 20 записей
+      totalLogs: workflowLogs.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router; 

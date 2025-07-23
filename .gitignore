@@ -16,6 +16,10 @@ dashboard.env
 secrets/
 keys/
 certificates/
+tokens/
+*.token
+github-token.txt
+git-token.txt
 
 # Logs
 logs/

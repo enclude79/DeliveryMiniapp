@@ -99,6 +99,121 @@ app.use('/api/database', apiRateLimiter, authenticateToken, databaseRoutes);
 app.use('/api/backup', apiRateLimiter, authenticateToken, backupRoutes);
 app.use('/api/logs', apiRateLimiter, authenticateToken, logsRoutes);
 
+// Endpoint для копирования базы prod → staging
+app.post('/api/database/copy-prod-to-staging', apiRateLimiter, authenticateToken, async (req, res) => {
+  try {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    
+    const sourceDb = '/home/enclude/automation/production/delivery.db';
+    const targetDb = '/home/enclude/automation/staging/delivery.db';
+    const includeMedia = req.body.includeMedia === true;
+    
+    log('info', `Запрос копирования базы prod → staging (медиафайлы: ${includeMedia ? 'включены' : 'отключены'})`);
+    
+    // Проверяем существование исходной базы
+    if (!fs.existsSync(sourceDb)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Исходная база данных production не найдена'
+      });
+    }
+    
+    // Выполняем копирование базы данных
+    const dbCommand = `cp -f "${sourceDb}" "${targetDb}"`;
+    log('info', `Выполняется копирование базы: ${dbCommand}`);
+    
+    const { stdout, stderr } = await execAsync(dbCommand);
+    
+    if (stderr) {
+      log('warning', `Предупреждение при копировании базы: ${stderr}`);
+    }
+    
+    // Проверяем результат копирования базы
+    if (!fs.existsSync(targetDb)) {
+      throw new Error('База данных не была создана после копирования');
+    }
+    
+    const dbStats = fs.statSync(targetDb);
+    log('info', `База успешно скопирована. Размер: ${dbStats.size} байт`);
+    
+    const result = {
+      success: true,
+      message: 'База данных успешно скопирована из production в staging',
+      details: {
+        database: {
+          source: sourceDb,
+          target: targetDb,
+          size: dbStats.size,
+          timestamp: new Date().toISOString()
+        }
+      }
+    };
+    
+    // Копирование медиафайлов (если включено)
+    if (includeMedia) {
+      try {
+        const sourceUploads = '/home/enclude/automation/production/public/uploads';
+        const targetUploads = '/home/enclude/automation/staging/public/uploads';
+        
+        // Проверяем существование исходной папки uploads
+        if (!fs.existsSync(sourceUploads)) {
+          log('warning', 'Исходная папка uploads не найдена');
+          result.details.media = { copied: false, error: 'Исходная папка uploads не найдена' };
+        } else {
+          // Очищаем staging uploads (кроме .gitkeep)
+          const clearCommand = `find "${targetUploads}" -type f ! -name '.gitkeep' -delete`;
+          log('info', `Очистка staging uploads: ${clearCommand}`);
+          await execAsync(clearCommand);
+          
+          // Копируем медиафайлы
+          const mediaCommand = `cp -r "${sourceUploads}"/* "${targetUploads}/" 2>/dev/null || true`;
+          log('info', `Копирование медиафайлов: ${mediaCommand}`);
+          await execAsync(mediaCommand);
+          
+          // Подсчитываем скопированные файлы
+          const files = fs.readdirSync(targetUploads).filter(file => file !== '.gitkeep');
+          const totalSize = files.reduce((size, file) => {
+            const filePath = path.join(targetUploads, file);
+            return size + (fs.existsSync(filePath) ? fs.statSync(filePath).size : 0);
+          }, 0);
+          
+          log('info', `Медиафайлы скопированы. Файлов: ${files.length}, размер: ${totalSize} байт`);
+          
+          result.details.media = {
+            copied: true,
+            files: files.length,
+            size: totalSize,
+            timestamp: new Date().toISOString()
+          };
+          
+          // Обновляем сообщение
+          result.message = 'База данных и медиафайлы успешно скопированы из production в staging';
+        }
+      } catch (mediaError) {
+        log('error', `Ошибка копирования медиафайлов: ${mediaError.message}`);
+        result.details.media = { 
+          copied: false, 
+          error: mediaError.message,
+          timestamp: new Date().toISOString()
+        };
+      }
+    } else {
+      result.details.media = { copied: false, reason: 'Флаг отключен' };
+    }
+    
+    res.json(result);
+    
+  } catch (error) {
+    log('error', `Ошибка копирования: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      error: `Ошибка копирования: ${error.message}`
+    });
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({
