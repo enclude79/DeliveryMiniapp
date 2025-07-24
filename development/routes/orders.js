@@ -2,8 +2,37 @@ const express = require('express');
 const router = express.Router();
 const TelegramBot = require('node-telegram-bot-api');
 const { query } = require('../database');
+const { cache } = require('../cache');
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false });
+
+// Эндпоинт для получения минимальной суммы заказа
+router.get('/minimum-amount', async (req, res) => {
+    try {
+        console.log('[ORDERS API] Getting minimum order amount');
+        
+        // Получаем настройку из базы данных
+        const [setting] = await query('SELECT value FROM settings WHERE key = "minimum_order_amount"');
+        
+        let minimumAmount = 0;
+        if (setting) {
+            minimumAmount = parseInt(setting.value) || 0;
+        }
+        
+        console.log(`[ORDERS API] Minimum order amount: ${minimumAmount}₽`);
+        
+        res.json({
+            success: true,
+            minimum_amount: minimumAmount
+        });
+    } catch (error) {
+        console.error('[ORDERS API] Ошибка получения минимальной суммы заказа:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Ошибка получения минимальной суммы заказа'
+        });
+    }
+});
 
 // Middleware для логирования всех запросов к заказам
 router.use((req, res, next) => {
@@ -112,6 +141,35 @@ router.post('/', async (req, res) => {
         if (!telegram_id) {
             console.log('[ORDERS API] Missing telegram_id');
             return res.status(400).json({ error: 'Не указан telegram_id' });
+        }
+
+        // Проверяем минимальную сумму заказа
+        try {
+            const settings = await cache.memoize('all_settings', async () => {
+                const settings = await query('SELECT * FROM app_settings ORDER BY setting_key');
+                const settingsMap = {};
+                settings.forEach(setting => {
+                    settingsMap[setting.setting_key] = {
+                        value: setting.setting_value,
+                        description: setting.description
+                    };
+                });
+                return settingsMap;
+            }, 5 * 60 * 1000);
+
+            const minimumAmount = parseInt(settings.minimum_order_amount?.value || '500');
+            
+            if (total < minimumAmount) {
+                console.log(`[ORDERS API] Order total ${total}₽ is less than minimum ${minimumAmount}₽`);
+                const remaining = minimumAmount - total;
+                return res.status(400).json({ 
+                    error: '💰 Минимальная сумма заказа',
+                    details: `✨ Минимальная сумма заказа: ${minimumAmount}₽\n\n➕ Добавьте товары на сумму ${remaining}₽ для оформления заказа 😊`
+                });
+            }
+        } catch (settingsError) {
+            console.error('[ORDERS API] Error checking minimum order amount:', settingsError);
+            // Продолжаем выполнение, если не удалось проверить минимальную сумму
         }
 
         // Получаем пользователя
@@ -344,6 +402,35 @@ router.put('/:id/cancel', async (req, res) => {
     } catch (error) {
         console.error('[ORDERS API] Ошибка отмены заказа:', error);
         res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Получить минимальную сумму заказа
+router.get('/minimum-amount', async (req, res) => {
+    try {
+        console.log('[ORDERS API] Getting minimum order amount');
+        
+        const settings = await cache.memoize('all_settings', async () => {
+            const settings = await query('SELECT * FROM app_settings ORDER BY setting_key');
+            const settingsMap = {};
+            settings.forEach(setting => {
+                settingsMap[setting.setting_key] = {
+                    value: setting.setting_value,
+                    description: setting.description
+                };
+            });
+            return settingsMap;
+        }, 5 * 60 * 1000);
+
+        const minimumAmount = parseInt(settings.minimum_order_amount?.value || '500');
+        
+        res.json({ 
+            minimum_amount: minimumAmount,
+            currency: 'RUB'
+        });
+    } catch (error) {
+        console.error('[ORDERS API] Error getting minimum order amount:', error);
+        res.status(500).json({ error: 'Ошибка получения минимальной суммы' });
     }
 });
 

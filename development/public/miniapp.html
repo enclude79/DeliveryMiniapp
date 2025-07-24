@@ -310,147 +310,6 @@
             gap: 8px;
         }
 
-        /* Стили для секции телефона */
-        .phone-status-card {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            padding: 16px;
-            background: var(--background-light);
-            border-radius: 12px;
-            border: 2px solid var(--border-color);
-            transition: all 0.2s ease;
-        }
-
-        .phone-status-card.success {
-            border-color: var(--success-color);
-            background: rgba(34, 197, 94, 0.05);
-        }
-
-        .phone-status-icon {
-            font-size: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.8);
-            flex-shrink: 0;
-        }
-
-        .phone-status-text {
-            flex: 1;
-        }
-
-        .phone-status-title {
-            font-weight: 600;
-            color: var(--text-primary);
-            font-size: 16px;
-            margin-bottom: 4px;
-        }
-
-        .phone-status-desc {
-            color: var(--text-secondary);
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        /* Новые стили для структуры из 3 строк */
-        .phone-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .phone-row-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-        }
-
-        .phone-row-text {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            text-align: center;
-        }
-
-        .phone-row-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .phone-checkbox {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--success-color);
-            border-radius: 4px;
-            background: var(--success-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-            flex-shrink: 0;
-        }
-
-        .btn-phone-add,
-        .btn-phone-edit {
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 2px solid;
-            text-align: center;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .btn-phone-add {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        .btn-phone-add:hover {
-            background: #2563eb;
-            border-color: #2563eb;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(46, 134, 171, 0.3);
-        }
-
-        .btn-phone-edit {
-            background: transparent;
-            color: var(--success-color);
-            border-color: var(--success-color);
-        }
-
-        .btn-phone-edit:hover {
-            background: rgba(34, 197, 94, 0.1);
-            transform: translateY(-1px);
-        }
-
-        /* Стили для новой 4-строчной структуры */
-        .phone-row-actions {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .phone-row-actions .phone-checkbox {
-            flex-shrink: 0;
-        }
-
-        .phone-row-actions .btn-phone-edit {
-            flex-shrink: 0;
-        }
-
         .address-item {
             background: var(--background-light);
             border-radius: 12px;
@@ -1162,18 +1021,6 @@
         // Инициализация пользователя
         async function initializeUser() {
             try {
-                console.log('🔍 === ДИАГНОСТИКА TELEGRAM WEBAPP ===');
-                console.log('🔍 window.Telegram:', !!window.Telegram);
-                console.log('🔍 window.Telegram.WebApp:', !!(window.Telegram && window.Telegram.WebApp));
-                
-                if (tg) {
-                    console.log('🔍 tg объект:', tg);
-                    console.log('🔍 tg.initData:', tg.initData || 'НЕТ');
-                    console.log('🔍 tg.initDataUnsafe:', tg.initDataUnsafe || 'НЕТ');
-                    console.log('🔍 tg.version:', tg.version || 'НЕТ');
-                    console.log('🔍 tg.platform:', tg.platform || 'НЕТ');
-                }
-                
                 let userData = {
                     telegram_id: 'demo_user',
                     first_name: 'Демо',
@@ -1181,40 +1028,16 @@
                     username: 'demo_user'
                 };
 
-                // Попытка получить реальные данные из Telegram - УЛУЧШЕННАЯ ВЕРСИЯ
-                let telegramUser = null;
-                
-                // Способ 1: tg.initDataUnsafe.user
-                if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                    telegramUser = tg.initDataUnsafe.user;
-                    console.log('✅ Найден пользователь через initDataUnsafe:', telegramUser);
-                }
-                // Способ 2: парсинг tg.initData
-                else if (tg && tg.initData) {
-                    try {
-                        console.log('🔍 Пытаемся парсить initData:', tg.initData);
-                        const urlParams = new URLSearchParams(tg.initData);
-                        const userParam = urlParams.get('user');
-                        if (userParam) {
-                            telegramUser = JSON.parse(decodeURIComponent(userParam));
-                            console.log('✅ Найден пользователь через initData парсинг:', telegramUser);
-                        }
-                    } catch (e) {
-                        console.error('❌ Ошибка парсинга initData:', e);
-                    }
-                }
-                
-                if (telegramUser) {
+                // Попытка получить реальные данные из Telegram
+                if (tg.initDataUnsafe?.user) {
+                    const telegramUser = tg.initDataUnsafe.user;
                     userData = {
                         telegram_id: telegramUser.id.toString(),
                         first_name: telegramUser.first_name || '',
                         last_name: telegramUser.last_name || '',
-                        username: telegramUser.username || '',
-                        display_name: undefined // Не передаем display_name при инициализации, чтобы не затереть существующее
+                        username: telegramUser.username || ''
                     };
-                    console.log('✅ ИСПОЛЬЗУЕМ РЕАЛЬНОГО ПОЛЬЗОВАТЕЛЯ:', userData);
-                } else {
-                    console.log('⚠️ ДАННЫЕ TELEGRAM НЕ НАЙДЕНЫ, ИСПОЛЬЗУЕМ DEMO:', userData);
+                    console.log('✅ Реальный пользователь:', userData.telegram_id);
                 }
 
                 const response = await fetch('/users', {
@@ -1935,15 +1758,15 @@
         function showCart() {
             const items = Object.values(cart);
             if (items.length === 0) {
-                tg.showAlert('Корзина пуста');
+                tg.showAlert('🛒 Корзина пуста! Добавьте товары для заказа 😊');
                 return;
             }
             
             const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const itemsList = items.map(item => `• ${item.name} x${item.quantity} = ${item.price * item.quantity}₽`).join('\n');
+            const itemsList = items.map(item => `🍽️ ${item.name} x${item.quantity} = ${item.price * item.quantity}₽`).join('\n');
             
-            // Показываем товары и кнопку оформления
-            const message = `Корзина:\n\n${itemsList}\n\nИтого: ${total}₽\n\nОформить заказ?`;
+            // Красивое сообщение с эмодзи
+            const message = `🛒 Ваша корзина:\n\n${itemsList}\n\n💰 Итого: ${total}₽\n\n✨ Оформить заказ?`;
             
             if (tg && tg.showConfirm) {
                 tg.showConfirm(message, (confirmed) => {
@@ -1980,6 +1803,25 @@
                 tg.showAlert('Для оформления заказа нужно указать адрес доставки.');
                 showAddressSetup();
                 return;
+            }
+
+            // Проверяем минимальную сумму заказа
+            try {
+                const response = await fetch('/orders/minimum-amount');
+                if (response.ok) {
+                    const data = await response.json();
+                    const minimumAmount = data.minimum_amount;
+                    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    
+                    if (total < minimumAmount) {
+                        const remaining = minimumAmount - total;
+                        tg.showAlert(`💰 Минимальная сумма заказа: ${minimumAmount}₽\n\n➕ Добавьте товары на сумму ${remaining}₽ для оформления заказа 😊`);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка проверки минимальной суммы:', error);
+                // Продолжаем выполнение, если не удалось проверить
             }
             
             try {
@@ -2020,10 +1862,16 @@
                     // Обновляем UI всех товаров для скрытия количеств
                     updateAllProductsUI();
                     
-                    tg.showAlert(`Заказ #${order.id} оформлен! Спасибо за покупку!`);
+                    tg.showAlert(`🎉 Заказ #${order.id} оформлен! Спасибо за покупку! ✨\n\n🚚 Мы скоро свяжемся с вами для подтверждения доставки!`);
                 } else {
-                    console.error('Ошибка создания заказа:', response.status);
-                    tg.showAlert('Ошибка оформления заказа. Попробуйте еще раз.');
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Ошибка создания заказа:', response.status, errorData);
+                    
+                    if (errorData.error && errorData.error.includes('Минимальная сумма заказа')) {
+                        tg.showAlert(errorData.details || '💰 Сумма заказа меньше минимальной 😊');
+                    } else {
+                        tg.showAlert('❌ Ошибка оформления заказа. Попробуйте еще раз.');
+                    }
                 }
                 
             } catch (error) {
@@ -2333,158 +2181,6 @@
         }
 
         console.log('🟢 Скрипт загружен');
-    </script>
-    
-    <!-- Подключение модуля формы телефона -->
-    <script src="/js/phone-form.js"></script>
-    
-    <script>
-        // Функция для проверки необходимости ввода телефона
-        function checkPhoneRequired() {
-            // Проверяем, есть ли у пользователя телефон и согласие
-            if (currentUser && (!currentUser.phone || !currentUser.privacy_consent)) {
-                // Показываем форму автоматически при первом заходе в профиль
-                const profileButton = document.getElementById('nav-profile');
-                const originalOnClick = profileButton.onclick;
-                
-                profileButton.onclick = function() {
-                    if (!currentUser.phone || !currentUser.privacy_consent) {
-                        showPhoneForm();
-                    } else {
-                        originalOnClick();
-                    }
-                };
-            }
-        }
-        
-        // Добавляем секцию телефона в профиль (ВСЕГДА!)
-        function addPhoneButtonToProfile() {
-            if (!currentUser) {
-                return; // Пользователь не инициализирован
-            }
-            
-            const profileView = document.getElementById('profile-view');
-            
-            // Проверяем, не добавлена ли уже секция
-            if (document.getElementById('phone-section')) {
-                return;
-            }
-            
-            // ВСЕГДА добавляем секцию телефона (пустую)
-            const phoneSection = `
-                <div class="profile-section" id="phone-section">
-                    <h3>📱 Контактная информация</h3>
-                    <div class="phone-status-card">
-                        <div class="phone-status-icon">⏳</div>
-                        <div class="phone-status-text">
-                            <div class="phone-status-title">Загрузка...</div>
-                            <div class="phone-status-desc">Проверяем данные телефона</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Вставляем секцию телефона в начало профиля
-            profileView.insertAdjacentHTML('afterbegin', phoneSection);
-        }
-        
-        // Обновляем секцию телефона после сохранения
-        async function updatePhoneSection() {
-            const phoneSection = document.getElementById('phone-section');
-            if (!phoneSection) return;
-            
-            // ЗАГРУЖАЕМ АКТУАЛЬНЫЙ НОМЕР ИЗ API
-            if (currentUser && currentUser.telegram_id) {
-                try {
-                    const response = await fetch('/users/phone/get', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            telegram_id: currentUser.telegram_id
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.success && data.user.phone) {
-                            // Обновляем currentUser актуальными данными
-                            currentUser.phone = data.user.phone;
-                            currentUser.display_name = data.user.display_name;
-                            currentUser.privacy_consent = data.user.privacy_consent;
-                            
-                            phoneSection.innerHTML = `
-                                <h3>📱 Контактная информация</h3>
-                                <div class="phone-status-card success">
-                                    <!-- Строка 1: Имя -->
-                                    <div class="phone-row">
-                                        <div class="phone-status-title">Имя: ${data.user.display_name || 'Не указано'}</div>
-                                    </div>
-                                    
-                                    <!-- Строка 2: Телефон -->
-                                    <div class="phone-row">
-                                        <div class="phone-status-title">Телефон: ${data.user.phone}</div>
-                                    </div>
-                                    
-                                    <!-- Строка 3: Текст согласия -->
-                                    <div class="phone-row">
-                                        <div class="phone-status-desc">Согласие на обработку ПД получено</div>
-                                    </div>
-                                    
-                                    <!-- Строка 4: Флаг + Кнопка -->
-                                    <div class="phone-row phone-row-actions">
-                                        <div class="phone-checkbox">✓</div>
-                                        <button class="btn-phone-edit" onclick="showPhoneForm()">
-                                            ✏️ Изменить
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                            return;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Ошибка загрузки номера телефона:', error);
-                }
-            }
-            
-            // Если номер не найден или ошибка - показываем кнопку добавления
-            phoneSection.innerHTML = `
-                <h3>📱 Контактная информация</h3>
-                <div class="phone-status-card">
-                    <div class="phone-status-icon">📵</div>
-                    <div class="phone-status-text">
-                        <div class="phone-status-title">Номер телефона не указан</div>
-                        <div class="phone-status-desc">Добавьте номер для связи по заказам</div>
-                    </div>
-                    <button class="btn-phone-add" onclick="showPhoneForm()">
-                        ➕ Добавить телефон
-                    </button>
-                </div>
-            `;
-        }
-        
-        // Вызываем проверки после инициализации пользователя
-        const originalInitializeUser = initializeUser;
-        initializeUser = function() {
-            originalInitializeUser();
-            setTimeout(() => {
-                checkPhoneRequired();
-                addPhoneButtonToProfile();
-                updatePhoneSection(); // ДОБАВЛЕНО: обновляем секцию телефона при инициализации
-            }, 100);
-        };
-        
-        // Обновляем отображение профиля
-        const originalShowProfile = showProfile;
-        showProfile = function() {
-            originalShowProfile();
-            setTimeout(() => {
-                addPhoneButtonToProfile();
-                updatePhoneSection();
-            }, 50);
-        };
     </script>
 </body>
 </html> 
