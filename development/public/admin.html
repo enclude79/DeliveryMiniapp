@@ -721,7 +721,17 @@
                                 </div>
                             </div>
                             
-                            <button class="btn btn-primary" onclick="saveCriticalStatus()">
+                            <div class="mb-3">
+                                <label for="minimumOrderAmount" class="form-label">
+                                    <strong>💰 Минимальная сумма заказа (руб.)</strong>
+                                </label>
+                                <input type="number" class="form-control" id="minimumOrderAmount" min="0" step="1" placeholder="500">
+                                <div class="form-text">
+                                    Пользователи не смогут оформить заказ на сумму меньше указанной
+                                </div>
+                            </div>
+                            
+                            <button class="btn btn-primary" onclick="saveOrderSettings()">
                                 💾 Сохранить настройки
                             </button>
                         </div>

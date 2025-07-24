@@ -1,31 +1,9 @@
-const dotenv = require("dotenv");
-const path = require("path");
-
-// ЖЕСТКО ФИКСИРОВАННАЯ КОНФИГУРАЦИЯ ДЛЯ РАЗРАБОТКИ
-// ПОЛНАЯ ИЗОЛЯЦИЯ ОТ ПРОДАКШНА (/home/enclude/delivery-app)
-const envFile = ".env.dev";
-dotenv.config({ path: path.join(__dirname, envFile) });
-
-// ЖЕСТКО ФИКСИРОВАННАЯ БД ДЛЯ РАЗРАБОТКИ
-const dbFile = "delivery-dev.db";
-
-// ЖЕСТКО ФИКСИРОВАННЫЕ ПОРТЫ (НЕ ПЕРЕСЕКАЮТСЯ С ПРОДАКШНОМ 3000/3443)  
-const DEV_HTTP_PORT = 3001;  // АДМИНКА НА ВНЕШНЕМ IP
-const DEV_HTTPS_PORT = 3444;  // ВАЖНО! Telegram настроен на этот порт
-
-console.log(`🚀 Запуск в режиме: РАЗРАБОТКА (ЖЕСТКО ИЗОЛИРОВАНО)`);
-console.log(`📊 База данных: ${dbFile}`);
-console.log(`🔌 Порты: HTTP ${DEV_HTTP_PORT} (АДМИНКА), HTTPS ${DEV_HTTPS_PORT} (TELEGRAM)`);
-console.log(`🔒 Продакшн НЕ ЗАТРОНУТ: /home/enclude/delivery-app (порты 3000/3443)`);
-console.log(`📱 TELEGRAM ПОРТ СОХРАНЕН: ${DEV_HTTPS_PORT}`);
-
-// Принудительная загрузка Yandex Maps для диагностики
-require('./services/yandex-maps');
-
+require('dotenv').config();
 const express = require('express');
 const https = require('https');
 const cors = require('cors');
 const compression = require('compression');
+const path = require('path');
 const fs = require('fs');
 const morgan = require('morgan');
 // ВРЕМЕННО ОТКЛЮЧЕНА СЛОЖНАЯ БЕЗОПАСНОСТЬ ДЛЯ ИСПРАВЛЕНИЯ ЧЕРНОГО ЭКРАНА
@@ -41,8 +19,9 @@ const settingsRoutes = require('./routes/settings');
 const orderStatusRoutes = require('./routes/order-statuses');
 
 const app = express();
-const port = DEV_HTTP_PORT;  // ЖЕСТКО ЗАФИКСИРОВАНО: 3010
-const httpsPort = DEV_HTTPS_PORT;  // ЖЕСТКО ЗАФИКСИРОВАНО: 3410
+const config = require('./config');
+const port = process.env.PORT || config.port || 3001;
+const httpsPort = process.env.HTTPS_PORT || config.httpsPort || 3444;
 
 // Создаем директорию для логов
 const logsDir = path.join(__dirname, 'logs');
@@ -199,12 +178,6 @@ app.get('/test', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'miniapp-test.html'));
 });
 
-// Роут для диагностики Telegram WebApp
-app.get('/telegram-diagnostics', (req, res) => {
-    console.log('[DIAGNOSTICS] Запрос диагностической страницы Telegram WebApp');
-    res.sendFile(path.join(__dirname, 'public', 'telegram-diagnostics.html'));
-});
-
 // Роут для Mini App
 app.get('/app', (req, res) => {
     // Проверяем User-Agent для определения мобильного устройства
@@ -309,7 +282,7 @@ async function startServer() {
         app.listen(port, '0.0.0.0', () => {
             console.log(`🚀 HTTP сервер запущен на http://0.0.0.0:${port}`);
             console.log(`👤 Главная страница: http://0.0.0.0:${port}`);
-            console.log(`⚙️ Админ панель: http://89.169.182.9:${port}/admin`);
+            console.log(`⚙️ Админ панель: http://0.0.0.0:${port}/admin`);
             console.log(`📱 Mini App: http://0.0.0.0:${port}/app`);
             console.log(`📱 Мобильная диагностика: http://0.0.0.0:${port}/mobile`);
         });

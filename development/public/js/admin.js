@@ -1,5 +1,5 @@
 // Глобальные переменные
-let token = localStorage.getItem('adminToken');
+let isAuthenticated = localStorage.getItem('adminAuthenticated') === 'true';
 let currentOrders = [];
 let currentCustomers = [];
 let filters = {
@@ -61,9 +61,7 @@ function clearCache() {
 
 // Функции для работы с API
 async function apiCall(endpoint, method = 'GET', data = null) {
-    const headers = {
-        'Authorization': `Bearer ${token}`
-    };
+    const headers = {};
     
     if (data && !(data instanceof FormData)) {
         headers['Content-Type'] = 'application/json';
@@ -86,14 +84,14 @@ async function apiCall(endpoint, method = 'GET', data = null) {
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Admin panel loading...', { token: !!token });
+    console.log('Admin panel loading...', { isAuthenticated });
     
-    if (token) {
-        console.log('Token found, showing main content');
+    if (isAuthenticated) {
+        console.log('User authenticated, showing main content');
         showMainContent();
         loadOrders();
     } else {
-        console.log('No token found, showing login form');
+        console.log('User not authenticated, showing login form');
     }
 
     // Обработчики событий
@@ -196,10 +194,14 @@ async function handleLogin(e) {
     
     try {
         const response = await apiCall('/api/admin/login', 'POST', { username, password });
-        token = response.token;
-        localStorage.setItem('adminToken', token);
-        showMainContent();
-        loadOrders();
+        if (response.success) {
+            isAuthenticated = true;
+            localStorage.setItem('adminAuthenticated', 'true');
+            showMainContent();
+            loadOrders();
+        } else {
+            showAlert('Ошибка входа: ' + (response.error || 'Неизвестная ошибка'), 'danger');
+        }
     } catch (error) {
         showAlert('Ошибка входа: ' + error.message, 'danger');
     }
@@ -208,7 +210,8 @@ async function handleLogin(e) {
 function handleLogout() {
     // Останавливаем автообновление при выходе
     stopAutoRefresh();
-    localStorage.removeItem('adminToken');
+    isAuthenticated = false;
+    localStorage.removeItem('adminAuthenticated');
     location.reload();
 }
 
@@ -287,7 +290,7 @@ function createAlertsContainer() {
 
 // Работа с заказами
 async function loadOrders() {
-    console.log('Loading orders...', { filters, token: !!token });
+    console.log('Loading orders...', { filters, isAuthenticated });
     
     try {
         showLoading('ordersTableBody');
@@ -586,25 +589,7 @@ async function showCustomer(telegramId) {
                         <tr><td><strong>Имя:</strong></td><td>${customer.first_name || 'Не указано'}</td></tr>
                         <tr><td><strong>Фамилия:</strong></td><td>${customer.last_name || 'Не указано'}</td></tr>
                         <tr><td><strong>Username:</strong></td><td>${customer.username ? '@' + customer.username : 'Не указан'}</td></tr>
-                        <tr>
-                            <td><strong>📱 Телефон:</strong></td>
-                            <td>
-                                ${customer.phone ? `
-                                    <span class="text-success">${customer.phone}</span>
-                                    ${customer.privacy_consent ? 
-                                        '<br><small class="text-success">✅ Согласие на обработку ПД получено</small>' : 
-                                        '<br><small class="text-warning">⚠️ Согласие на обработку ПД не получено</small>'
-                                    }
-                                    ${customer.privacy_consent_date ? 
-                                        `<br><small class="text-muted">Дата согласия: ${formatDateTime(customer.privacy_consent_date)}</small>` : 
-                                        ''
-                                    }
-                                ` : `
-                                    <span class="text-muted">📵 Не указан</span>
-                                    <br><small class="text-danger">❌ Согласие на обработку ПД не получено</small>
-                                `}
-                            </td>
-                        </tr>
+                        <tr><td><strong>Телефон:</strong></td><td>${customer.phone || 'Не указан'}</td></tr>
                         <tr><td><strong>Дата регистрации:</strong></td><td>${formatDateTime(customer.created_at)}</td></tr>
                         <tr><td><strong>Последнее обновление:</strong></td><td>${formatDateTime(customer.updated_at)}</td></tr>
                     </table>
@@ -1626,6 +1611,13 @@ async function loadSettings() {
             select.value = criticalStatus;
         }
         
+        // Устанавливаем минимальную сумму заказа
+        const minimumAmount = settings.minimum_order_amount?.value || '500';
+        const amountInput = document.getElementById('minimumOrderAmount');
+        if (amountInput) {
+            amountInput.value = minimumAmount;
+        }
+        
         // Отображаем все настройки в таблице
         renderAllSettings(settings);
         
@@ -1661,22 +1653,37 @@ function renderAllSettings(settings) {
     tbody.innerHTML = rows || '<tr><td colspan="4" class="text-center"><em>Настройки не найдены</em></td></tr>';
 }
 
-// Сохранить критический статус
-async function saveCriticalStatus() {
+// Сохранить настройки заказов
+async function saveOrderSettings() {
     try {
         const select = document.getElementById('criticalStatus');
+        const amountInput = document.getElementById('minimumOrderAmount');
+        
         const newStatus = select.value;
+        const newAmount = amountInput.value;
         
         if (!newStatus) {
-            showAlert('Выберите статус', 'warning');
+            showAlert('Выберите критический статус', 'warning');
             return;
         }
         
-        console.log('Сохранение критического статуса:', newStatus);
+        if (!newAmount || newAmount < 0) {
+            showAlert('Введите корректную минимальную сумму', 'warning');
+            return;
+        }
         
-        const response = await apiCall('/settings/critical_order_status', 'PUT', {
+        console.log('Сохранение настроек заказов:', { status: newStatus, amount: newAmount });
+        
+        // Сохраняем критический статус
+        await apiCall('/settings/critical_order_status', 'PUT', {
             value: newStatus,
             description: 'Критический статус заказа, после которого отмена невозможна'
+        });
+        
+        // Сохраняем минимальную сумму заказа
+        await apiCall('/settings/minimum_order_amount', 'PUT', {
+            value: newAmount,
+            description: 'Минимальная сумма заказа в рублях'
         });
         
         showAlert('Настройки успешно сохранены', 'success');

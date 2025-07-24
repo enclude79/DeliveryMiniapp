@@ -4,11 +4,6 @@ const https = require('https');
 const YANDEX_GEOCODER_API_KEY = process.env.YANDEX_GEOCODER_API_KEY || 'your_api_key_here';
 const YANDEX_GEOCODER_URL = 'https://geocode-maps.yandex.ru/1.x/';
 
-// Диагностика загрузки API ключа
-console.log(`[YANDEX MAPS] ДИАГНОСТИКА: process.env.YANDEX_GEOCODER_API_KEY = "${process.env.YANDEX_GEOCODER_API_KEY || 'ОТСУТСТВУЕТ'}"`);
-console.log(`[YANDEX MAPS] ДИАГНОСТИКА: YANDEX_GEOCODER_API_KEY = "${YANDEX_GEOCODER_API_KEY}"`);
-console.log(`[YANDEX MAPS] ДИАГНОСТИКА: NODE_ENV = "${process.env.NODE_ENV || 'ОТСУТСТВУЕТ'}"`);
-
 // Логирование для отладки
 function logYandexMaps(type, message, data = {}) {
     const timestamp = new Date().toISOString();

@@ -7,11 +7,8 @@ let db;
 
 // Инициализация базы данных с обработкой ошибок
 function initDB() {
-    // ЖЕСТКО ФИКСИРОВАННАЯ БД ДЛЯ РАЗРАБОТКИ - НИКАКОЙ ПУТАНИЦЫ!
-    const dbFile = 'delivery-dev.db';
-    const dbPath = path.join(__dirname, dbFile);
-    
-    console.log(`🔒 ФИКСИРОВАННАЯ БД: ${dbPath}`);
+    // Используем отдельную базу данных для Development
+    const dbPath = path.join(__dirname, 'delivery-dev.db');
     
     try {
         db = new sqlite3.Database(dbPath, (err) => {
@@ -172,7 +169,6 @@ async function createIndexes() {
         // Индексы для таблицы users
         await query('CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id)');
         await query('CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)');
-        await query('CREATE INDEX IF NOT EXISTS idx_users_display_name ON users(display_name)');
         
         // Индексы для таблицы order_items
         await query('CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)');
@@ -274,12 +270,6 @@ async function initDatabase() {
         } catch (e) { /* столбец уже существует */ }
         try {
             await query('ALTER TABLE users ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP');
-        } catch (e) { /* столбец уже существует */ }
-        try {
-            await query('ALTER TABLE users ADD COLUMN display_name TEXT');
-        } catch (e) { /* столбец уже существует */ }
-        try {
-            await query('ALTER TABLE users ADD COLUMN privacy_consent BOOLEAN DEFAULT 0');
         } catch (e) { /* столбец уже существует */ }
 
         // Добавление новых столбцов в таблицу products если они не существуют

@@ -61,10 +61,6 @@ nano .env
 # База данных создается автоматически при первом запуске
 # Или можно создать вручную:
 sqlite3 delivery.db < database/schema.sql
-
-# НОВИНКА: Система миграций
-npm run migrate:status        # Проверить статус миграций
-npm run migrate:run           # Выполнить все новые миграции
 ```
 
 ### 5. Запуск приложения
@@ -75,9 +71,6 @@ npm run dev
 
 # Продакшн
 npm start
-
-# Автоматический деплой с миграциями
-./scripts/deploy-with-migrations.sh production
 ```
 
 ## 📊 База данных
