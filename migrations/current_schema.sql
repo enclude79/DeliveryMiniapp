@@ -1,9 +1,9 @@
 -- Development Database Schema
--- Экспортировано: 2025-07-25 08:34:42
+-- Экспортировано: 2025-07-25 08:42:04
 -- База данных: /home/enclude/automation/development/delivery-dev.db
--- Ветка: [0;34m[INFO][0m 2025-07-25 08:34:42 - Git репозиторий найден в .
+-- Ветка: [0;34m[INFO][0m 2025-07-25 08:42:04 - Git репозиторий найден в .
 develop
--- Коммит: c6fa8c3568e6586a70303fe4de05456e2759f753
+-- Коммит: bc91b6ab53533fa93da8f732aa019c4a1301c77e
 
 CREATE TABLE admins (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1,11 +1,11 @@
 {
   "export_info": {
-    "timestamp": "2025-07-25T08:34:42+00:00",
+    "timestamp": "2025-07-25T08:42:04+00:00",
     "database_path": "/home/enclude/automation/development/delivery-dev.db",
-    "branch": "[0;34m[INFO][0m 2025-07-25 08:34:42 - Git репозиторий найден в .
+    "branch": "[0;34m[INFO][0m 2025-07-25 08:42:04 - Git репозиторий найден в .
 develop",
-    "commit": "c6fa8c3568e6586a70303fe4de05456e2759f753",
-    "commit_message": "feat: добавлен Git workflow интерфейс в Dashboard",
+    "commit": "bc91b6ab53533fa93da8f732aa019c4a1301c77e",
+    "commit_message": "Export current development schema",
     "author": "enclude79 <enclude79@github.com>"
   },
   "database_stats": {
