@@ -286,36 +286,9 @@ async function startServer() {
             console.log(`📱 Мобильная диагностика: http://0.0.0.0:${port}/mobile`);
         });
 
-        // Запускаем HTTPS сервер с сертификатами
-        // Пути к файлам сертификатов AlphaSSL для домена www.deliveryvlg.xyz
-        const certPath = path.join(__dirname, 'ssl', 'certificate.crt'); // Путь к сертификату
-        const keyPath = path.join(__dirname, 'ssl', 'private.key');     // Путь к приватному ключу
-        const caPath = path.join(__dirname, 'ssl', 'ca_bundle.crt');    // Путь к CA bundle (если есть)
-        
-        if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
-            const options = {
-                cert: fs.readFileSync(certPath),
-                key: fs.readFileSync(keyPath)
-            };
-            
-            // Добавляем CA bundle, если он существует
-            if (fs.existsSync(caPath)) {
-                options.ca = fs.readFileSync(caPath);
-            }
-
-            https.createServer(options, app).listen(httpsPort, '0.0.0.0', () => {
-                console.log(`🔒 HTTPS сервер запущен на https://0.0.0.0:${httpsPort}`);
-                console.log(`🔐 HTTPS Mini App: https://www.deliveryvlg.xyz:${httpsPort}/app`);
-                console.log(`📱 Используйте для Telegram: https://www.deliveryvlg.xyz:${httpsPort}/app`);
-                console.log(`🔍 HTTPS Мобильная диагностика: https://www.deliveryvlg.xyz:${httpsPort}/mobile`);
-            });
-        } else {
-            console.log('⚠️  SSL сертификаты не найдены, HTTPS сервер не запущен');
-            console.log(`   Ожидаемые пути к сертификатам:`);
-            console.log(`   - Сертификат: ${certPath}`);
-            console.log(`   - Приватный ключ: ${keyPath}`);
-            console.log(`   - CA Bundle: ${caPath}`);
-        }
+        // ВРЕМЕННО ОТКЛЮЧЕН HTTPS СЕРВЕР ДЛЯ STAGING
+        // HTTPS будет обрабатываться через nginx прокси
+        console.log('⚠️  HTTPS сервер отключен для staging, используйте nginx прокси');
         
     } catch (error) {
         console.error('❌ Ошибка при запуске сервера:', error);

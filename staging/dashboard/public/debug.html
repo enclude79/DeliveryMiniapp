@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐛 Отладка JavaScript</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .test-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .test-btn:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>�� Отладка JavaScript</h1>
+    
+    <div>
+        <h3>Тест базовых функций:</h3>
+        <button class="test-btn" onclick="testBasicFunctions()">Тест базовых функций</button>
+        <button class="test-btn" onclick="testGlobalFunctions()">Тест глобальных функций</button>
+        <button class="test-btn" onclick="testApiCall()">Тест API вызовов</button>
+        <button class="test-btn" onclick="clearResults()">Очистить результаты</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        // Глобальные переменные
+        let currentEnv = 'development';
+        let logsInterval;
+
+        // Функции dashboard (копируем из index.html)
+        function updateEnvironment(env) {
+            currentEnv = env;
+            console.log(`🌍 Среда изменена на: ${env}`);
+            showNotification(`Среда изменена на ${env}`, 'success');
+        }
+
+        function getSelectedEnv() {
+            return currentEnv;
+        }
+
+        function compareSchemas() {
+            console.log('🔍 Сравнение схем БД...');
+            showNotification('Сравнение схем БД запущено', 'info');
+            
+            apiCall('/api/database/compare-schemas', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Сравнение схем завершено', 'success');
+                    console.log('Результат сравнения:', data);
+                })
+                .catch(error => {
+                    showNotification('Ошибка сравнения схем', 'error');
+                    console.error('Ошибка:', error);
+                });
+        }
+
+        function mergeBranches() {
+            console.log('🔄 Слияние веток...');
+            showNotification('Слияние веток запущено', 'info');
+            
+            apiCall('/api/deployment/step/2', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Слияние веток завершено', 'success');
+                    console.log('Результат слияния:', data);
+                })
+                .catch(error => {
+                    showNotification('Ошибка слияния веток', 'error');
+                    console.error('Ошибка:', error);
+                });
+        }
+
+        function createBackup() {
+            console.log('💾 Создание бэкапа...');
+            showNotification('Создание бэкапа запущено', 'info');
+            
+            apiCall('/api/database/backup', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Бэкап создан успешно', 'success');
+                    console.log('Результат бэкапа:', data);
+                })
+                .catch(error => {
+                    showNotification('Ошибка создания бэкапа', 'error');
+                    console.error('Ошибка:', error);
+                });
+        }
+
+        function runMigrations() {
+            console.log('🚀 Запуск миграций...');
+            showNotification('Миграции запущены', 'info');
+            
+            apiCall('/api/deployment/step/2', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Миграции завершены', 'success');
+                    console.log('Результат миграций:', data);
+                })
+                .catch(error => {
+                    showNotification('Ошибка миграций', 'error');
+                    console.error('Ошибка:', error);
+                });
+        }
+
+        function startEnvironment() {
+            console.log('🖥️ Запуск сервера...');
+            showNotification('Сервер запускается', 'info');
+            
+            apiCall('/api/deployment/environments/start', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Сервер запущен', 'success');
+                    console.log('Результат запуска:', data);
+                })
+                .catch(error => {
+                    showNotification('Ошибка запуска сервера', 'error');
+                    console.error('Ошибка:', error);
+                });
+        }
+
+        function runTests() {
+            console.log('🧪 Запуск тестов...');
+            showNotification('Тесты запущены', 'info');
+            
+            apiCall('/api/deployment/run-tests', 'POST', { environment: currentEnv })
+                .then(response => response.json())
+                .then(data => {
+                    showNotification('Тесты завершены', 'success');
+                    console.log('Результат тестов:', data);
+                })
+                .catch(error => {
+                    showNotification('Ошибка тестов', 'error');
+                    console.error('Ошибка:', error);
+                });
+        }
+
+        function loadLogs() {
+            console.log('📊 Загрузка логов...');
+            apiCall('/api/deployment/logs')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Логи загружены:', data);
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки логов:', error);
+                });
+        }
+
+        function startLogsPolling() {
+            loadLogs();
+            const interval = window.LOGS_POLLING_INTERVAL || 30000;
+            logsInterval = setInterval(loadLogs, interval);
+            console.log(`📊 Логи будут обновляться каждые ${interval/1000} секунд`);
+        }
+
+        function stopLogsPolling() {
+            if (logsInterval) {
+                clearInterval(logsInterval);
+            }
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('dashboard_token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        function logout() {
+            localStorage.removeItem('dashboard_token');
+            localStorage.removeItem('dashboard_user');
+            window.location.href = '/login.html';
+        }
+
+        function apiCall(url, method = 'GET', data = null) {
+            const token = localStorage.getItem('dashboard_token');
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            return fetch(url, options);
+        }
+
+        function showHelp(topic) {
+            console.log(`📖 Показать справку: ${topic}`);
+            showNotification(`Справка: ${topic}`, 'info');
+        }
+
+        function closeHelp() {
+            console.log('❌ Закрыть справку');
+            showNotification('Справка закрыта', 'info');
+        }
+
+        function showReportModal(title, content) {
+            console.log(`📋 Модальное окно: ${title}`);
+            showNotification(`Отчет: ${title}`, 'info');
+        }
+
+        function showNotification(message, type = 'info') {
+            console.log(`🔔 Уведомление [${type}]: ${message}`);
+        }
+
+        // Делаем функции глобальными
+        window.currentEnv = currentEnv;
+        window.updateEnvironment = updateEnvironment;
+        window.getSelectedEnv = getSelectedEnv;
+        window.compareSchemas = compareSchemas;
+        window.mergeBranches = mergeBranches;
+        window.createBackup = createBackup;
+        window.runMigrations = runMigrations;
+        window.startEnvironment = startEnvironment;
+        window.runTests = runTests;
+        window.loadLogs = loadLogs;
+        window.logout = logout;
+        window.showHelp = showHelp;
+        window.closeHelp = closeHelp;
+        window.showNotification = showNotification;
+        window.showReportModal = showReportModal;
+        window.apiCall = apiCall;
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+        }
+
+        function testBasicFunctions() {
+            log('=== ТЕСТ БАЗОВЫХ ФУНКЦИЙ ===', 'info');
+            
+            // Проверяем localStorage
+            try {
+                localStorage.setItem('test', 'value');
+                const testValue = localStorage.getItem('test');
+                if (testValue === 'value') {
+                    log('✅ localStorage работает', 'success');
+                } else {
+                    log('❌ localStorage не работает', 'error');
+                }
+            } catch (e) {
+                log(`❌ localStorage ошибка: ${e.message}`, 'error');
+            }
+
+            // Проверяем fetch
+            try {
+                fetch('/health')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'OK') {
+                            log('✅ fetch работает', 'success');
+                        } else {
+                            log('❌ fetch вернул неверный статус', 'error');
+                        }
+                    })
+                    .catch(e => {
+                        log(`❌ fetch ошибка: ${e.message}`, 'error');
+                    });
+            } catch (e) {
+                log(`❌ fetch ошибка: ${e.message}`, 'error');
+            }
+        }
+
+        function testGlobalFunctions() {
+            log('=== ТЕСТ ГЛОБАЛЬНЫХ ФУНКЦИЙ ===', 'info');
+            
+            const functions = [
+                'logout', 'compareSchemas', 'mergeBranches', 'createBackup',
+                'runMigrations', 'startEnvironment', 'runTests', 'loadLogs',
+                'showHelp', 'closeHelp', 'showNotification', 'showReportModal'
+            ];
+
+            functions.forEach(funcName => {
+                if (typeof window[funcName] === 'function') {
+                    log(`✅ ${funcName} определена`, 'success');
+                } else {
+                    log(`❌ ${funcName} НЕ определена`, 'error');
+                }
+            });
+        }
+
+        function testApiCall() {
+            log('=== ТЕСТ API ВЫЗОВОВ ===', 'info');
+            
+            if (typeof apiCall === 'function') {
+                log('✅ apiCall определена', 'success');
+                
+                // Тестируем API вызов
+                apiCall('/api/config', 'GET')
+                    .then(data => {
+                        log('✅ API вызов работает', 'success');
+                    })
+                    .catch(e => {
+                        log(`❌ API вызов ошибка: ${e.message}`, 'error');
+                    });
+            } else {
+                log('❌ apiCall НЕ определена', 'error');
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Автоматический тест при загрузке
+        window.addEventListener('load', () => {
+            log('🚀 Страница загружена, начинаем тесты...', 'info');
+            setTimeout(testBasicFunctions, 1000);
+            setTimeout(testGlobalFunctions, 2000);
+            setTimeout(testApiCall, 3000);
+        });
+    </script>
+</body>
+</html> 

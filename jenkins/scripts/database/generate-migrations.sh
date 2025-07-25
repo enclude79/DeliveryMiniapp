@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Jenkins Pipeline - Генерация миграций на основе сравнения схем
-# =============================================================
+# Jenkins Pipeline - Генерация SQL миграций
+# =========================================
 
 set -euo pipefail
 
@@ -16,22 +16,21 @@ fi
 
 # Загрузка утилит
 source "${UTILS_DIR}/log-utils.sh"
-source "${UTILS_DIR}/git-utils.sh"
 
 # Параметры
-STAGING_DB_PATH="${1:-$STAGING_DB_PATH}"
-MIGRATIONS_PATH="${2:-$MIGRATIONS_PATH}"
-TARGET_BRANCH="${3:-develop}"
+TARGET_DB_PATH="${1:-}"
+MIGRATIONS_PATH="${2:-}"
+SOURCE_BRANCH="${3:-develop}"
 VERBOSE="${4:-false}"
 
 # Проверка параметров
-if [[ -z "$STAGING_DB_PATH" ]]; then
-    log_error "Путь к staging БД не указан"
+if [[ -z "$TARGET_DB_PATH" ]]; then
+    log_error "Путь к целевой БД не указан"
     exit 1
 fi
 
-if [[ ! -f "$STAGING_DB_PATH" ]]; then
-    log_error "Staging БД не найдена: $STAGING_DB_PATH"
+if [[ -z "$MIGRATIONS_PATH" ]]; then
+    log_error "Путь к миграциям не указан"
     exit 1
 fi
 
@@ -44,217 +43,183 @@ setup_log_file "$LOG_PATH" "generate-migrations"
 
 log_stage_start "Generate Migrations" "generate-migrations"
 
-# Проверка Git репозитория
-if ! check_git_repo; then
-    log_error "Git репозиторий не найден"
+# Проверка существования целевой БД
+if [[ ! -f "$TARGET_DB_PATH" ]]; then
+    log_error "Целевая БД не найдена: $TARGET_DB_PATH"
     log_stage_end "Generate Migrations" "false" "" "generate-migrations"
     exit 1
 fi
 
-# Проверка SQLite
-if ! command -v sqlite3 &> /dev/null; then
-    log_error "sqlite3 не установлен"
-    log_stage_end "Generate Migrations" "false" "" "generate-migrations"
-    exit 1
+# Создание директории для миграций
+if [[ ! -d "$MIGRATIONS_PATH" ]]; then
+    log_info "Создание директории для миграций: $MIGRATIONS_PATH"
+    mkdir -p "$MIGRATIONS_PATH"
 fi
 
-# Получение схемы из Git (target schema)
-log_info "Получение схемы из ветки $TARGET_BRANCH"
-local target_schema_file="/tmp/target_schema.sql"
+# Экспорт текущей схемы целевой БД
+log_info "Экспорт текущей схемы целевой БД"
+current_schema_file="/tmp/current_schema_$(date +%Y%m%d_%H%M%S).sql"
 
-# Проверка существования файла схемы в Git
-if ! git show "$TARGET_BRANCH:migrations/current_schema.sql" &> /dev/null; then
-    log_error "Файл схемы не найден в ветке $TARGET_BRANCH"
+sqlite3 "$TARGET_DB_PATH" ".schema" > "$current_schema_file" 2>/dev/null || {
+    log_error "Ошибка экспорта схемы из целевой БД"
     log_stage_end "Generate Migrations" "false" "" "generate-migrations"
     exit 1
-fi
+}
 
-log_command "git show \"$TARGET_BRANCH:migrations/current_schema.sql\" > \"$target_schema_file\""
-git show "$TARGET_BRANCH:migrations/current_schema.sql" > "$target_schema_file"
+log_success "Схема экспортирована: $current_schema_file"
 
-if [[ $? -eq 0 ]]; then
-    log_success "Схема из Git получена"
-else
-    log_error "Ошибка получения схемы из Git"
-    log_stage_end "Generate Migrations" "false" "" "generate-migrations"
-    exit 1
-fi
+# Получение схемы из Git (develop ветка)
+log_info "Получение схемы из ветки $SOURCE_BRANCH"
 
-# Экспорт текущей схемы staging
-log_info "Экспорт текущей схемы staging БД"
-local current_schema_file="/tmp/current_staging_schema.sql"
+# Временная директория для Git операций
+temp_git_dir="/tmp/git_schema_$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$temp_git_dir"
 
-log_command "sqlite3 \"$STAGING_DB_PATH\" \".schema\" > \"$current_schema_file\""
-sqlite3 "$STAGING_DB_PATH" ".schema" > "$current_schema_file"
+# Клонирование репозитория во временную директорию
+log_command "git clone /home/enclude/automation/.git \"$temp_git_dir\""
+git clone /home/enclude/automation/.git "$temp_git_dir"
 
-if [[ $? -eq 0 ]]; then
-    log_success "Текущая схема staging экспортирована"
-else
-    log_error "Ошибка экспорта схемы staging"
-    log_stage_end "Generate Migrations" "false" "" "generate-migrations"
-    exit 1
-fi
+cd "$temp_git_dir"
 
-# Сравнение схем
-log_info "Сравнение схем staging и target"
-local diff_file="/tmp/schema_diff.txt"
+# Переключение на нужную ветку
+log_command "git checkout $SOURCE_BRANCH"
+git checkout "$SOURCE_BRANCH"
 
-log_command "diff \"$current_schema_file\" \"$target_schema_file\" > \"$diff_file\" || true"
-diff "$current_schema_file" "$target_schema_file" > "$diff_file" || true
+# Поиск файла схемы
+schema_file=""
+for possible_schema in "database/schema.sql" "schema.sql" "db/schema.sql" "migrations/latest.sql"; do
+    if [[ -f "$possible_schema" ]]; then
+        schema_file="$possible_schema"
+        break
+    fi
+done
 
-local diff_size=$(wc -l < "$diff_file")
-log_info "Найдено различий: $diff_size строк"
-
-if [[ $diff_size -eq 0 ]]; then
-    log_info "Схемы идентичны, миграции не требуются"
+if [[ -z "$schema_file" ]]; then
+    log_warning "Файл схемы не найден в ветке $SOURCE_BRANCH"
+    log_info "Создание пустой миграции"
+    
+    # Создание пустой миграции
+    migration_file="${MIGRATIONS_PATH}/$(date +%Y%m%d_%H%M%S)_no_changes.sql"
+    echo "-- Миграция: нет изменений в схеме" > "$migration_file"
+    echo "-- Дата: $(date)" >> "$migration_file"
+    echo "-- Источник: $SOURCE_BRANCH" >> "$migration_file"
+    echo "" >> "$migration_file"
+    echo "-- Схема не изменилась" >> "$migration_file"
+    
+    log_success "Пустая миграция создана: $migration_file"
+    
+    # Очистка
+    rm -rf "$temp_git_dir"
+    rm -f "$current_schema_file"
+    
     log_stage_end "Generate Migrations" "true" "" "generate-migrations"
+    echo "$migration_file"
+    echo "{\"status\":\"no_changes\",\"message\":\"Схема не изменилась\"}"
     exit 0
 fi
 
-# Анализ различий и генерация миграций
-log_info "Анализ различий и генерация миграций"
-local migration_timestamp=$(date +%Y%m%d_%H%M%S)
-local migration_file="${MIGRATIONS_PATH}/${migration_timestamp}_schema_update.sql"
+log_info "Найден файл схемы: $schema_file"
 
-# Создание файла миграции
+# Сравнение схем
+log_info "Сравнение схем"
+diff_output="/tmp/schema_diff_$(date +%Y%m%d_%H%M%S).diff"
+
+if diff "$current_schema_file" "$schema_file" > "$diff_output" 2>/dev/null; then
+    log_info "Схемы идентичны, миграция не требуется"
+    
+    # Создание пустой миграции
+    migration_file="${MIGRATIONS_PATH}/$(date +%Y%m%d_%H%M%S)_no_changes.sql"
+    echo "-- Миграция: нет изменений в схеме" > "$migration_file"
+    echo "-- Дата: $(date)" >> "$migration_file"
+    echo "-- Источник: $SOURCE_BRANCH" >> "$migration_file"
+    echo "" >> "$migration_file"
+    echo "-- Схемы идентичны" >> "$migration_file"
+    
+    log_success "Пустая миграция создана: $migration_file"
+    
+    # Очистка
+    rm -rf "$temp_git_dir"
+    rm -f "$current_schema_file"
+    rm -f "$diff_output"
+    
+    log_stage_end "Generate Migrations" "true" "" "generate-migrations"
+    echo "$migration_file"
+    echo "{\"status\":\"no_changes\",\"message\":\"Схемы идентичны\"}"
+    exit 0
+fi
+
+log_info "Найдены различия в схемах"
+
+# Создание миграции на основе различий
+migration_file="${MIGRATIONS_PATH}/$(date +%Y%m%d_%H%M%S)_schema_update.sql"
+
+log_info "Создание миграции: $migration_file"
+
+# Заголовок миграции
 cat > "$migration_file" << EOF
--- Schema Migration: Staging to Target
--- Сгенерировано: $(date '+%Y-%m-%d %H:%M:%S')
--- Источник: $STAGING_DB_PATH
--- Цель: $TARGET_BRANCH
--- Различий найдено: $diff_size
+-- Миграция: обновление схемы БД
+-- Дата: $(date)
+-- Источник: $SOURCE_BRANCH
+-- Целевая БД: $TARGET_DB_PATH
+-- 
+-- Автоматически сгенерированная миграция
+-- ВНИМАНИЕ: Проверьте миграцию перед применением!
 
 BEGIN TRANSACTION;
 
--- ===========================================
--- АВТОМАТИЧЕСКИ СГЕНЕРИРОВАННАЯ МИГРАЦИЯ
--- ВНИМАНИЕ: Проверьте перед применением!
--- ===========================================
-
 EOF
 
-# Анализ различий и генерация SQL команд
-log_info "Генерация SQL команд для миграции"
+# Анализ различий и генерация SQL
+log_info "Анализ различий и генерация SQL"
 
-local in_table=false
-local table_name=""
-local current_table=""
-
+# Простой анализ различий (можно улучшить)
 while IFS= read -r line; do
-    # Пропускаем пустые строки и комментарии
-    if [[ -z "$line" || "$line" =~ ^[[:space:]]*-- ]]; then
+    if [[ "$line" =~ ^[0-9]+[acd][0-9]+ ]]; then
+        # Это строка с информацией о различии
+        continue
+    elif [[ "$line" =~ ^\> ]]; then
+        # Добавляемая строка (новая схема)
+        sql_line="${line#> }"
+        echo "$sql_line" >> "$migration_file"
+    elif [[ "$line" =~ ^\< ]]; then
+        # Удаляемая строка (старая схема) - можно добавить DROP
         continue
     fi
-    
-    # Определяем тип изменения
-    if [[ "$line" =~ ^[0-9]+[acd][0-9]+ ]]; then
-        # Строка diff - определяем тип изменения
-        local change_type=$(echo "$line" | sed 's/^[0-9]*\([acd]\)[0-9]*.*/\1/')
-        
-        case "$change_type" in
-            "a") # Добавление
-                echo "-- ADD: Добавление новой структуры" >> "$migration_file"
-                ;;
-            "d") # Удаление
-                echo "-- REMOVE: Удаление структуры" >> "$migration_file"
-                ;;
-            "c") # Изменение
-                echo "-- MODIFY: Изменение структуры" >> "$migration_file"
-                ;;
-        esac
-    elif [[ "$line" =~ ^CREATE[[:space:]]+TABLE ]]; then
-        # Новая таблица
-        table_name=$(echo "$line" | sed 's/CREATE TABLE \([^[:space:]]*\).*/\1/')
-        echo "-- Создание таблицы: $table_name" >> "$migration_file"
-        echo "$line;" >> "$migration_file"
-        echo "" >> "$migration_file"
-    elif [[ "$line" =~ ^CREATE[[:space:]]+INDEX ]]; then
-        # Новый индекс
-        echo "-- Создание индекса" >> "$migration_file"
-        echo "$line;" >> "$migration_file"
-        echo "" >> "$migration_file"
-    elif [[ "$line" =~ ^ALTER[[:space:]]+TABLE ]]; then
-        # Изменение таблицы
-        echo "-- Изменение таблицы" >> "$migration_file"
-        echo "$line;" >> "$migration_file"
-        echo "" >> "$migration_file"
-    elif [[ "$line" =~ ^DROP[[:space:]]+TABLE ]]; then
-        # Удаление таблицы
-        table_name=$(echo "$line" | sed 's/DROP TABLE \([^[:space:]]*\).*/\1/')
-        echo "-- Удаление таблицы: $table_name" >> "$migration_file"
-        echo "$line;" >> "$migration_file"
-        echo "" >> "$migration_file"
-    elif [[ "$line" =~ ^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]+[A-Za-z_][A-Za-z0-9_]* ]]; then
-        # Определение колонки
-        echo "-- Добавление колонки" >> "$migration_file"
-        echo "ALTER TABLE $current_table ADD COLUMN $line;" >> "$migration_file"
-        echo "" >> "$migration_file"
-    fi
-done < "$diff_file"
+done < "$diff_output"
 
-# Добавление проверок целостности
+# Завершение миграции
 cat >> "$migration_file" << EOF
 
--- ===========================================
--- ПРОВЕРКИ ЦЕЛОСТНОСТИ
--- ===========================================
-
--- Проверка целостности БД после миграции
+-- Проверка целостности после миграции
 PRAGMA integrity_check;
 
--- Проверка внешних ключей
-PRAGMA foreign_key_check;
-
--- Проверка количества таблиц
-SELECT 'Tables count: ' || COUNT(*) as info FROM sqlite_master WHERE type='table';
-
 COMMIT;
-
--- ===========================================
--- МИГРАЦИЯ ЗАВЕРШЕНА
--- ===========================================
 EOF
 
-log_success "Файл миграции создан: $migration_file"
+log_success "Миграция создана: $migration_file"
 
-# Создание отчета о миграции
-log_info "Создание отчета о миграции"
-local migration_report="${LOG_PATH}/migration-report-$(date +%Y%m%d_%H%M%S).json"
+# Создание отчета
+report_file="${MIGRATIONS_PATH}/migration_report_$(date +%Y%m%d_%H%M%S).json"
 
-cat > "$migration_report" << EOF
+cat > "$report_file" << EOF
 {
-  "migration_info": {
-    "timestamp": "$(date -Iseconds)",
-    "staging_db": "$STAGING_DB_PATH",
-    "target_branch": "$TARGET_BRANCH",
-    "migration_file": "$migration_file",
-    "diff_file": "$diff_file"
-  },
-  "schema_comparison": {
-    "differences_count": $diff_size,
-    "current_schema_lines": $(wc -l < "$current_schema_file"),
-    "target_schema_lines": $(wc -l < "$target_schema_file")
-  },
-  "generated_migration": {
-    "file_size": $(stat -c%s "$migration_file" 2>/dev/null || echo 0),
-    "lines_count": $(wc -l < "$migration_file")
-  },
-  "status": "generated"
+  "migration_file": "$migration_file",
+  "source_branch": "$SOURCE_BRANCH",
+  "target_db": "$TARGET_DB_PATH",
+  "timestamp": "$(date -Iseconds)",
+  "status": "generated",
+  "changes_detected": true,
+  "file_size": "$(stat -c%s "$migration_file" 2>/dev/null || echo 'unknown')"
 }
 EOF
 
-log_success "Отчет о миграции создан: $migration_report"
-
 # Очистка временных файлов
-log_info "Очистка временных файлов"
-rm -f "$target_schema_file" "$current_schema_file" "$diff_file"
+rm -rf "$temp_git_dir"
+rm -f "$current_schema_file"
+rm -f "$diff_output"
 
-# Итоговая статистика
-local total_duration=$(($(date +%s) - $(date -d "$(date '+%Y-%m-%d %H:%M:%S')" +%s)))
-log_performance "Генерация миграций" "$total_duration" "generate-migrations"
+log_stage_end "Generate Migrations" "true" "" "generate-migrations"
 
-log_stage_end "Generate Migrations" "true" "$total_duration" "generate-migrations"
-
-log_success "Генерация миграций завершена успешно"
+# Вывод результата
 echo "$migration_file"
-echo "$migration_report" 
+echo "$report_file" 

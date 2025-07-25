@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Тест кнопок - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .test-button:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Тест кнопок Dashboard</h1>
+        
+        <div class="test-section">
+            <h3>🔧 Тест API вызовов</h3>
+            <button class="test-button" onclick="testApiCall()">Тест API Call</button>
+            <button class="test-button" onclick="testFetch()">Тест Fetch</button>
+            <button class="test-button" onclick="testAuth()">Тест Аутентификации</button>
+            <div id="api-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 Тест функций кнопок</h3>
+            <button class="test-button" onclick="testCompareSchemas()">Сравнение схем</button>
+            <button class="test-button" onclick="testMergeBranches()">Слияние веток</button>
+            <button class="test-button" onclick="testCreateBackup()">Создание бэкапа</button>
+            <div id="function-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Диагностика</h3>
+            <button class="test-button" onclick="checkLocalStorage()">Проверить LocalStorage</button>
+            <button class="test-button" onclick="checkConsole()">Проверить Console</button>
+            <button class="test-button" onclick="clearAll()">Очистить все</button>
+            <div id="diagnostic-result" class="result"></div>
+        </div>
+
+        <a href="/" class="back-btn">← Вернуться на Dashboard</a>
+    </div>
+
+    <script>
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `result ${type}`;
+        }
+
+        function testApiCall() {
+            showResult('api-result', 'Тестируем API call...', 'info');
+            
+            // Тестируем функцию apiCall
+            try {
+                const token = localStorage.getItem('dashboard_token');
+                const options = {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                };
+                
+                fetch('/api/config', options)
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                    })
+                    .then(data => {
+                        showResult('api-result', `✅ API call успешен:\n${JSON.stringify(data, null, 2)}`, 'success');
+                    })
+                    .catch(error => {
+                        showResult('api-result', `❌ Ошибка API call:\n${error.message}`, 'error');
+                    });
+            } catch (error) {
+                showResult('api-result', `❌ Ошибка в функции apiCall:\n${error.message}`, 'error');
+            }
+        }
+
+        function testFetch() {
+            showResult('api-result', 'Тестируем обычный fetch...', 'info');
+            
+            fetch('/api/config')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                })
+                .then(data => {
+                    showResult('api-result', `✅ Fetch успешен:\n${JSON.stringify(data, null, 2)}`, 'success');
+                })
+                .catch(error => {
+                    showResult('api-result', `❌ Ошибка fetch:\n${error.message}`, 'error');
+                });
+        }
+
+        function testAuth() {
+            showResult('api-result', 'Тестируем аутентификацию...', 'info');
+            
+            const token = localStorage.getItem('dashboard_token');
+            if (!token) {
+                showResult('api-result', '❌ Токен не найден в localStorage', 'error');
+                return;
+            }
+
+            fetch('/api/auth/verify', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                showResult('api-result', `✅ Аутентификация успешна:\n${JSON.stringify(data, null, 2)}`, 'success');
+            })
+            .catch(error => {
+                showResult('api-result', `❌ Ошибка аутентификации:\n${error.message}`, 'error');
+            });
+        }
+
+        function testCompareSchemas() {
+            showResult('function-result', 'Тестируем функцию compareSchemas...', 'info');
+            
+            // Имитируем функцию compareSchemas
+            const token = localStorage.getItem('dashboard_token');
+            if (!token) {
+                showResult('function-result', '❌ Токен не найден', 'error');
+                return;
+            }
+
+            fetch('/api/database/compare-schemas', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                showResult('function-result', `✅ compareSchemas успешна:\n${JSON.stringify(data, null, 2)}`, 'success');
+            })
+            .catch(error => {
+                showResult('function-result', `❌ Ошибка compareSchemas:\n${error.message}`, 'error');
+            });
+        }
+
+        function testMergeBranches() {
+            showResult('function-result', 'Тестируем функцию mergeBranches...', 'info');
+            
+            const token = localStorage.getItem('dashboard_token');
+            if (!token) {
+                showResult('function-result', '❌ Токен не найден', 'error');
+                return;
+            }
+
+            fetch('/api/deployment/step/2', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ env: 'development' })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                showResult('function-result', `✅ mergeBranches успешна:\n${JSON.stringify(data, null, 2)}`, 'success');
+            })
+            .catch(error => {
+                showResult('function-result', `❌ Ошибка mergeBranches:\n${error.message}`, 'error');
+            });
+        }
+
+        function testCreateBackup() {
+            showResult('function-result', 'Тестируем функцию createBackup...', 'info');
+            
+            const token = localStorage.getItem('dashboard_token');
+            if (!token) {
+                showResult('function-result', '❌ Токен не найден', 'error');
+                return;
+            }
+
+            fetch('/api/database/backup', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ env: 'development' })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                showResult('function-result', `✅ createBackup успешна:\n${JSON.stringify(data, null, 2)}`, 'success');
+            })
+            .catch(error => {
+                showResult('function-result', `❌ Ошибка createBackup:\n${error.message}`, 'error');
+            });
+        }
+
+        function checkLocalStorage() {
+            const token = localStorage.getItem('dashboard_token');
+            const user = localStorage.getItem('dashboard_user');
+            
+            let result = '📦 LocalStorage содержимое:\n\n';
+            result += `dashboard_token: ${token ? '✅ Найден' : '❌ Не найден'}\n`;
+            result += `dashboard_user: ${user ? '✅ Найден' : '❌ Не найден'}\n\n`;
+            
+            if (token) {
+                result += `Токен (первые 20 символов): ${token.substring(0, 20)}...\n`;
+            }
+            
+            if (user) {
+                result += `Пользователь: ${user}\n`;
+            }
+            
+            showResult('diagnostic-result', result, token ? 'success' : 'error');
+        }
+
+        function checkConsole() {
+            showResult('diagnostic-result', '🔍 Проверьте консоль браузера (F12) на наличие ошибок JavaScript', 'info');
+            
+            // Логируем в консоль для проверки
+            console.log('🧪 Тест: console.log работает');
+            console.error('🧪 Тест: console.error работает');
+            console.warn('🧪 Тест: console.warn работает');
+        }
+
+        function clearAll() {
+            localStorage.removeItem('dashboard_token');
+            localStorage.removeItem('dashboard_user');
+            showResult('diagnostic-result', '🧹 LocalStorage очищен', 'success');
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deliveryminiapp
+  labels:
+    app: deliveryminiapp
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: deliveryminiapp
+  template:
+    metadata:
+      labels:
+        app: deliveryminiapp
+        version: v1
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+      - name: deliveryminiapp
+        image: ghcr.io/enclude79/deliveryminiapp:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        - containerPort: 3443
+          name: https
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: HTTPS_PORT
+          value: "3443"
+        envFrom:
+        - secretRef:
+            name: deliveryminiapp-secrets
+        - configMapRef:
+            name: deliveryminiapp-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        - name: uploads
+          mountPath: /app/uploads
+        - name: ssl-certs
+          mountPath: /app/ssl
+          readOnly: true
+      volumes:
+      - name: logs
+        emptyDir: {}
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: deliveryminiapp-uploads-pvc
+      - name: ssl-certs
+        secret:
+          secretName: ssl-certificates
+          defaultMode: 0400
+      imagePullSecrets:
+      - name: ghcr-secret 

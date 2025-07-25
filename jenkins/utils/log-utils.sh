@@ -69,11 +69,11 @@ format_json() {
         json="$json,\"context\":\"$context\""
     fi
     
-    if [[ -n "$JENKINS_BUILD_NUMBER" ]]; then
+    if [[ -n "${JENKINS_BUILD_NUMBER:-}" ]]; then
         json="$json,\"build\":\"$JENKINS_BUILD_NUMBER\""
     fi
     
-    if [[ -n "$JENKINS_JOB_NAME" ]]; then
+    if [[ -n "${JENKINS_JOB_NAME:-}" ]]; then
         json="$json,\"job\":\"$JENKINS_JOB_NAME\""
     fi
     

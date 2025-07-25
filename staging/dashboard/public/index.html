@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 DeliveryMiniapp - Автоматизация развертывания</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .header {
+            position: relative;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .environment-selector {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .environment-selector label {
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-right: 15px;
+        }
+
+        .environment-selector select {
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .environment-selector select:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        /* Исправление layout для workflow секции */
+        .workflow-section {
+            margin-top: 40px;
+        }
+
+        .workflow-section .cards-grid {
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        }
+
+        .rollback-section {
+            margin-top: 30px;
+        }
+
+        .rollback-section .cards-grid {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+            min-height: 200px; /* Фиксированная минимальная высота */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--card-color);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 15px;
+            background: var(--card-color);
+            color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .card-description {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex-grow: 1; /* Растягивает описание для выравнивания */
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-execute {
+            flex: 1;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-execute:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+            background: linear-gradient(135deg, #0056b3, #004085);
+        }
+
+        .btn-execute:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        /* Специальные стили для workflow кнопок */
+        .workflow-section .btn-execute {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .workflow-section .btn-execute:hover {
+            background: linear-gradient(135deg, #1e7e34, #155724);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        /* Стили для кнопок отката */
+        .rollback-section .btn-execute {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+
+        .rollback-section .btn-execute:hover {
+            background: linear-gradient(135deg, #c82333, #a71e2a);
+            box-shadow: 0 8px 20px rgba(220, 53, 69, 0.4);
+        }
+
+        /* Адаптивные стили для мобильных устройств */
+        @media (max-width: 768px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .workflow-section .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .rollback-section .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                min-height: 180px;
+                padding: 20px;
+            }
+
+            .card-title {
+                font-size: 1.2rem;
+            }
+
+            .card-description {
+                font-size: 0.9rem;
+            }
+
+            .btn-execute {
+                padding: 10px 16px;
+                font-size: 0.9rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .workflow-section h3 {
+                font-size: 1.3rem !important;
+            }
+
+            .rollback-section h4 {
+                font-size: 1.1rem !important;
+            }
+        }
+
+        /* Стили для планшетов */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+
+            .workflow-section .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .rollback-section .cards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .btn-help {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-help:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+            background: linear-gradient(135deg, #495057, #343a40);
+        }
+
+        .btn-help:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .logs-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .logs-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .logs-content {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #e0e0e0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border: 1px solid #333;
+        }
+
+        .logs-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .logs-content::-webkit-scrollbar-track {
+            background: #2d2d2d;
+            border-radius: 4px;
+        }
+
+        .logs-content::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        .logs-content::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        #helpTitle {
+            color: #333;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        #helpContent {
+            color: #666;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            z-index: 1001;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #f44336, #da190b);
+        }
+
+        .notification.warning {
+            background: linear-gradient(135deg, #ff9800, #e68900);
+        }
+
+        @media (max-width: 768px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+
+        /* Цветовые схемы для карточек */
+        .card[data-type="compare"] {
+            --card-color: #2196F3;
+            --card-color-dark: #1976D2;
+        }
+
+        .card[data-type="merge"] {
+            --card-color: #4CAF50;
+            --card-color-dark: #388E3C;
+        }
+
+        .card[data-type="backup"] {
+            --card-color: #FF9800;
+            --card-color-dark: #F57C00;
+        }
+
+        .card[data-type="migrate"] {
+            --card-color: #F44336;
+            --card-color-dark: #D32F2F;
+        }
+
+        .card[data-type="server"] {
+            --card-color: #9C27B0;
+            --card-color-dark: #7B1FA2;
+        }
+
+        .card[data-type="test"] {
+            --card-color: #00BCD4;
+            --card-color-dark: #0097A7;
+        }
+
+        /* 1. Добавляю стили для яркой зелёной кнопки */
+        .btn-execute.copy-db {
+            background: linear-gradient(90deg, #28a745 60%, #43e97b 100%);
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.15rem;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(40,167,69,0.15);
+            padding: 12px 28px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-execute.copy-db:hover {
+            background: linear-gradient(90deg, #43e97b 60%, #38f9d7 100%);
+            box-shadow: 0 4px 16px rgba(40,167,69,0.25);
+            transform: scale(1.04);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 DeliveryMiniapp</h1>
+            <p>Панель автоматизации развертывания</p>
+            <button class="logout-btn" onclick="logout()">🚪 Выйти</button>
+        </div>
+
+        <div class="environment-selector">
+            <label for="envSelect">Выберите среду:</label>
+            <select id="envSelect" onchange="updateEnvironment()">
+                <option value="development">Development</option>
+                <option value="staging">Staging</option>
+                <option value="production">Production</option>
+            </select>
+        </div>
+
+        <div class="cards-grid">
+            <!-- Карточка сравнения схем БД -->
+            <div class="card" data-type="compare">
+                <div class="card-icon">🔍</div>
+                <div class="card-title">Сравнить схемы БД</div>
+                <div class="card-description">Сравнить структуру prod и dev, создать миграции</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="compareSchemas()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('compare')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка слияния веток -->
+            <div class="card" data-type="merge">
+                <div class="card-icon">🔄</div>
+                <div class="card-title">Слияние веток</div>
+                <div class="card-description">Выполнить merge из dev в main</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="mergeBranches()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('merge')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка бэкапа БД -->
+            <div class="card" data-type="backup">
+                <div class="card-icon">💾</div>
+                <div class="card-title">Бэкап БД prod</div>
+                <div class="card-description">Создать резервную копию продакшн БД</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="createBackup()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('backup')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка миграций -->
+            <div class="card" data-type="migrate">
+                <div class="card-icon">🔧</div>
+                <div class="card-title">Применить миграции</div>
+                <div class="card-description">Выполнить миграции к prod БД</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="runMigrations()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('migrate')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка запуска сервера -->
+            <div class="card" data-type="server">
+                <div class="card-icon">🖥️</div>
+                <div class="card-title">Запустить сервер</div>
+                <div class="card-description" id="server-description">Перезапустить development сервер</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="startEnvironment()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('server')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка тестирования -->
+            <div class="card" data-type="test">
+                <div class="card-icon">🧪</div>
+                <div class="card-title">Запустить тесты</div>
+                <div class="card-description">Выполнить автоматические тесты</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="runTests()">Выполнить</button>
+                    <button class="btn-help" onclick="showHelp('test')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка копирования базы prod → staging -->
+            <div class="card" data-type="copy-db">
+                <div class="card-icon">📋</div>
+                <div class="card-title">Залить базу prod → staging</div>
+                <div class="card-description">Скопировать базу данных из production в staging (с защитным бэкапом)</div>
+                <div class="card-actions">
+                    <button class="btn-execute copy-db" onclick="showCopyDbConfirm()">
+                        🟢 Залить prod → staging
+                    </button>
+                    <button class="btn-help" onclick="showHelp('copy-db')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка управления защитными бэкапами -->
+            <div class="card" data-type="protection-backups">
+                <div class="card-icon">🛡️</div>
+                <div class="card-title">Защитные бэкапы</div>
+                <div class="card-description">Управление защитными бэкапами и восстановление</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="showProtectionBackups()">
+                        🛡️ Управление
+                    </button>
+                    <button class="btn-help" onclick="showHelp('protection-backups')">?</button>
+                </div>
+            </div>
+
+            <!-- НОВЫЙ РАЗДЕЛ: WORKFLOW DEVELOPMENT → STAGING → PRODUCTION -->
+            <div class="workflow-section">
+                <h3 style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin: 30px 0 20px 0; text-align: center; font-size: 1.5rem;">
+                    🚀 WORKFLOW: DEVELOPMENT → STAGING → PRODUCTION
+                </h3>
+                
+                <!-- Карточка фиксации Development -->
+                <div class="card" data-type="sync-development">
+                    <div class="card-icon">💾</div>
+                    <div class="card-title">Фиксация Development</div>
+                    <div class="card-description">Зафиксировать изменения Development контура в GitHub develop ветку</div>
+                    <div class="card-actions">
+                        <button class="btn-execute" onclick="syncDevelopment()">Зафиксировать</button>
+                        <button class="btn-help" onclick="showHelp('sync-development')">?</button>
+                    </div>
+                </div>
+
+                <!-- Карточка тестирования в Staging -->
+                <div class="card" data-type="test-staging">
+                    <div class="card-icon">🧪</div>
+                    <div class="card-title">Тестирование в Staging</div>
+                    <div class="card-description">Протестировать изменения в staging контуре</div>
+                    <div class="card-actions">
+                        <button class="btn-execute" onclick="testInStaging()">Выполнить</button>
+                        <button class="btn-help" onclick="showHelp('test-staging')">?</button>
+                    </div>
+                </div>
+
+                <!-- Карточка деплоя в Production -->
+                <div class="card" data-type="deploy-production">
+                    <div class="card-icon">🚀</div>
+                    <div class="card-title">Деплой в Production</div>
+                    <div class="card-description">Выполнить merge develop → main и деплой в production</div>
+                    <div class="card-actions">
+                        <button class="btn-execute" onclick="deployToProduction()">Выполнить</button>
+                        <button class="btn-help" onclick="showHelp('deploy-production')">?</button>
+                    </div>
+                </div>
+
+                <!-- Карточка полного workflow -->
+                <div class="card" data-type="full-workflow" style="background: linear-gradient(135deg, #007bff, #28a745); color: white; grid-column: 1 / -1;">
+                    <div class="card-icon" style="background: rgba(255,255,255,0.2);">⚡</div>
+                    <div class="card-title">Полный Workflow</div>
+                    <div class="card-description">Выполнить весь процесс: Development → Staging → Production</div>
+                    <div class="card-actions">
+                        <button class="btn-execute" onclick="performFullWorkflow()" style="background: #fff; color: #007bff; font-weight: bold; box-shadow: 0 4px 12px rgba(255,255,255,0.3);">🚀 Запустить</button>
+                        <button class="btn-help" onclick="showHelp('full-workflow')" style="background: rgba(255,255,255,0.2);">?</button>
+                    </div>
+                </div>
+
+                <!-- Карточки отката -->
+                <div class="rollback-section" style="margin-top: 30px;">
+                    <h4 style="color: #dc3545; margin-bottom: 20px; text-align: center; font-size: 1.3rem; border-bottom: 2px solid #dc3545; padding-bottom: 10px;">🔄 Откат изменений</h4>
+                    
+                    <!-- Карточка отката Staging -->
+                    <div class="card" data-type="rollback-staging" style="border: 2px solid #dc3545;">
+                        <div class="card-icon">🔄</div>
+                        <div class="card-title">Откат Staging</div>
+                        <div class="card-description">Откатить staging к состоянию production</div>
+                        <div class="card-actions">
+                            <button class="btn-execute" onclick="rollbackStaging()" style="background: #dc3545;">Откатить</button>
+                            <button class="btn-help" onclick="showHelp('rollback-staging')">?</button>
+                        </div>
+                    </div>
+
+                    <!-- Карточка отката Production -->
+                    <div class="card" data-type="rollback-production" style="border: 2px solid #dc3545;">
+                        <div class="card-icon">🔄</div>
+                        <div class="card-title">Откат Production</div>
+                        <div class="card-description">Откатить production к предыдущему коммиту</div>
+                        <div class="card-actions">
+                            <button class="btn-execute" onclick="rollbackProduction()" style="background: #dc3545;">Откатить</button>
+                            <button class="btn-help" onclick="showHelp('rollback-production')">?</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="logs-section">
+            <h3>📋 Логи операций</h3>
+            <div class="logs-content" id="logs-content">
+                Загрузка логов...
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно справки -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeHelp()">&times;</span>
+            <h2 id="helpTitle">Справка</h2>
+            <div id="helpContent">
+                Выберите раздел для получения справки.
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения копирования базы -->
+    <div id="copyDbConfirmModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <span class="close" onclick="closeCopyDbConfirm()">&times;</span>
+            <h2 style="color:#28a745;">Подтвердите действие</h2>
+            <p style="font-size:1.1rem;">Вы уверены, что хотите <b>перезаписать staging базу</b> содержимым из production?<br><br>
+            <span style='color:#dc3545;font-weight:bold;'>Вся текущая база staging будет полностью заменена!</span></p>
+            
+            <!-- Чекбокс для медиафайлов -->
+            <div style="margin:20px 0;padding:15px;background:#f8f9fa;border-radius:8px;border-left:4px solid #007bff;">
+                <label style="display:flex;align-items:center;cursor:pointer;font-weight:500;">
+                    <input type="checkbox" id="includeMediaCheckbox" style="margin-right:10px;transform:scale(1.2);">
+                    <span style="font-size:1rem;">📸 <b>Перенести медиафайлы</b></span>
+                </label>
+                <p style="margin:8px 0 0 25px;font-size:0.9rem;color:#666;">
+                    Если включено: очистит staging uploads и скопирует все медиафайлы из production (1.3MB, 8 файлов)
+                </p>
+            </div>
+            
+            <div style="display:flex;justify-content: flex-end;gap:12px;margin-top:24px;">
+                <button onclick="closeCopyDbConfirm()" style="padding:8px 18px;">Отмена</button>
+                <button id="confirmCopyDbBtn" style="background:#28a745;color:#fff;font-weight:bold;padding:8px 18px;border:none;border-radius:6px;cursor:pointer;">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let currentEnv = 'development';
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            // Автоматическое обновление логов запускается в startLogsPolling()
+            
+            // Инициализируем описание карточки сервера
+            const serverDescription = document.getElementById('server-description');
+            if (serverDescription) {
+                serverDescription.textContent = `Перезапустить ${currentEnv} сервер`;
+            }
+        });
+
+        function updateEnvironment() {
+            currentEnv = document.getElementById('envSelect').value;
+            showNotification(`Среда изменена на: ${currentEnv}`, 'success');
+            
+            // Обновляем описание карточки сервера
+            const serverDescription = document.getElementById('server-description');
+            if (serverDescription) {
+                serverDescription.textContent = `Перезапустить ${currentEnv} сервер`;
+            }
+        }
+
+        function getSelectedEnv() {
+            return currentEnv;
+        }
+
+        // Функции для карточек
+        async function compareSchemas() {
+            showNotification('Сравнение схем БД...', 'warning');
+            try {
+                const res = await apiCall('/api/database/compare-schemas');
+                const data = await res.json();
+                if (data.success) {
+                    // Формируем детальный отчет
+                    let report = '📊 ОТЧЕТ О СРАВНЕНИИ СХЕМ БД\n\n';
+                    
+                    // Статистика
+                    report += `📈 СТАТИСТИКА:\n`;
+                    report += `• Production: ${data.production.tables} таблиц\n`;
+                    report += `• Development: ${data.development.tables} таблиц\n\n`;
+                    
+                    if (data.hasDifferences) {
+                        report += `⚠️ ОБНАРУЖЕНЫ РАЗЛИЧИЯ:\n\n`;
+                        
+                        // Новые таблицы
+                        if (data.differences.tables.added.length > 0) {
+                            report += `🆕 НОВЫЕ ТАБЛИЦЫ:\n`;
+                            data.differences.tables.added.forEach(table => {
+                                report += `  • ${table}\n`;
+                            });
+                            report += '\n';
+                        }
+                        
+                        // Удаленные таблицы
+                        if (data.differences.tables.removed.length > 0) {
+                            report += `🗑️ УДАЛЕННЫЕ ТАБЛИЦЫ:\n`;
+                            data.differences.tables.removed.forEach(table => {
+                                report += `  • ${table}\n`;
+                            });
+                            report += '\n';
+                        }
+                        
+                        // Новые колонки
+                        if (data.differences.columns.added.length > 0) {
+                            report += `➕ НОВЫЕ КОЛОНКИ:\n`;
+                            data.differences.columns.added.forEach(item => {
+                                report += `  • Таблица "${item.table}": ${item.columns.join(', ')}\n`;
+                            });
+                            report += '\n';
+                        }
+                        
+                        // Удаленные колонки
+                        if (data.differences.columns.removed.length > 0) {
+                            report += `➖ УДАЛЕННЫЕ КОЛОНКИ:\n`;
+                            data.differences.columns.removed.forEach(item => {
+                                report += `  • Таблица "${item.table}": ${item.columns.join(', ')}\n`;
+                            });
+                            report += '\n';
+                        }
+                        
+                        showNotification('Обнаружены различия в схемах БД', 'warning');
+                    } else {
+                        report += `✅ СХЕМЫ БД ИДЕНТИЧНЫ\n`;
+                        showNotification('Схемы БД идентичны', 'success');
+                    }
+                    
+                    // Показываем отчет в модальном окне
+                    showReportModal('Сравнение схем БД', report);
+                    
+                } else {
+                    showNotification('Ошибка сравнения: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+
+
+        async function mergeBranches() {
+            showNotification('Выполнение слияния веток...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/step/2', 'POST', { env: currentEnv });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Ветки успешно слиты', 'success');
+                } else {
+                    showNotification('Ошибка слияния: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function createBackup() {
+            showNotification('Создание бэкапа...', 'warning');
+            try {
+                const res = await apiCall('/api/database/backup', 'POST', { env: currentEnv });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Бэкап успешно создан', 'success');
+                } else {
+                    showNotification('Ошибка создания бэкапа: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function copyProdToStaging() {
+            // Получаем состояние чекбокса медиафайлов
+            const includeMedia = document.getElementById('includeMediaCheckbox').checked;
+            
+            let notificationText = 'Копирование базы prod → staging...';
+            if (includeMedia) {
+                notificationText += ' (включая медиафайлы)';
+            }
+            showNotification(notificationText, 'warning');
+            
+            try {
+                const res = await apiCall('/api/database/copy-prod-to-staging', 'POST', { includeMedia });
+                const data = await res.json();
+                if (data.success) {
+                    let report = '📋 ОТЧЕТ О КОПИРОВАНИИ\n\n';
+                    report += `✅ Операция успешно завершена!\n\n`;
+                    report += `📊 ДЕТАЛИ БАЗЫ ДАННЫХ:\n`;
+                    if (data.details && data.details.database) {
+                        report += `• Источник: ${data.details.database.source || 'не указан'}\n`;
+                        report += `• Назначение: ${data.details.database.target || 'не указано'}\n`;
+                        report += `• Размер: ${data.details.database.size ? (data.details.database.size / 1024).toFixed(2) : 'неизвестен'} KB\n`;
+                        report += `• Время: ${data.details.database.timestamp ? new Date(data.details.database.timestamp).toLocaleString() : 'не указано'}\n\n`;
+                    } else {
+                        report += `• Информация о базе данных недоступна\n\n`;
+                    }
+                    
+                    if (data.details && data.details.media && data.details.media.copied) {
+                        report += `📸 ДЕТАЛИ МЕДИАФАЙЛОВ:\n`;
+                        report += `• Файлов скопировано: ${data.details.media.files || 0}\n`;
+                        report += `• Общий размер: ${data.details.media.size ? (data.details.media.size / 1024 / 1024).toFixed(2) : '0'} MB\n`;
+                        report += `• Статус: ✅ Медиафайлы успешно перенесены\n\n`;
+                    } else if (includeMedia) {
+                        report += `📸 МЕДИАФАЙЛЫ: ❌ Не были скопированы (ошибка)\n\n`;
+                    } else {
+                        report += `📸 МЕДИАФАЙЛЫ: ⏭️ Не копировались (флаг отключен)\n\n`;
+                    }
+                    
+                    report += `⚠️ ВАЖНО: База staging была полностью перезаписана.\n`;
+                    report += `Бэкап staging не создавался (по требованию).`;
+                    
+                    let successMessage = 'База успешно скопирована из prod в staging';
+                    if (includeMedia && data.details && data.details.media && data.details.media.copied) {
+                        successMessage += ' (включая медиафайлы)';
+                    }
+                    showNotification(successMessage, 'success');
+                    showReportModal('Копирование prod → staging', report);
+                } else {
+                    showNotification('Ошибка копирования: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function runMigrations() {
+            showNotification('Применение миграций...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/step/4', 'POST', { env: currentEnv });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Миграции успешно применены', 'success');
+                } else {
+                    showNotification('Ошибка миграций: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function startEnvironment() {
+            showNotification('Запуск сервера...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/environments/start', 'POST', { env: currentEnv });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Сервер успешно запущен', 'success');
+                } else {
+                    showNotification('Ошибка запуска: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function runTests() {
+            showNotification('Запуск тестов...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/run-tests', 'POST', { env: currentEnv });
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Тесты успешно выполнены', 'success');
+                } else {
+                    showNotification('Ошибка тестов: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        async function loadLogs() {
+            try {
+                // Загружаем обычные логи
+                const res = await apiCall('/api/deployment/logs');
+                const data = await res.json();
+                
+                // Загружаем workflow логи
+                const workflowRes = await apiCall('/api/deployment/workflow/status');
+                const workflowData = await workflowRes.json();
+                
+                const logsContainer = document.getElementById('logs-content');
+                let allLogs = [];
+                
+                // Обрабатываем обычные логи
+                if (data.success && data.logs) {
+                    if (Array.isArray(data.logs)) {
+                        allLogs = allLogs.concat(data.logs.map(log => {
+                            if (typeof log === 'object' && log !== null) {
+                                return `${log.timestamp || ''} [${log.level || 'INFO'}] ${log.message || JSON.stringify(log)}`;
+                            }
+                            return String(log);
+                        }));
+                    } else if (typeof data.logs === 'string') {
+                        allLogs.push(data.logs);
+                    }
+                }
+                
+                // Обрабатываем workflow логи
+                if (workflowData.success && workflowData.logs) {
+                    if (Array.isArray(workflowData.logs)) {
+                        allLogs = allLogs.concat(workflowData.logs.map(log => {
+                            if (typeof log === 'object' && log !== null) {
+                                return `${log.timestamp || ''} [WORKFLOW] [${log.level || 'INFO'}] ${log.message || JSON.stringify(log)}`;
+                            }
+                            return String(log);
+                        }));
+                    }
+                }
+                
+                // Сортируем логи по времени и отображаем последние 100 записей
+                allLogs = allLogs
+                    .filter(log => log.trim().length > 0)
+                    .slice(-100)
+                    .reverse(); // Новые записи сверху
+                
+                logsContainer.textContent = allLogs.join('\n');
+                
+            } catch (e) {
+                console.error('Ошибка загрузки логов:', e);
+                document.getElementById('logs-content').textContent = 'Ошибка загрузки логов: ' + e.message;
+            }
+        }
+
+        // Система справки
+        const helpContent = {
+            'compare': {
+                title: 'Сравнение схем БД',
+                content: `
+                    <strong>Что делает:</strong> Сравнивает структуру базы данных production и development.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Анализирует схему prod БД<br>
+                    2. Анализирует схему dev БД<br>
+                    3. Выявляет различия<br>
+                    4. Создает SQL миграции<br><br>
+                    <strong>Результат:</strong> Отчет о различиях и готовые миграции.
+                `
+            },
+            'merge': {
+                title: 'Слияние веток',
+                content: `
+                    <strong>Что делает:</strong> Выполняет merge изменений из ветки dev в main.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Проверяет статус Git репозитория<br>
+                    2. Выполняет merge dev → main<br>
+                    3. Разрешает конфликты (если есть)<br>
+                    4. Создает коммит слияния<br><br>
+                    <strong>Результат:</strong> Код из dev перенесен в main.
+                `
+            },
+            'backup': {
+                title: 'Создание бэкапа БД',
+                content: `
+                    <strong>Что делает:</strong> Создает резервную копию базы данных production.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Создает бэкап с временной меткой<br>
+                    2. Проверяет целостность бэкапа<br>
+                    3. Сохраняет в папку backup/<br><br>
+                    <strong>Безопасность:</strong> Бэкап создается перед любыми критическими операциями автоматически.
+                `
+            },
+            'migrate': {
+                title: 'Применение миграций',
+                content: `
+                    <strong>Что делает:</strong> Применяет SQL миграции к базе данных.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Проверяет доступные миграции<br>
+                    2. Создает бэкап перед применением<br>
+                    3. Выполняет SQL скрипты<br>
+                    4. Проверяет результат<br><br>
+                    <strong>Результат:</strong> Структура БД обновлена согласно миграциям.
+                `
+            },
+            'server': {
+                title: 'Запуск сервера',
+                content: `
+                    <strong>Что делает:</strong> Перезапускает сервер приложения.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Останавливает текущий сервис<br>
+                    2. Проверяет конфигурацию<br>
+                    3. Запускает сервис заново<br>
+                    4. Проверяет health check<br><br>
+                    <strong>Результат:</strong> Сервер работает с обновленным кодом.
+                `
+            },
+            'test': {
+                title: 'Запуск тестов',
+                content: `
+                    <strong>Что делает:</strong> Выполняет автоматические тесты приложения.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Запуск unit тестов<br>
+                    2. Запуск integration тестов<br>
+                    3. Проверка покрытия кода<br>
+                    4. Генерация отчета<br><br>
+                    <strong>Результат:</strong> Отчет о прохождении тестов.
+                `
+            },
+            'copy-db': {
+                title: 'Копирование базы prod → staging',
+                content: `
+                    <strong>Что делает:</strong> Копирует базу данных из production в staging.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Проверяет существование prod базы<br>
+                    2. Выполняет копирование файла<br>
+                    3. Проверяет целостность копии<br>
+                    4. Генерирует отчет<br><br>
+                    <strong>⚠️ ВАЖНО:</strong><br>
+                    • База staging будет полностью перезаписана<br>
+                    • Бэкап staging НЕ создается (по требованию)<br>
+                    • Операция атомарная и безопасная<br><br>
+                    <strong>Результат:</strong> Staging база идентична production.
+                `
+            },
+            'sync-development': {
+                title: 'Фиксация Development',
+                content: `
+                    <strong>Что делает:</strong> Зафиксировать изменения Development контура в GitHub develop ветку.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Переходит в Development контур<br>
+                    2. Инициализирует Git репозиторий (если нужно)<br>
+                    3. Переключается на develop ветку<br>
+                    4. Добавляет все изменения в staging<br>
+                    5. Создает коммит с изменениями<br>
+                    6. Отправляет изменения в GitHub<br>
+                    7. Запускает тесты в development<br><br>
+                    <strong>Результат:</strong> Изменения Development контура зафиксированы в GitHub develop ветке.
+                `
+            },
+            'test-staging': {
+                title: 'Тестирование в Staging',
+                content: `
+                    <strong>Что делает:</strong> Протестировать изменения в staging контуре.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Копирует состояние Production в Staging<br>
+                    2. Применяет изменения из develop ветки<br>
+                    3. Генерирует SQL миграции<br>
+                    4. Запускает тесты в staging<br>
+                    5. Проверяет работоспособность<br><br>
+                    <strong>Результат:</strong> Отчет о тестировании и готовые миграции.
+                `
+            },
+            'deploy-production': {
+                title: 'Деплой в Production',
+                content: `
+                    <strong>Что делает:</strong> Выполнить merge develop → main и деплой в production.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Создает полный бэкап Production<br>
+                    2. Проверяет существование develop ветки<br>
+                    3. Выполняет merge develop → main<br>
+                    4. Применяет миграции<br>
+                    5. Перезапускает Production сервер<br><br>
+                    <strong>Результат:</strong> Production обновлен с изменениями из develop.
+                `
+            },
+            'full-workflow': {
+                title: 'Полный Workflow',
+                content: `
+                    <strong>Что делает:</strong> Выполнить весь процесс: Development → Staging → Production.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. 🔄 Синхронизация Development<br>
+                    2. 🧪 Тестирование в Staging<br>
+                    3. 🚀 Деплой в Production<br><br>
+                    <strong>Результат:</strong> Полный отчет о выполнении всех этапов.
+                `
+            },
+            'rollback-staging': {
+                title: 'Откат Staging',
+                content: `
+                    <strong>Что делает:</strong> Откатить staging к состоянию production.<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Копирует файлы из production в staging<br>
+                    2. Восстанавливает состояние staging<br><br>
+                    <strong>Результат:</strong> Staging возвращен к состоянию production.
+                `
+            },
+            'rollback-production': {
+                title: 'Откат Production',
+                content: `
+                    <strong>Что делает:</strong> Откатить production к предыдущему коммиту.<br><br>
+                    <strong>ВНИМАНИЕ:</strong> Это критическая операция!<br><br>
+                    <strong>Процесс:</strong><br>
+                    1. Откатывает Git к предыдущему коммиту<br>
+                    2. Восстанавливает предыдущее состояние<br><br>
+                    <strong>Результат:</strong> Production возвращен к предыдущему состоянию.
+                `
+            },
+
+        };
+
+        function showHelp(topic) {
+            const modal = document.getElementById('helpModal');
+            const title = document.getElementById('helpTitle');
+            const content = document.getElementById('helpContent');
+
+            if (helpContent[topic]) {
+                title.textContent = helpContent[topic].title;
+                content.innerHTML = helpContent[topic].content;
+                modal.style.display = 'block';
+            } else {
+                title.textContent = 'Справка не найдена';
+                content.innerHTML = 'Описание для этого раздела не найдено.';
+                modal.style.display = 'block';
+            }
+        }
+
+        function closeHelp() {
+            const modal = document.getElementById('helpModal');
+            modal.style.display = 'none';
+        }
+
+        function showReportModal(title, content) {
+            const modal = document.getElementById('helpModal');
+            const modalTitle = document.getElementById('helpTitle');
+            const modalContent = document.getElementById('helpContent');
+            
+            modalTitle.textContent = title;
+            modalContent.innerHTML = `<pre style="white-space: pre-wrap; font-family: monospace; background: #f5f5f5; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto;">${content}</pre>`;
+            modal.style.display = 'block';
+        }
+
+        // Система уведомлений
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Закрытие модального окна при клике вне его
+        window.onclick = function(event) {
+            const modal = document.getElementById('helpModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Автоматическое обновление логов с настраиваемым интервалом
+        let logsInterval;
+        async function startLogsPolling() {
+            // Загружаем конфигурацию с сервера
+            try {
+                const configResponse = await apiCall('/api/config');
+                const config = await configResponse.json();
+                window.LOGS_POLLING_INTERVAL = config.logsPollingInterval;
+                console.log(`📊 Конфигурация загружена: интервал обновления ${config.logsPollingInterval/1000} сек`);
+            } catch (error) {
+                console.warn('⚠️ Не удалось загрузить конфигурацию, используем значения по умолчанию');
+                window.LOGS_POLLING_INTERVAL = 30000;
+            }
+            
+            loadLogs();
+            const interval = window.LOGS_POLLING_INTERVAL || 30000;
+            logsInterval = setInterval(loadLogs, interval);
+            console.log(`📊 Логи будут обновляться каждые ${interval/1000} секунд`);
+        }
+
+        function stopLogsPolling() {
+            if (logsInterval) {
+                clearInterval(logsInterval);
+            }
+        }
+
+        // Проверка аутентификации
+        function checkAuth() {
+            const token = localStorage.getItem('dashboard_token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Функция выхода
+        function logout() {
+            localStorage.removeItem('dashboard_token');
+            localStorage.removeItem('dashboard_user');
+            window.location.href = '/login.html';
+        }
+
+        // Добавляем токен к API запросам
+        function apiCall(url, method = 'GET', data = null) {
+            const token = localStorage.getItem('dashboard_token');
+            const options = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            return fetch(url, options);
+        }
+
+        // НОВЫЕ ФУНКЦИИ ДЛЯ WORKFLOW DEVELOPMENT → STAGING → PRODUCTION
+
+        // Фиксация Development контура
+        async function syncDevelopment() {
+            showNotification('💾 Фиксация изменений Development контура...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/sync-development', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    let report = '📊 ОТЧЕТ О ФИКСАЦИИ DEVELOPMENT\n\n';
+                    report += `✅ ${data.message}\n\n`;
+                    
+                    if (data.changes && data.changes.length > 0) {
+                        report += `📋 ВЫПОЛНЕННЫЕ ИЗМЕНЕНИЯ:\n`;
+                        data.changes.forEach(change => {
+                            report += `• ${change}\n`;
+                        });
+                        report += '\n';
+                    }
+                    
+                    if (data.testResult) {
+                        report += `🧪 РЕЗУЛЬТАТЫ ТЕСТОВ:\n`;
+                        report += `• Статус: ${data.testResult.success ? '✅ Успешно' : '❌ Ошибка'}\n`;
+                        if (data.testResult.results) {
+                            report += `• Пройдено: ${data.testResult.results.passed}\n`;
+                            report += `• Провалено: ${data.testResult.results.failed}\n`;
+                        }
+                        report += `• Сообщение: ${data.testResult.message}\n`;
+                    }
+                    
+                    showReportModal('Фиксация Development', report);
+                    showNotification('✅ Изменения Development зафиксированы в GitHub', 'success');
+                } else {
+                    showNotification('❌ Ошибка синхронизации: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Тестирование в Staging контуре
+        async function testInStaging() {
+            showNotification('🧪 Тестирование в Staging контуре...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/test-staging', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    let report = '📊 ОТЧЕТ О ТЕСТИРОВАНИИ В STAGING\n\n';
+                    report += `✅ ${data.message}\n\n`;
+                    
+                    if (data.migrations && data.migrations.length > 0) {
+                        report += `🔧 СГЕНЕРИРОВАННЫЕ МИГРАЦИИ:\n`;
+                        data.migrations.forEach(migration => {
+                            report += `• ${migration}\n`;
+                        });
+                        report += '\n';
+                    } else {
+                        report += `🔧 Миграции: не требуются\n\n`;
+                    }
+                    
+                    if (data.testResults) {
+                        report += `🧪 РЕЗУЛЬТАТЫ ТЕСТОВ:\n`;
+                        report += `• Статус: ${data.testResults.success ? '✅ Успешно' : '❌ Ошибка'}\n`;
+                        if (data.testResults.results) {
+                            report += `• Пройдено: ${data.testResults.results.passed}\n`;
+                            report += `• Провалено: ${data.testResults.results.failed}\n`;
+                        }
+                        report += `• Сообщение: ${data.testResults.message}\n`;
+                    }
+                    
+                    showReportModal('Тестирование в Staging', report);
+                    showNotification('✅ Тестирование в Staging завершено', 'success');
+                } else {
+                    showNotification('❌ Ошибка тестирования: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Деплой в Production
+        async function deployToProduction() {
+            showNotification('🚀 Деплой в Production...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/deploy-production', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    let report = '📊 ОТЧЕТ О ДЕПЛОЕ В PRODUCTION\n\n';
+                    report += `✅ ${data.message}\n\n`;
+                    
+                    report += `💾 БЭКАП:\n`;
+                    report += `• Путь: ${data.backupPath}\n\n`;
+                    
+                    report += `🔗 GIT:\n`;
+                    report += `• Коммит слияния: ${data.mergeCommit}\n\n`;
+                    
+                    if (data.migrationResult) {
+                        report += `🔧 МИГРАЦИИ:\n`;
+                        report += `• Статус: ${data.migrationResult.success ? '✅ Успешно' : '❌ Ошибка'}\n`;
+                        report += `• Применено: ${data.migrationResult.applied}\n`;
+                        report += `• Сообщение: ${data.migrationResult.message}\n\n`;
+                    }
+                    
+                    if (data.restartResult) {
+                        report += `🖥️ ПЕРЕЗАПУСК СЕРВЕРА:\n`;
+                        report += `• Статус: ${data.restartResult.success ? '✅ Успешно' : '❌ Ошибка'}\n`;
+                        report += `• Сообщение: ${data.restartResult.message}\n`;
+                    }
+                    
+                    showReportModal('Деплой в Production', report);
+                    showNotification('✅ Деплой в Production выполнен', 'success');
+                } else {
+                    showNotification('❌ Ошибка деплоя: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Полный workflow
+        async function performFullWorkflow() {
+            showNotification('⚡ Запуск полного workflow...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/full', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    let report = '📊 ОТЧЕТ О ПОЛНОМ WORKFLOW\n\n';
+                    report += `✅ ${data.message}\n`;
+                    report += `🆔 ID: ${data.workflowId}\n\n`;
+                    
+                    report += `📋 ВЫПОЛНЕННЫЕ ЭТАПЫ:\n`;
+                    data.steps.forEach((step, index) => {
+                        const status = step.success ? '✅' : '❌';
+                        report += `${index + 1}. ${status} ${step.name}\n`;
+                        if (step.data && step.data.message) {
+                            report += `   ${step.data.message}\n`;
+                        }
+                    });
+                    
+                    showReportModal('Полный Workflow', report);
+                    showNotification('✅ Полный workflow завершен', 'success');
+                } else {
+                    showNotification('❌ Ошибка workflow: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Откат Staging
+        async function rollbackStaging() {
+            if (!confirm('⚠️ Вы уверены, что хотите откатить Staging к состоянию Production?')) {
+                return;
+            }
+            
+            showNotification('🔄 Откат Staging...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/rollback-staging', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('✅ Staging откачен к состоянию Production', 'success');
+                } else {
+                    showNotification('❌ Ошибка отката: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Откат Production
+        async function rollbackProduction() {
+            if (!confirm('⚠️ ВНИМАНИЕ! Вы уверены, что хотите откатить Production к предыдущему коммиту?\n\nЭто критическая операция!')) {
+                return;
+            }
+            
+            showNotification('🔄 Откат Production...', 'warning');
+            try {
+                const res = await apiCall('/api/deployment/workflow/rollback-production', 'POST');
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('✅ Production откачен к предыдущему коммиту', 'success');
+                } else {
+                    showNotification('❌ Ошибка отката: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Управление защитными бэкапами
+        async function showProtectionBackups() {
+            showNotification('🛡️ Загрузка защитных бэкапов...', 'warning');
+            try {
+                const res = await apiCall('/api/database/protection-backups');
+                const data = await res.json();
+                if (data.success) {
+                    let report = '🛡️ ЗАЩИТНЫЕ БЭКАПЫ\n\n';
+                    
+                    if (data.backups && data.backups.length > 0) {
+                        report += `📊 Всего бэкапов: ${data.backups.length}\n\n`;
+                        
+                        data.backups.forEach((backup, index) => {
+                            const date = new Date(backup.timestamp).toLocaleString();
+                            const size = (backup.size / 1024).toFixed(2);
+                            report += `${index + 1}. 📁 ${backup.name}\n`;
+                            report += `   📅 ${date}\n`;
+                            report += `   🔧 Операция: ${backup.operation}\n`;
+                            report += `   🌍 Среда: ${backup.environment}\n`;
+                            report += `   📊 Размер: ${size} KB\n`;
+                            report += `   📝 ${backup.description}\n\n`;
+                        });
+                        
+                        report += `💡 Для восстановления используйте команду:\n`;
+                        report += `restoreFromProtectionBackup("имя_бэкапа", "среда")\n\n`;
+                    } else {
+                        report += `✅ Защитные бэкапы не найдены\n`;
+                        report += `🛡️ Система защиты активна и будет создавать бэкапы автоматически\n`;
+                    }
+                    
+                    showReportModal('Защитные бэкапы', report);
+                    showNotification('✅ Защитные бэкапы загружены', 'success');
+                } else {
+                    showNotification('❌ Ошибка загрузки: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Проверяем аутентификацию при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            // Сразу проверяем токен
+            const token = localStorage.getItem('dashboard_token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            // Проверяем валидность токена
+            fetch('/api/auth/verify', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    localStorage.removeItem('dashboard_token');
+                    localStorage.removeItem('dashboard_user');
+                    window.location.href = '/login.html';
+                    return;
+                }
+                // Токен валиден, запускаем dashboard
+                startLogsPolling();
+            })
+            .catch(error => {
+                console.error('Ошибка проверки токена:', error);
+                localStorage.removeItem('dashboard_token');
+                localStorage.removeItem('dashboard_user');
+                window.location.href = '/login.html';
+            });
+        });
+
+        // Делаем функции глобальными для работы с onclick (в самом конце)
+        window.currentEnv = currentEnv;
+        window.updateEnvironment = updateEnvironment;
+        window.getSelectedEnv = getSelectedEnv;
+        window.compareSchemas = compareSchemas;
+        window.mergeBranches = mergeBranches;
+        window.createBackup = createBackup;
+        window.runMigrations = runMigrations;
+        window.startEnvironment = startEnvironment;
+        window.runTests = runTests;
+        window.loadLogs = loadLogs;
+        window.logout = logout;
+        window.showHelp = showHelp;
+        window.closeHelp = closeHelp;
+        window.showNotification = showNotification;
+        window.showReportModal = showReportModal;
+        window.apiCall = apiCall;
+
+        // Модальное подтверждение копирования базы
+        function showCopyDbConfirm() {
+            document.getElementById('copyDbConfirmModal').style.display = 'block';
+        }
+        function closeCopyDbConfirm() {
+            document.getElementById('copyDbConfirmModal').style.display = 'none';
+        }
+        document.getElementById('confirmCopyDbBtn').onclick = function() {
+            closeCopyDbConfirm();
+            copyProdToStaging();
+        };
+    </script>
+</body>
+</html> 

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>🔍 Telegram WebApp Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .status {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            word-break: break-all;
+        }
+        .error { background: rgba(255,0,0,0.3); }
+        .success { background: rgba(0,255,0,0.3); }
+        .info { background: rgba(0,100,255,0.3); }
+        .test-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+        }
+        .test-btn:hover {
+            background: #45a049;
+        }
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Telegram WebApp Диагностика</h1>
+        
+        <div id="status" class="status info">
+            <strong>Инициализация...</strong>
+        </div>
+
+        <div class="status">
+            <strong>🌐 URL:</strong> <span id="current-url"></span>
+        </div>
+
+        <div class="status">
+            <strong>📱 User Agent:</strong>
+            <pre id="user-agent"></pre>
+        </div>
+
+        <div class="status">
+            <strong>🔗 Referer:</strong> <span id="referer"></span>
+        </div>
+
+        <div class="status">
+            <strong>🎯 Telegram WebApp:</strong> <span id="webapp-status"></span>
+        </div>
+
+        <div class="status">
+            <strong>📊 Platform Info:</strong>
+            <pre id="platform-info"></pre>
+        </div>
+
+        <button class="test-btn" onclick="testConnection()">🔄 Тест соединения</button>
+        <button class="test-btn" onclick="testAPI()">📡 Тест API</button>
+        <button class="test-btn" onclick="sendDiagnostics()">📤 Отправить диагностику</button>
+
+        <div id="test-results"></div>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        let diagnostics = {};
+
+        function log(message, type = 'info') {
+            console.log(`[TELEGRAM-TEST] ${message}`);
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+        }
+
+        function updateInfo() {
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('user-agent').textContent = navigator.userAgent;
+            document.getElementById('referer').textContent = document.referrer || 'Нет';
+            
+            // Platform info
+            const platformInfo = {
+                platform: navigator.platform,
+                language: navigator.language,
+                cookieEnabled: navigator.cookieEnabled,
+                onLine: navigator.onLine,
+                screenWidth: screen.width,
+                screenHeight: screen.height,
+                windowWidth: window.innerWidth,
+                windowHeight: window.innerHeight,
+                timestamp: new Date().toISOString()
+            };
+            
+            document.getElementById('platform-info').textContent = JSON.stringify(platformInfo, null, 2);
+            diagnostics.platformInfo = platformInfo;
+        }
+
+        function checkTelegramWebApp() {
+            try {
+                if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+                    const webApp = Telegram.WebApp;
+                    const info = {
+                        isExpanded: webApp.isExpanded,
+                        viewportHeight: webApp.viewportHeight,
+                        viewportStableHeight: webApp.viewportStableHeight,
+                        platform: webApp.platform,
+                        colorScheme: webApp.colorScheme,
+                        themeParams: webApp.themeParams,
+                        isVersionAtLeast: webApp.isVersionAtLeast ? webApp.isVersionAtLeast('6.0') : false,
+                        initData: webApp.initData ? 'Присутствует' : 'Отсутствует',
+                        initDataUnsafe: webApp.initDataUnsafe ? Object.keys(webApp.initDataUnsafe) : 'Отсутствует'
+                    };
+                    
+                    document.getElementById('webapp-status').innerHTML = `
+                        <div style="color: #4CAF50;">✅ Доступен</div>
+                        <pre style="margin-top: 10px;">${JSON.stringify(info, null, 2)}</pre>
+                    `;
+                    
+                    diagnostics.telegram = info;
+                    log('Telegram WebApp инициализирован успешно', 'success');
+                    
+                    // Expand the app
+                    webApp.expand();
+                    webApp.ready();
+                    
+                } else {
+                    document.getElementById('webapp-status').innerHTML = '<div style="color: #f44336;">❌ Недоступен</div>';
+                    diagnostics.telegram = { error: 'Telegram WebApp не найден' };
+                    log('Telegram WebApp недоступен', 'error');
+                }
+            } catch (error) {
+                document.getElementById('webapp-status').innerHTML = `<div style="color: #f44336;">❌ Ошибка: ${error.message}</div>`;
+                diagnostics.telegram = { error: error.message };
+                log(`Ошибка Telegram WebApp: ${error.message}`, 'error');
+            }
+        }
+
+        async function testConnection() {
+            log('Тестирование соединения...', 'info');
+            try {
+                const response = await fetch('/products/categories');
+                const data = await response.json();
+                
+                const result = document.createElement('div');
+                result.className = 'status success';
+                result.innerHTML = `
+                    <strong>✅ Соединение успешно</strong><br>
+                    Status: ${response.status}<br>
+                    Data: ${JSON.stringify(data)}
+                `;
+                document.getElementById('test-results').appendChild(result);
+                
+                diagnostics.connectionTest = { success: true, status: response.status, data };
+                log('Соединение работает', 'success');
+            } catch (error) {
+                const result = document.createElement('div');
+                result.className = 'status error';
+                result.innerHTML = `<strong>❌ Ошибка соединения:</strong> ${error.message}`;
+                document.getElementById('test-results').appendChild(result);
+                
+                diagnostics.connectionTest = { success: false, error: error.message };
+                log(`Ошибка соединения: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAPI() {
+            log('Тестирование API...', 'info');
+            try {
+                const tests = [
+                    { url: '/products/categories', name: 'Категории' },
+                    { url: '/products/category/1', name: 'Продукты категории 1' }
+                ];
+                
+                for (const test of tests) {
+                    const response = await fetch(test.url);
+                    const data = await response.json();
+                    
+                    const result = document.createElement('div');
+                    result.className = 'status success';
+                    result.innerHTML = `
+                        <strong>✅ ${test.name}</strong><br>
+                        URL: ${test.url}<br>
+                        Status: ${response.status}<br>
+                        Response: ${JSON.stringify(data).substring(0, 100)}...
+                    `;
+                    document.getElementById('test-results').appendChild(result);
+                }
+                
+                log('API тесты завершены', 'success');
+            } catch (error) {
+                log(`Ошибка API: ${error.message}`, 'error');
+            }
+        }
+
+        async function sendDiagnostics() {
+            log('Отправка диагностики...', 'info');
+            try {
+                const response = await fetch('/debug/report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ...diagnostics,
+                        timestamp: new Date().toISOString(),
+                        testType: 'telegram-webapp-test'
+                    })
+                });
+                
+                if (response.ok) {
+                    log('Диагностика отправлена успешно', 'success');
+                } else {
+                    log('Ошибка отправки диагностики', 'error');
+                }
+            } catch (error) {
+                log(`Ошибка отправки: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateInfo();
+            setTimeout(checkTelegramWebApp, 1000);
+            log('Диагностика запущена', 'info');
+        });
+
+        // Auto-refresh info every 5 seconds
+        setInterval(updateInfo, 5000);
+    </script>
+</body>
+</html> 

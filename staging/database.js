@@ -7,7 +7,7 @@ let db;
 
 // Инициализация базы данных с обработкой ошибок
 function initDB() {
-    const dbPath = path.join(__dirname, 'delivery.db');
+    const dbPath = path.join(__dirname, 'delivery-staging.db');
     
     try {
         db = new sqlite3.Database(dbPath, (err) => {

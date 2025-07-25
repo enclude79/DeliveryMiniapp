@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Обход прокси - Dashboard</title>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            padding: 50px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .button { 
+            background: #4CAF50; 
+            color: white; 
+            padding: 15px 30px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            display: inline-block; 
+            margin: 20px;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+        .button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        .warning { 
+            color: #ffeb3b; 
+            font-weight: bold; 
+            background: rgba(255, 235, 59, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Automation Dashboard</h1>
+        <p class="warning">⚠️ ПРОБЛЕМА: Прокси блокирует HTTP соединение!</p>
+        
+        <div class="instructions">
+            <h3>🔧 Как обойти прокси:</h3>
+            <div class="step">1. <strong>Очистите кеш браузера</strong> (Ctrl+Shift+Delete)</div>
+            <div class="step">2. <strong>Отключите прокси</strong> для этого сайта</div>
+            <div class="step">3. <strong>Используйте прямую ссылку</strong> ниже</div>
+        </div>
+        
+        <a href="http://89.169.182.9:8080" class="button">
+            🔓 ОТКРЫТЬ DASHBOARD (HTTP)
+        </a>
+        
+        <br><br>
+        
+        <div class="instructions">
+            <h3>🔐 Учетные данные:</h3>
+            <div class="step"><strong>Логин:</strong> dev_admin</div>
+            <div class="step"><strong>Пароль:</strong> [СКРЫТО - обратитесь к администратору]</div>
+        </div>
+        
+        <div class="warning">
+            <strong>Если не работает:</strong><br>
+            • Попробуйте другой браузер<br>
+            • Отключите VPN/прокси<br>
+            • Используйте мобильный интернет
+        </div>
+    </div>
+    
+    <script>
+        // Автоматическое перенаправление через 10 секунд
+        setTimeout(() => {
+            window.location.href = 'http://89.169.182.9:8080';
+        }, 10000);
+    </script>
+</body>
+</html> 
