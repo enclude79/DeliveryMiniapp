@@ -610,12 +610,25 @@
             <div class="card" data-type="copy-db">
                 <div class="card-icon">📋</div>
                 <div class="card-title">Залить базу prod → staging</div>
-                <div class="card-description">Скопировать базу данных из production в staging</div>
+                <div class="card-description">Скопировать базу данных из production в staging (с защитным бэкапом)</div>
                 <div class="card-actions">
                     <button class="btn-execute copy-db" onclick="showCopyDbConfirm()">
                         🟢 Залить prod → staging
                     </button>
                     <button class="btn-help" onclick="showHelp('copy-db')">?</button>
+                </div>
+            </div>
+
+            <!-- Карточка управления защитными бэкапами -->
+            <div class="card" data-type="protection-backups">
+                <div class="card-icon">🛡️</div>
+                <div class="card-title">Защитные бэкапы</div>
+                <div class="card-description">Управление защитными бэкапами и восстановление</div>
+                <div class="card-actions">
+                    <button class="btn-execute" onclick="showProtectionBackups()">
+                        🛡️ Управление
+                    </button>
+                    <button class="btn-help" onclick="showHelp('protection-backups')">?</button>
                 </div>
             </div>
 
@@ -1495,6 +1508,46 @@
                     showNotification('✅ Production откачен к предыдущему коммиту', 'success');
                 } else {
                     showNotification('❌ Ошибка отката: ' + data.error, 'error');
+                }
+            } catch (e) {
+                showNotification('❌ Ошибка: ' + e.message, 'error');
+            }
+        }
+
+        // Управление защитными бэкапами
+        async function showProtectionBackups() {
+            showNotification('🛡️ Загрузка защитных бэкапов...', 'warning');
+            try {
+                const res = await apiCall('/api/database/protection-backups');
+                const data = await res.json();
+                if (data.success) {
+                    let report = '🛡️ ЗАЩИТНЫЕ БЭКАПЫ\n\n';
+                    
+                    if (data.backups && data.backups.length > 0) {
+                        report += `📊 Всего бэкапов: ${data.backups.length}\n\n`;
+                        
+                        data.backups.forEach((backup, index) => {
+                            const date = new Date(backup.timestamp).toLocaleString();
+                            const size = (backup.size / 1024).toFixed(2);
+                            report += `${index + 1}. 📁 ${backup.name}\n`;
+                            report += `   📅 ${date}\n`;
+                            report += `   🔧 Операция: ${backup.operation}\n`;
+                            report += `   🌍 Среда: ${backup.environment}\n`;
+                            report += `   📊 Размер: ${size} KB\n`;
+                            report += `   📝 ${backup.description}\n\n`;
+                        });
+                        
+                        report += `💡 Для восстановления используйте команду:\n`;
+                        report += `restoreFromProtectionBackup("имя_бэкапа", "среда")\n\n`;
+                    } else {
+                        report += `✅ Защитные бэкапы не найдены\n`;
+                        report += `🛡️ Система защиты активна и будет создавать бэкапы автоматически\n`;
+                    }
+                    
+                    showReportModal('Защитные бэкапы', report);
+                    showNotification('✅ Защитные бэкапы загружены', 'success');
+                } else {
+                    showNotification('❌ Ошибка загрузки: ' + data.error, 'error');
                 }
             } catch (e) {
                 showNotification('❌ Ошибка: ' + e.message, 'error');

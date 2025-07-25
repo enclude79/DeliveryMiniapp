@@ -105,6 +105,8 @@ app.post('/api/database/copy-prod-to-staging', apiRateLimiter, authenticateToken
     const { exec } = require('child_process');
     const { promisify } = require('util');
     const execAsync = promisify(exec);
+    const BackupProtection = require('../scripts/backup-protection');
+    const protection = new BackupProtection();
     
     const sourceDb = '/home/enclude/automation/production/delivery.db';
     const targetDb = '/home/enclude/automation/staging/delivery.db';
@@ -119,6 +121,19 @@ app.post('/api/database/copy-prod-to-staging', apiRateLimiter, authenticateToken
         error: 'Исходная база данных production не найдена'
       });
     }
+    
+    // Создаем защитный бэкап staging перед операцией
+    log('info', 'Создание защитного бэкапа staging...');
+    const protectionBackup = await protection.createProtectionBackup('staging', 'copy_prod_to_staging');
+    
+    if (!protectionBackup.success) {
+      return res.status(500).json({
+        success: false,
+        error: `Не удалось создать защитный бэкап: ${protectionBackup.error}`
+      });
+    }
+    
+    log('info', `Защитный бэкап создан: ${protectionBackup.backupName}`);
     
     // Выполняем копирование базы данных
     const dbCommand = `cp -f "${sourceDb}" "${targetDb}"`;

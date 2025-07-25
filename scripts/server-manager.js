@@ -510,7 +510,7 @@ class ServerManager {
   }
 
   /**
-   * Запуск среды
+   * Запуск среды через systemd сервисы
    * @param {string} env - production|development|staging
    * @returns {Promise<{success: boolean, error: string}>}
    */
@@ -519,30 +519,61 @@ class ServerManager {
       // Логируем в orchestrator
       const orchestrator = global.orchestrator || this.orchestrator;
       if (orchestrator) {
-        orchestrator.log('info', `Запуск среды: ${env}`);
+        orchestrator.log('info', `Запуск среды через systemd: ${env}`);
       }
       
-      const envPath = `/home/enclude/automation/${env}`;
-      const startScript = path.join(envPath, 'start.sh');
+      // Маппинг сред к systemd сервисам
+      const serviceMap = {
+        production: 'delivery-app-production',
+        development: 'delivery-app-dev',
+        staging: 'delivery-app-staging'
+      };
       
-      if (orchestrator) {
-        orchestrator.log('info', `Путь к скрипту: ${startScript}`);
-      }
-      
-      if (!fs.existsSync(startScript)) {
-        const error = `Скрипт запуска не найден: ${startScript}`;
+      const serviceName = serviceMap[env];
+      if (!serviceName) {
+        const error = `Неизвестная среда: ${env}`;
         if (orchestrator) {
           orchestrator.log('error', error);
         }
         throw new Error(error);
       }
       
-      const command = `cd ${envPath} && chmod +x start.sh && nohup ./start.sh > logs/start.log 2>&1 &`;
       if (orchestrator) {
-        orchestrator.log('info', `Выполнение команды: ${command}`);
+        orchestrator.log('info', `Запуск systemd сервиса: ${serviceName}`);
       }
       
-      const { stdout, stderr } = await execAsync(command);
+      // Логика управления сервисами в зависимости от среды
+      if (env === 'production') {
+        // Production всегда должен работать - запускаем только его
+        if (orchestrator) {
+          orchestrator.log('info', 'Запуск production - основной сервис');
+        }
+      } else if (env === 'development' || env === 'staging') {
+        // Development и staging могут работать параллельно
+        // Останавливаем только другую dev/staging среду, но НЕ production
+        const devStagingServices = ['delivery-app-dev', 'delivery-app-staging'];
+        const otherDevStaging = devStagingServices.filter(s => s !== serviceName);
+        
+        for (const otherService of otherDevStaging) {
+          try {
+            await execAsync(`sudo systemctl stop ${otherService}`);
+            if (orchestrator) {
+              orchestrator.log('info', `Остановлен dev/staging сервис: ${otherService}`);
+            }
+          } catch (e) {
+            if (orchestrator) {
+              orchestrator.log('warning', `Не удалось остановить ${otherService}: ${e.message}`);
+            }
+          }
+        }
+        
+        if (orchestrator) {
+          orchestrator.log('info', 'Production остается активным');
+        }
+      }
+      
+      // Запускаем нужный сервис
+      const { stdout, stderr } = await execAsync(`sudo systemctl start ${serviceName}`);
       
       if (orchestrator) {
         orchestrator.log('info', `stdout: ${stdout}`);
@@ -555,9 +586,21 @@ class ServerManager {
       if (orchestrator) {
         orchestrator.log('info', 'Ожидание запуска сервера...');
       }
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise(resolve => setTimeout(resolve, 5000));
       
-      // Проверяем, что сервер запустился
+      // Проверяем статус сервиса
+      try {
+        const { stdout: statusOutput } = await execAsync(`sudo systemctl is-active ${serviceName}`);
+        if (orchestrator) {
+          orchestrator.log('info', `Статус сервиса ${serviceName}: ${statusOutput}`);
+        }
+      } catch (e) {
+        if (orchestrator) {
+          orchestrator.log('warning', `Сервис ${serviceName} не активен: ${e.message}`);
+        }
+      }
+      
+      // Проверяем, что сервер запустился на порту
       const portMap = {
         production: 3000,
         development: 3001,
@@ -580,7 +623,7 @@ class ServerManager {
       
       const result = {
         success: true,
-        message: `${env} среда успешно запущена`,
+        message: `${env} среда успешно запущена через systemd сервис ${serviceName}`,
         output: stdout,
         timestamp: new Date().toISOString()
       };
@@ -604,76 +647,167 @@ class ServerManager {
   }
 
   /**
-   * Остановка среды
+   * Остановка среды через systemd сервисы
    * @param {string} env - production|development|staging
    * @returns {Promise<{success: boolean, error: string}>}
    */
   async stopEnvironment(env) {
     try {
-      // Определяем порты для каждой среды
-      const portMap = {
-        production: [3000, 3443],
-        development: [3001, 3444],
-        staging: [3002, 3445]
+      // Логируем в orchestrator
+      const orchestrator = global.orchestrator || this.orchestrator;
+      if (orchestrator) {
+        orchestrator.log('info', `Остановка среды через systemd: ${env}`);
+      }
+      
+      // Маппинг сред к systemd сервисам
+      const serviceMap = {
+        production: 'delivery-app-production',
+        development: 'delivery-app-dev',
+        staging: 'delivery-app-staging'
       };
       
-      const ports = portMap[env] || [];
-      let stopped = false;
+      const serviceName = serviceMap[env];
+      if (!serviceName) {
+        const error = `Неизвестная среда: ${env}`;
+        if (orchestrator) {
+          orchestrator.log('error', error);
+        }
+        throw new Error(error);
+      }
       
-      for (const port of ports) {
-        try {
-          const { stdout } = await execAsync(`fuser -k ${port}/tcp`);
-          if (stdout) {
-            stopped = true;
-          }
-        } catch (e) {
-          // Порт может быть не занят
+      // Защита: Production нельзя останавливать через dashboard
+      if (env === 'production') {
+        const error = 'Production нельзя останавливать через dashboard. Используйте командную строку для экстренной остановки.';
+        if (orchestrator) {
+          orchestrator.log('error', error);
+        }
+        throw new Error(error);
+      }
+      
+      if (orchestrator) {
+        orchestrator.log('info', `Остановка systemd сервиса: ${serviceName}`);
+      }
+      
+      // Останавливаем сервис (только dev/staging)
+      const { stdout, stderr } = await execAsync(`sudo systemctl stop ${serviceName}`);
+      
+      if (orchestrator) {
+        orchestrator.log('info', `stdout: ${stdout}`);
+        if (stderr) {
+          orchestrator.log('warning', `stderr: ${stderr}`);
+        }
+      }
+      
+      // Проверяем статус сервиса
+      try {
+        const { stdout: statusOutput } = await execAsync(`sudo systemctl is-active ${serviceName}`);
+        if (orchestrator) {
+          orchestrator.log('warning', `Сервис ${serviceName} все еще активен: ${statusOutput}`);
+        }
+      } catch (e) {
+        if (orchestrator) {
+          orchestrator.log('info', `Сервис ${serviceName} успешно остановлен`);
         }
       }
       
       return {
         success: true,
-        message: `${env} среда остановлена`,
-        stopped,
+        message: `${env} среда остановлена через systemd сервис ${serviceName}`,
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      return {
+      const result = {
         success: false,
         error: error.message,
         timestamp: new Date().toISOString()
       };
+      
+      const orchestrator = global.orchestrator || this.orchestrator;
+      if (orchestrator) {
+        orchestrator.log('error', `Ошибка остановки ${env}: ${error.message}`);
+      }
+      return result;
     }
   }
 
   /**
-   * Перезапуск среды
+   * Перезапуск среды через systemd сервисы
    * @param {string} env - production|development|staging
    * @returns {Promise<{success: boolean, error: string}>}
    */
   async restartEnvironment(env) {
     try {
-      // Сначала останавливаем
-      await this.stopEnvironment(env);
+      // Логируем в orchestrator
+      const orchestrator = global.orchestrator || this.orchestrator;
+      if (orchestrator) {
+        orchestrator.log('info', `Перезапуск среды через systemd: ${env}`);
+      }
       
-      // Ждем немного
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Маппинг сред к systemd сервисам
+      const serviceMap = {
+        production: 'delivery-app-production',
+        development: 'delivery-app-dev',
+        staging: 'delivery-app-staging'
+      };
       
-      // Затем запускаем
-      const result = await this.startEnvironment(env);
+      const serviceName = serviceMap[env];
+      if (!serviceName) {
+        const error = `Неизвестная среда: ${env}`;
+        if (orchestrator) {
+          orchestrator.log('error', error);
+        }
+        throw new Error(error);
+      }
+      
+      if (orchestrator) {
+        orchestrator.log('info', `Перезапуск systemd сервиса: ${serviceName}`);
+      }
+      
+      // Перезапускаем сервис
+      const { stdout, stderr } = await execAsync(`sudo systemctl restart ${serviceName}`);
+      
+      if (orchestrator) {
+        orchestrator.log('info', `stdout: ${stdout}`);
+        if (stderr) {
+          orchestrator.log('warning', `stderr: ${stderr}`);
+        }
+      }
+      
+      // Ждем немного, чтобы сервер успел перезапуститься
+      if (orchestrator) {
+        orchestrator.log('info', 'Ожидание перезапуска сервера...');
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      // Проверяем статус сервиса
+      try {
+        const { stdout: statusOutput } = await execAsync(`sudo systemctl is-active ${serviceName}`);
+        if (orchestrator) {
+          orchestrator.log('info', `Статус сервиса ${serviceName}: ${statusOutput}`);
+        }
+      } catch (e) {
+        if (orchestrator) {
+          orchestrator.log('warning', `Сервис ${serviceName} не активен: ${e.message}`);
+        }
+      }
       
       return {
-        success: result.success,
-        message: `${env} среда перезапущена`,
-        error: result.error,
+        success: true,
+        message: `${env} среда перезапущена через systemd сервис ${serviceName}`,
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      return {
+      const result = {
         success: false,
         error: error.message,
         timestamp: new Date().toISOString()
       };
+      
+      const orchestrator = global.orchestrator || this.orchestrator;
+      if (orchestrator) {
+        orchestrator.log('error', `Ошибка перезапуска ${env}: ${error.message}`);
+      }
+      return result;
     }
   }
 

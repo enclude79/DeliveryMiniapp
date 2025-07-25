@@ -418,15 +418,11 @@ async function initDatabase() {
         await createIndexes();
 
         // Создание администратора по умолчанию
-        if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD) {
         const adminExists = await query('SELECT id FROM admins WHERE username = ?', [process.env.ADMIN_USERNAME]);
         if (adminExists.length === 0) {
             const passwordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD, 10);
             await query('INSERT INTO admins (username, password_hash) VALUES (?, ?)', 
                 [process.env.ADMIN_USERNAME, passwordHash]);
-            }
-        } else {
-            console.log('⚠️ ADMIN_USERNAME или ADMIN_PASSWORD не установлены, пропускаем создание админа');
         }
 
     } catch (error) {

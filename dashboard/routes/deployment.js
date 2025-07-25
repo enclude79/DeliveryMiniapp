@@ -696,6 +696,22 @@ router.post('/workflow/rollback-production', async (req, res) => {
 });
 
 /**
+ * POST /api/deployment/workflow/full
+ * Выполнение полного workflow
+ */
+router.post('/workflow/full', async (req, res) => {
+  try {
+    const result = await orchestrator.performFullWorkflow();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/deployment/workflow/status
  * Получение статуса workflow
  */

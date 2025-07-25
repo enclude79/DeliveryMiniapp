@@ -165,6 +165,69 @@ router.get('/schema', async (req, res) => {
 });
 
 /**
+ * GET /api/database/protection-backups
+ * Получение списка защитных бэкапов
+ */
+router.get('/protection-backups', async (req, res) => {
+  try {
+    const BackupProtection = require('../../scripts/backup-protection');
+    const protection = new BackupProtection();
+    
+    const environment = req.query.env || 'all';
+    let backups = [];
+    
+    if (environment === 'all') {
+      const environments = ['production', 'development', 'staging'];
+      for (const env of environments) {
+        const envBackups = protection.getProtectionBackups(env);
+        backups = backups.concat(envBackups);
+      }
+    } else {
+      backups = protection.getProtectionBackups(environment);
+    }
+    
+    res.json({
+      success: true,
+      backups,
+      total: backups.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/database/restore-protection-backup
+ * Восстановление из защитного бэкапа
+ */
+router.post('/restore-protection-backup', async (req, res) => {
+  try {
+    const { backupName, environment } = req.body;
+    
+    if (!backupName || !environment) {
+      return res.status(400).json({
+        success: false,
+        error: 'Необходимо указать backupName и environment'
+      });
+    }
+    
+    const BackupProtection = require('../../scripts/backup-protection');
+    const protection = new BackupProtection();
+    
+    const result = await protection.restoreFromProtectionBackup(backupName, environment);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/database/compare-schemas
  * Сравнение схем БД production и development
  */

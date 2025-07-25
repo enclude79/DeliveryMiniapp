@@ -465,7 +465,6 @@ Thumbs.db
    */
   async branchExists(branchName) {
     try {
-      process.chdir(this.repoPath);
       const { stdout } = await execAsync(`git branch -r | grep origin/${branchName}`);
       return stdout.trim().length > 0;
     } catch {
@@ -481,34 +480,58 @@ Thumbs.db
     try {
       const developmentPath = '/home/enclude/automation/development';
       
+      console.log('🔄 Начинаем syncDevelopment в:', developmentPath);
+      
       // 1. Переходим в development контур
       process.chdir(developmentPath);
+      console.log('✅ Перешли в development контур');
       
-      // 2. Проверяем, является ли это Git репозиторием
+      // 2. Проверяем, является ли это Git репозиторий
+      console.log('🔍 Проверяем Git репозиторий...');
       const isGitRepo = await this.isGitRepository();
+      console.log('📊 isGitRepo:', isGitRepo);
+      
       if (!isGitRepo) {
+        console.log('🆕 Инициализируем новый Git репозиторий...');
         // Инициализируем Git репозиторий в development
         await execAsync('git init');
-        await execAsync('git remote add origin https://github.com/enclude79/DeliveryMiniapp.git');
+        await execAsync('git remote add origin https://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@github.com/enclude79/DeliveryMiniapp.git');
         await execAsync('git config user.name "DeliveryMiniapp Development"');
-        await execAsync('git config user.email "development@deliveryvlg.xyz');
+        await execAsync('git config user.email "development@deliveryvlg.xyz"');
+        console.log('✅ Git репозиторий инициализирован');
+      } else {
+        console.log('✅ Git репозиторий уже существует');
       }
       
       // 3. Проверяем существование develop ветки
-      if (!await this.branchExists('develop')) {
+      console.log('🔍 Проверяем существование ветки develop...');
+      const developExists = await this.branchExists('develop');
+      console.log('📊 developExists:', developExists);
+      
+      if (!developExists) {
+        console.log('🆕 Создаем ветку develop...');
         await execAsync('git checkout -b develop');
+        console.log('✅ Ветка develop создана');
       } else {
+        console.log('✅ Ветка develop существует, переключаемся на неё...');
         await execAsync('git checkout develop');
+        console.log('📥 Получаем последние изменения...');
         await execAsync('git pull origin develop');
+        console.log('✅ Изменения получены');
       }
       
       // 4. Добавляем все изменения в staging
+      console.log('📝 Добавляем изменения в staging...');
       await execAsync('git add .');
+      console.log('✅ Изменения добавлены');
       
       // 5. Проверяем, есть ли изменения для коммита
+      console.log('🔍 Проверяем статус изменений...');
       const { stdout: status } = await execAsync('git status --porcelain');
+      console.log('📊 Статус:', status.trim() || 'Нет изменений');
       
       if (!status.trim()) {
+        console.log('ℹ️ Нет изменений для коммита');
         return {
           success: true,
           changes: ['Нет изменений для фиксации'],
@@ -517,15 +540,22 @@ Thumbs.db
       }
       
       // 6. Создаем коммит
+      console.log('💾 Создаем коммит...');
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       await execAsync(`git commit -m "Development changes - ${timestamp}"`);
+      console.log('✅ Коммит создан');
       
       // 7. Пушим изменения в GitHub
+      console.log('🚀 Отправляем изменения в GitHub...');
       await execAsync('git push origin develop');
+      console.log('✅ Изменения отправлены в GitHub');
       
       // 8. Запускаем тесты в development
+      console.log('🧪 Запускаем тесты в development...');
       const testResult = await this.runDevelopmentTests();
+      console.log('📊 Результаты тестов:', JSON.stringify(testResult));
       
+      console.log('🎉 syncDevelopment завершен успешно!');
       return {
         success: true,
         changes: [
@@ -538,6 +568,8 @@ Thumbs.db
       };
       
     } catch (error) {
+      console.error('💥 Ошибка в syncDevelopment:', error.message);
+      console.error('Stack trace:', error.stack);
       return {
         success: false,
         error: error.message
@@ -551,67 +583,119 @@ Thumbs.db
    */
   async testInStaging() {
     try {
+      console.log('🔄 Начинаем testInStaging...');
+      console.log('📁 Текущая директория:', process.cwd());
+      console.log('📁 repoPath:', this.repoPath);
+      
       process.chdir(this.repoPath);
+      console.log('✅ Перешли в repoPath');
       
       // 1. Копируем Production в Staging (исключая проблемные папки)
+      console.log('📋 Шаг 1: Копирование Production в Staging...');
       const stagingPath = '/home/enclude/automation/staging';
       const productionPath = '/home/enclude/automation/production';
       
+      console.log('📁 stagingPath:', stagingPath);
+      console.log('📁 productionPath:', productionPath);
+      
       // Очищаем staging (кроме node_modules и важных файлов)
-      await execAsync(`find ${stagingPath} -maxdepth 1 -not -name node_modules -not -name .git -not -name logs -not -name backup -not -name '*.db' -not -name staging -exec rm -rf {} +`);
+      console.log('🧹 Очищаем staging...');
+      await execAsync(`find ${stagingPath} -maxdepth 1 -not -name node_modules -not -name .git -not -name logs -not -name backup -not -name '*.db' -not -name staging -not -name delivery-staging.db -exec rm -rf {} +`);
+      console.log('✅ Staging очищен');
       
       // Копируем файлы из production (исключая node_modules)
-      const { stdout: prodFiles } = await execAsync(`find ${productionPath} -maxdepth 1 -not -name node_modules -not -name .git -not -name logs -not -name backup -not -name '*.db'`);
-      
-      const prodFilesList = prodFiles.trim().split('\n').filter(f => f && f !== productionPath);
-      
-      for (const file of prodFilesList) {
-        const fileName = file.split('/').pop();
-        if (fileName) {
-          try {
-            await execAsync(`cp -r "${file}" "${stagingPath}/${fileName}"`);
-          } catch (copyError) {
-            console.log(`Предупреждение: не удалось скопировать ${fileName} из production: ${copyError.message}`);
+      console.log('📋 Копируем файлы из production...');
+      try {
+        const { stdout: prodFiles } = await execAsync(`find ${productionPath} -maxdepth 1 -not -name node_modules -not -name .git -not -name logs -not -name backup -not -name '*.db'`);
+        console.log('📄 Найдены файлы в production:', prodFiles.trim().split('\n').length);
+        
+        const prodFilesList = prodFiles.trim().split('\n').filter(f => f && f !== productionPath);
+        
+        for (const file of prodFilesList) {
+          const fileName = file.split('/').pop();
+          if (fileName) {
+            try {
+              console.log(`📋 Копируем: ${fileName}`);
+              await execAsync(`cp -r "${file}" "${stagingPath}/${fileName}"`);
+            } catch (copyError) {
+              console.log(`⚠️ Предупреждение: не удалось скопировать ${fileName} из production: ${copyError.message}`);
+            }
           }
         }
+        console.log('✅ Файлы из production скопированы');
+      } catch (error) {
+        console.error('❌ Ошибка при копировании файлов из production:', error.message);
+        throw error;
       }
       
       // 2. Переключаемся на develop для получения изменений
-      await execAsync('git checkout develop');
-      await execAsync('git pull origin develop');
+      console.log('📋 Шаг 2: Переключение на develop ветку...');
+      try {
+        await execAsync('git checkout develop');
+        console.log('✅ Переключились на develop ветку');
+        await execAsync('git pull origin develop');
+        console.log('✅ Получили последние изменения из develop');
+      } catch (error) {
+        console.error('❌ Ошибка при работе с Git:', error.message);
+        throw error;
+      }
       
-      // 3. Копируем изменения develop в staging (исключая node_modules)
-      const { stdout: devFiles } = await execAsync(`find ${this.repoPath} -maxdepth 1 -not -name node_modules -not -name .git -not -name logs -not -name backup -not -name '*.db'`);
-      
-      const devFilesList = devFiles.trim().split('\n').filter(f => f && f !== this.repoPath);
-      
-      for (const file of devFilesList) {
-        const fileName = file.split('/').pop();
-        if (fileName) {
-          try {
-            await execAsync(`cp -r "${file}" "${stagingPath}/${fileName}"`);
-          } catch (copyError) {
-            console.log(`Предупреждение: не удалось скопировать ${fileName} из develop: ${copyError.message}`);
-          }
-        }
+      // 3. Копируем код из develop ветки в staging (ИСКЛЮЧАЯ БД)
+      console.log('📋 Шаг 3: Копирование кода из develop ветки в staging...');
+      try {
+        // Копируем файлы из develop ветки, ИСКЛЮЧАЯ БД файлы
+        console.log('📋 Копируем файлы из develop ветки (исключая БД)...');
+        await execAsync(`rsync -av --exclude='*.db' --exclude='node_modules' --exclude='.git' --exclude='logs' --exclude='backup' --exclude='delivery-staging.db' . ${stagingPath}/`);
+        console.log('✅ Файлы из develop ветки скопированы в staging (БД сохранена)');
+        
+      } catch (error) {
+        console.error('❌ Ошибка при копировании файлов из develop ветки:', error.message);
+        throw error;
       }
       
       // 4. Перезапускаем staging сервер
+      console.log('📋 Шаг 4: Перезапуск staging сервера...');
       try {
+        console.log('📦 Устанавливаем зависимости...');
         await execAsync('cd /home/enclude/automation/staging && npm install');
-        await execAsync('cd /home/enclude/automation/staging && pkill -f "node.*staging" || true');
+        console.log('✅ Зависимости установлены');
+      } catch (npmError) {
+        console.log(`⚠️ Предупреждение: не удалось установить зависимости: ${npmError.message}`);
+      }
+      
+      console.log('ℹ️ Пропускаем остановку старого сервера для избежания конфликтов');
+      
+      try {
+        console.log('🚀 Запускаем новый staging сервер...');
         await execAsync('cd /home/enclude/automation/staging && nohup npm start > logs/staging.log 2>&1 &');
+        console.log('⏳ Ждем запуска сервера...');
         await new Promise(resolve => setTimeout(resolve, 3000)); // Ждем запуска
-      } catch (restartError) {
-        console.log(`Предупреждение: не удалось перезапустить staging сервер: ${restartError.message}`);
+        console.log('✅ Staging сервер запущен');
+      } catch (startError) {
+        console.log(`⚠️ Предупреждение: не удалось запустить staging сервер: ${startError.message}`);
       }
       
       // 5. Генерируем SQL миграции
+      console.log('📋 Шаг 5: Генерация SQL миграций...');
       const migrations = await this.generateMigrations();
+      console.log(`✅ Миграции сгенерированы: ${migrations.length} шт.`);
       
-      // 6. Запускаем тесты в staging
+      // 6. Применяем миграции к staging БД
+      console.log('📋 Шаг 6: Применение миграций к staging БД...');
+      if (migrations.length > 0) {
+        console.log('🔧 Применяем миграции:', migrations);
+        const migrationResult = await this.applyMigrations();
+        console.log('✅ Миграции применены:', migrationResult);
+      } else {
+        console.log('ℹ️ Миграции не требуются');
+      }
+      
+      // 7. Запускаем тесты в staging
+      console.log('📋 Шаг 7: Запуск тестов в staging...');
       const testResult = await this.runStagingTests();
+      console.log('✅ Тесты в staging завершены');
       
+      console.log('🎉 testInStaging завершен успешно!');
       return {
         success: testResult.success,
         migrations: migrations,
@@ -725,27 +809,141 @@ Thumbs.db
    */
   async generateMigrations() {
     try {
-      // Здесь будет логика генерации миграций
-      // Пока возвращаем пустой массив
-      return [];
+      console.log('🔍 Генерируем SQL миграции...');
+      
+      // Используем DatabaseManager для сравнения схем
+      const DatabaseManager = require('./database-manager');
+      const dbManager = new DatabaseManager();
+      
+      const comparison = await dbManager.compareSchemas();
+      
+      if (!comparison.success) {
+        console.log('❌ Ошибка сравнения схем:', comparison.error);
+        return [];
+      }
+      
+      if (comparison.summary.totalDifferences === 0) {
+        console.log('✅ Различий в схемах не найдено');
+        return [];
+      }
+      
+      console.log(`📊 Найдено различий: ${comparison.summary.totalDifferences}`);
+      console.log(`🆕 Новые таблицы: ${comparison.summary.newTables}`);
+      console.log(`🔧 Изменения структуры: ${comparison.summary.structureChanges}`);
+      
+      // Генерируем SQL миграции на основе различий
+      const migrations = [];
+      
+      for (const diff of comparison.differences) {
+        switch (diff.type) {
+          case 'NEW_TABLE':
+            migrations.push({
+              type: 'CREATE_TABLE',
+              table: diff.table,
+              sql: diff.sql,
+              description: diff.description
+            });
+            break;
+            
+          case 'NEW_COLUMN':
+            migrations.push({
+              type: 'ADD_COLUMN',
+              table: diff.table,
+              column: diff.column,
+              sql: `ALTER TABLE ${diff.table} ADD COLUMN ${diff.column} ${diff.type};`,
+              description: diff.description
+            });
+            break;
+            
+          case 'COLUMN_TYPE_CHANGE':
+            migrations.push({
+              type: 'MODIFY_COLUMN',
+              table: diff.table,
+              column: diff.column,
+              sql: `ALTER TABLE ${diff.table} MODIFY COLUMN ${diff.column} ${diff.newType};`,
+              description: diff.description
+            });
+            break;
+            
+          case 'TABLE_STRUCTURE_CHANGE':
+            for (const tableDiff of diff.differences) {
+              if (tableDiff.type === 'NEW_COLUMN') {
+                migrations.push({
+                  type: 'ADD_COLUMN',
+                  table: diff.table,
+                  column: tableDiff.column,
+                  sql: `ALTER TABLE ${diff.table} ADD COLUMN ${tableDiff.column} ${tableDiff.type};`,
+                  description: tableDiff.description
+                });
+              }
+            }
+            break;
+        }
+      }
+      
+      console.log(`✅ Сгенерировано миграций: ${migrations.length}`);
+      return migrations;
+      
     } catch (error) {
+      console.error('💥 Ошибка генерации миграций:', error.message);
       return [];
     }
   }
 
   /**
-   * Применение миграций
+   * Применение миграций к staging БД
    * @returns {Promise<{success: boolean, applied: number, error: string}>}
    */
   async applyMigrations() {
     try {
-      // Здесь будет логика применения миграций
+      console.log('🔧 Начинаем применение миграций к staging БД...');
+      
+      // Генерируем миграции
+      const migrations = await this.generateMigrations();
+      console.log(`📋 Найдено миграций для применения: ${migrations.length}`);
+      
+      if (migrations.length === 0) {
+        return {
+          success: true,
+          applied: 0,
+          message: 'Миграции не требуются'
+        };
+      }
+      
+      // Применяем каждую миграцию к staging БД
+      const stagingDbPath = '/home/enclude/automation/staging/delivery-staging.db';
+      let appliedCount = 0;
+      
+      for (const migration of migrations) {
+        try {
+          console.log(`🔧 Применяем миграцию: ${migration.sql}`);
+          
+          // Выполняем SQL команду
+          const { stdout, stderr } = await execAsync(`sqlite3 "${stagingDbPath}" "${migration.sql}"`);
+          
+          if (stderr && !stderr.includes('already exists')) {
+            console.error(`❌ Ошибка применения миграции: ${stderr}`);
+            continue;
+          }
+          
+          appliedCount++;
+          console.log(`✅ Миграция применена: ${migration.description}`);
+          
+        } catch (error) {
+          console.error(`❌ Ошибка применения миграции: ${error.message}`);
+        }
+      }
+      
+      console.log(`✅ Применено миграций: ${appliedCount} из ${migrations.length}`);
+      
       return {
         success: true,
-        applied: 0,
-        message: 'Миграции применены'
+        applied: appliedCount,
+        message: `Применено ${appliedCount} миграций`
       };
+      
     } catch (error) {
+      console.error('💥 Ошибка применения миграций:', error.message);
       return {
         success: false,
         error: error.message

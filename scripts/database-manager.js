@@ -95,6 +95,76 @@ class DatabaseManager {
   }
 
   /**
+   * Сравнение схем между prod и dev базами
+   * @returns {Promise<{success: boolean, differences: Array, error: string}>}
+   */
+  async compareSchemas() {
+    try {
+      const differences = [];
+      
+      // Получаем схемы обеих баз
+      const prodSchema = await this.getDatabaseSchema(this.dbMap.production);
+      const devSchema = await this.getDatabaseSchema(this.dbMap.development);
+      
+      // Сравниваем таблицы
+      const allTables = new Set([...Object.keys(prodSchema), ...Object.keys(devSchema)]);
+      
+      for (const tableName of allTables) {
+        const prodTable = prodSchema[tableName] || null;
+        const devTable = devSchema[tableName] || null;
+        
+        if (!prodTable) {
+          // Получаем SQL для создания таблицы
+          const createTableSQL = await this.getCreateTableSQL(this.dbMap.development, tableName);
+          differences.push({
+            type: 'NEW_TABLE',
+            table: tableName,
+            description: `Новая таблица в dev: ${tableName}`,
+            sql: createTableSQL
+          });
+          continue;
+        }
+        
+        if (!devTable) {
+          differences.push({
+            type: 'MISSING_TABLE',
+            table: tableName,
+            description: `Таблица отсутствует в dev: ${tableName}`
+          });
+          continue;
+        }
+        
+        // Сравниваем структуру таблиц
+        const tableDiff = this.compareTableStructure(prodTable, devTable);
+        if (tableDiff.length > 0) {
+          differences.push({
+            type: 'TABLE_STRUCTURE_CHANGE',
+            table: tableName,
+            differences: tableDiff
+          });
+        }
+      }
+      
+      return {
+        success: true,
+        differences,
+        summary: {
+          totalDifferences: differences.length,
+          newTables: differences.filter(d => d.type === 'NEW_TABLE').length,
+          missingTables: differences.filter(d => d.type === 'MISSING_TABLE').length,
+          structureChanges: differences.filter(d => d.type === 'TABLE_STRUCTURE_CHANGE').length
+        }
+      };
+      
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * Синхронизация dev базы из prod
    * @returns {Promise<{success: boolean, error: string}>}
    */
@@ -171,6 +241,30 @@ class DatabaseManager {
         timestamp: new Date().toISOString()
       };
     }
+  }
+
+  /**
+   * Получение SQL для создания таблицы
+   * @param {string} dbPath - путь к БД
+   * @param {string} tableName - имя таблицы
+   * @returns {Promise<string>}
+   */
+  async getCreateTableSQL(dbPath, tableName) {
+    return new Promise((resolve, reject) => {
+      const db = new sqlite3.Database(dbPath);
+      
+      db.get(`SELECT sql FROM sqlite_master WHERE type='table' AND name=?`, [tableName], (err, row) => {
+        db.close();
+        
+        if (err) {
+          reject(err);
+        } else if (row) {
+          resolve(row.sql);
+        } else {
+          resolve(`-- Таблица ${tableName} не найдена`);
+        }
+      });
+    });
   }
 
   /**
@@ -291,22 +385,24 @@ class DatabaseManager {
    */
   compareTableStructure(prodTable, devTable) {
     const differences = [];
-    const prodColumns = new Map(prodTable.columns.map(col => [col.name, col]));
-    const devColumns = new Map(devTable.columns.map(col => [col.name, col]));
+    
+    // Преобразуем объекты в Map для удобства сравнения
+    const prodColumns = new Map(Object.entries(prodTable));
+    const devColumns = new Map(Object.entries(devTable));
     
     // Проверяем новые колонки в dev
-    for (const [colName, devCol] of devColumns) {
+    for (const [colName, devType] of devColumns) {
       if (!prodColumns.has(colName)) {
         differences.push({
           type: 'NEW_COLUMN',
           column: colName,
-          description: `Новая колонка: ${colName} (${devCol.type})`
+          description: `Новая колонка: ${colName} (${devType})`
         });
       }
     }
     
     // Проверяем удаленные колонки
-    for (const [colName, prodCol] of prodColumns) {
+    for (const [colName, prodType] of prodColumns) {
       if (!devColumns.has(colName)) {
         differences.push({
           type: 'MISSING_COLUMN',
@@ -317,28 +413,16 @@ class DatabaseManager {
     }
     
     // Проверяем изменения в существующих колонках
-    for (const [colName, prodCol] of prodColumns) {
-      const devCol = devColumns.get(colName);
-      if (devCol) {
-        if (prodCol.type !== devCol.type) {
-          differences.push({
-            type: 'COLUMN_TYPE_CHANGE',
-            column: colName,
-            oldType: prodCol.type,
-            newType: devCol.type,
-            description: `Изменен тип колонки ${colName}: ${prodCol.type} → ${devCol.type}`
-          });
-        }
-        
-        if (prodCol.notnull !== devCol.notnull) {
-          differences.push({
-            type: 'COLUMN_CONSTRAINT_CHANGE',
-            column: colName,
-            oldConstraint: prodCol.notnull ? 'NOT NULL' : 'NULL',
-            newConstraint: devCol.notnull ? 'NOT NULL' : 'NULL',
-            description: `Изменено ограничение колонки ${colName}`
-          });
-        }
+    for (const [colName, prodType] of prodColumns) {
+      const devType = devColumns.get(colName);
+      if (devType && prodType !== devType) {
+        differences.push({
+          type: 'COLUMN_TYPE_CHANGE',
+          column: colName,
+          oldType: prodType,
+          newType: devType,
+          description: `Изменен тип колонки ${colName}: ${prodType} → ${devType}`
+        });
       }
     }
     

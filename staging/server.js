@@ -18,10 +18,9 @@ const addressRoutes = require('./routes/addresses');
 const settingsRoutes = require('./routes/settings');
 const orderStatusRoutes = require('./routes/order-statuses');
 
-const config = require('./config');
 const app = express();
-const port = process.env.PORT || config.port;
-const httpsPort = process.env.HTTPS_PORT || config.httpsPort;
+const port = process.env.PORT || 3000;
+const httpsPort = process.env.HTTPS_PORT || 3443;
 
 // Создаем директорию для логов
 const logsDir = path.join(__dirname, 'logs');
