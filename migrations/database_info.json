@@ -1,0 +1,68 @@
+{
+  "export_info": {
+    "timestamp": "2025-07-25T08:34:42+00:00",
+    "database_path": "/home/enclude/automation/development/delivery-dev.db",
+    "branch": "[0;34m[INFO][0m 2025-07-25 08:34:42 - Git репозиторий найден в .
+develop",
+    "commit": "c6fa8c3568e6586a70303fe4de05456e2759f753",
+    "commit_message": "feat: добавлен Git workflow интерфейс в Dashboard",
+    "author": "enclude79 <enclude79@github.com>"
+  },
+  "database_stats": {
+    "size_bytes": 204800,
+    "tables_count": 11,
+    "indexes_count": 24,
+    "views_count": 0
+  },
+  "tables": [
+    {
+      "name": "admins",
+      "row_count": 1
+    }
+,
+    {
+      "name": "categories",
+      "row_count": 3
+    }
+,
+    {
+      "name": "products",
+      "row_count": 6
+    }
+,
+    {
+      "name": "users",
+      "row_count": 14
+    }
+,
+    {
+      "name": "orders",
+      "row_count": 55
+    }
+,
+    {
+      "name": "order_items",
+      "row_count": 115
+    }
+,
+    {
+      "name": "user_addresses",
+      "row_count": 16
+    }
+,
+    {
+      "name": "app_settings",
+      "row_count": 3
+    }
+,
+    {
+      "name": "order_statuses",
+      "row_count": 6
+    }
+,
+    {
+      "name": "settings",
+      "row_count": 1
+    }
+  ]
+}
