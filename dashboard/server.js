@@ -99,6 +99,10 @@ app.use('/api/database', apiRateLimiter, authenticateToken, databaseRoutes);
 app.use('/api/backup', apiRateLimiter, authenticateToken, backupRoutes);
 app.use('/api/logs', apiRateLimiter, authenticateToken, logsRoutes);
 
+// Git Workflow маршруты
+const gitWorkflowRoutes = require('./routes/git-workflow');
+app.use('/api/git-workflow', apiRateLimiter, authenticateToken, gitWorkflowRoutes);
+
 // Endpoint для копирования базы prod → staging
 app.post('/api/database/copy-prod-to-staging', apiRateLimiter, authenticateToken, async (req, res) => {
   try {
@@ -267,6 +271,11 @@ app.get('/debug-buttons', (req, res) => {
 // Простой тест JavaScript
 app.get('/test-simple', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'test-simple.html'));
+});
+
+// Git Workflow страница
+app.get('/git-workflow', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'git-workflow.html'));
 });
 
 // Конфигурация для фронтенда
