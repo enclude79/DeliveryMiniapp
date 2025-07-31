@@ -60,6 +60,10 @@ emergency-*.js
 minimal-*.js
 force-*.sh
 
-# Загруженные файлы пользователей
-public/uploads/*
-!public/uploads/.gitkeep 
+# Загруженные файлы пользователей (изображения)
+public/uploads/
+public/uploads/*.jpg
+public/uploads/*.jpeg
+public/uploads/*.png
+public/uploads/*.gif
+public/uploads/*.webp 
