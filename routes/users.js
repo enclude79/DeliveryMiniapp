@@ -35,13 +35,16 @@ router.get('/:telegramId', async (req, res) => {
 // POST /users - создать или обновить пользователя
 router.post('/', async (req, res) => {
     try {
-        const { telegram_id, first_name, last_name, username, phone } = req.body;
+        const { telegram_id, first_name, last_name, username, phone, phone_number, full_name, privacy_consent } = req.body;
         
         logUsers('POST', `Создание/обновление пользователя: ${telegram_id}`, {
             first_name,
             last_name,
             username,
-            phone
+            phone,
+            phone_number,
+            full_name,
+            privacy_consent
         });
         
         // Проверяем, существует ли пользователь
@@ -51,7 +54,7 @@ router.post('/', async (req, res) => {
         );
         
         if (existingUser.length > 0) {
-            // Обновляем существующего пользователя
+            // Обновляем существующего пользователя (только базовые поля, не трогаем профиль)
             await query(
                 `UPDATE users 
                  SET first_name = ?, last_name = ?, username = ?, phone = ?, updated_at = CURRENT_TIMESTAMP 
@@ -71,9 +74,9 @@ router.post('/', async (req, res) => {
         } else {
             // Создаем нового пользователя
             const result = await query(
-                `INSERT INTO users (telegram_id, first_name, last_name, username, phone) 
-                 VALUES (?, ?, ?, ?, ?)`,
-                [telegram_id, first_name, last_name, username, phone]
+                `INSERT INTO users (telegram_id, first_name, last_name, username, phone, phone_number, full_name, privacy_consent) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [telegram_id, first_name, last_name, username, phone, phone_number, full_name, privacy_consent]
             );
             
             logUsers('SUCCESS', `Новый пользователь создан: ${telegram_id}, ID: ${result.lastID}`);
@@ -96,21 +99,94 @@ router.post('/', async (req, res) => {
 router.put('/:telegramId', async (req, res) => {
     try {
         const { telegramId } = req.params;
-        const { first_name, last_name, username, phone } = req.body;
+        const { first_name, last_name, username, phone, phone_number, full_name, privacy_consent, date_of_birth, gender } = req.body;
         
         logUsers('PUT', `Обновление пользователя: ${telegramId}`, {
             first_name,
             last_name,
             username,
-            phone
+            phone,
+            phone_number,
+            full_name,
+            privacy_consent,
+            date_of_birth,
+            gender,
+            privacy_consent_type: typeof privacy_consent
         });
         
-        const result = await query(
-            `UPDATE users 
-             SET first_name = ?, last_name = ?, username = ?, phone = ?
-             WHERE telegram_id = ?`,
-            [first_name, last_name, username, phone, telegramId]
-        );
+        logUsers('INFO', `SQL параметры:`, {
+            first_name,
+            last_name,
+            username,
+            phone,
+            phone_number,
+            full_name,
+            privacy_consent,
+            date_of_birth,
+            gender,
+            telegramId
+        });
+
+        // Строим динамический SQL запрос только для переданных полей
+        const updates = [];
+        const params = [];
+        
+        if (first_name !== undefined) {
+            updates.push('first_name = ?');
+            params.push(first_name);
+        }
+        if (last_name !== undefined) {
+            updates.push('last_name = ?');
+            params.push(last_name);
+        }
+        if (username !== undefined) {
+            updates.push('username = ?');
+            params.push(username);
+        }
+        if (phone !== undefined) {
+            updates.push('phone = ?');
+            params.push(phone);
+        }
+        if (phone_number !== undefined) {
+            updates.push('phone_number = ?');
+            params.push(phone_number);
+        }
+        if (full_name !== undefined) {
+            updates.push('full_name = ?');
+            params.push(full_name);
+        }
+        if (privacy_consent !== undefined) {
+            updates.push('privacy_consent = ?');
+            params.push(privacy_consent);
+        }
+        if (date_of_birth !== undefined) {
+            updates.push('date_of_birth = ?');
+            params.push(date_of_birth || null);
+        }
+        if (gender !== undefined) {
+            updates.push('gender = ?');
+            params.push(gender || null);
+        }
+        
+        // Всегда обновляем updated_at
+        updates.push('updated_at = CURRENT_TIMESTAMP');
+        
+        if (updates.length === 1) {
+            // Если только updated_at - ничего не обновлять
+            logUsers('INFO', 'Нет полей для обновления');
+            const updatedUser = await query(
+                'SELECT * FROM users WHERE telegram_id = ?',
+                [telegramId]
+            );
+            return res.json(updatedUser[0]);
+        }
+        
+        const sql = `UPDATE users SET ${updates.join(', ')} WHERE telegram_id = ?`;
+        params.push(telegramId);
+        
+        logUsers('INFO', `SQL запрос: ${sql}`, params);
+
+        const result = await query(sql, params);
         
         if (result.changes === 0) {
             logUsers('ERROR', `Пользователь не найден для обновления: ${telegramId}`);

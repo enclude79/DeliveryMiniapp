@@ -223,8 +223,16 @@ router.get('/orders', authenticateToken, async (req, res) => {
             };
         });
         
-        // Возвращаем массив заказов (без пагинации для упрощения)
-        res.json(formattedOrders);
+        // Возвращаем с пагинацией
+        res.json({
+            orders: formattedOrders,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total: total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
     } catch (error) {
         console.error('[ADMIN API] Ошибка при получении заказов:', error);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });
@@ -377,6 +385,11 @@ router.get('/customers/:telegram_id', authenticateToken, async (req, res) => {
             last_name: customer.last_name || '',
             username: customer.username || '',
             phone: customer.phone || '',
+            full_name: customer.full_name || '',
+            phone_number: customer.phone_number || '',
+            date_of_birth: customer.date_of_birth || '',
+            gender: customer.gender || '',
+            privacy_consent: customer.privacy_consent || false,
             created_at: customer.created_at,
             addresses: addresses,
             recent_orders: orders,
@@ -444,6 +457,11 @@ router.get('/customers', authenticateToken, async (req, res) => {
             last_name: customer.last_name || '',
             username: customer.username || '',
             phone: customer.phone || '',
+            full_name: customer.full_name || '',
+            phone_number: customer.phone_number || '',
+            date_of_birth: customer.date_of_birth || '',
+            gender: customer.gender || '',
+            privacy_consent: customer.privacy_consent || false,
             total_orders: customer.total_orders || 0,
             total_spent: customer.total_spent || 0,
             last_order_date: customer.last_order_date,
@@ -595,13 +613,36 @@ router.delete('/categories/:id', authenticateToken, async (req, res) => {
 // Получение списка товаров
 router.get('/products', authenticateToken, async (req, res) => {
     try {
+        const { page = 1, limit = 50, category_id } = req.query;
+        const offset = (page - 1) * limit;
+        let where = '';
+        const params = [];
+        if (category_id) {
+            where = 'WHERE p.category_id = ?';
+            params.push(category_id);
+        }
         const products = await query(`
             SELECT p.*, c.name as category_name
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id
+            ${where}
             ORDER BY p.order_priority ASC, p.name ASC
-        `);
-        res.json(products);
+            LIMIT ? OFFSET ?
+        `, [...params, parseInt(limit), (page - 1) * limit]);
+        const [{ total }] = await query(`
+            SELECT COUNT(*) as total
+            FROM products p
+            ${where}
+        `, params);
+        res.json({
+            products,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
     } catch (error) {
         console.error('Ошибка при получении товаров:', error);
         res.status(500).json({ error: 'Внутренняя ошибка сервера' });

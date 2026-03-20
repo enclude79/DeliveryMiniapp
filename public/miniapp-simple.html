@@ -89,6 +89,7 @@
             padding: 15px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             text-align: center;
+            position: relative;
         }
 
         .product-image {
@@ -223,6 +224,138 @@
             color: #666;
         }
 
+        /* Мини-кнопка описания товара */
+        .desc-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 26px;
+            height: 26px;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            color: #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Модальное окно описания товара */
+        .desc-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .desc-modal.hidden {
+            display: none;
+        }
+
+        .desc-modal-content {
+            background: #fff;
+            border-radius: 14px;
+            width: 90%;
+            max-width: 480px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .desc-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 18px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .desc-modal-title {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .desc-modal-close {
+            background: none;
+            border: 1px solid #e5e7eb;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .desc-modal-body {
+            padding: 16px 18px 20px 18px;
+            line-height: 1.5;
+            white-space: pre-wrap; /* сохраняет переносы строк и эмодзи */
+            font-size: 14px;
+        }
+
+        /* Модалка просмотра изображения товара */
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .image-modal.hidden {
+            display: none;
+        }
+
+        .image-modal-content {
+            position: relative;
+            max-width: 96vw;
+            max-height: 92vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-modal-img {
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+            background: #000;
+        }
+
+        .image-modal-close {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            color: #333;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
         #products-view {
             display: none;
         }
@@ -251,6 +384,26 @@
             <button class="back-btn" onclick="showCategories()">← Назад</button>
             <div class="products" id="products-list">
                 <div class="loading">Загрузка товаров...</div>
+            </div>
+        </div>
+
+        <!-- Модальное окно описания товара -->
+        <div id="description-modal" class="desc-modal hidden">
+            <div class="desc-modal-content">
+                <div class="desc-modal-header">
+                    <div class="desc-modal-title" id="desc-title"></div>
+                    <button class="desc-modal-close" onclick="closeDescriptionModal()">×</button>
+                </div>
+                <div class="desc-modal-body" id="desc-body"></div>
+            </div>
+        </div>
+
+        <!-- Модальное окно просмотра изображения товара -->
+        <div id="image-viewer-modal" class="image-modal hidden" role="dialog" aria-modal="true" aria-labelledby="image-viewer-title">
+            <div class="image-modal-content" onclick="event.stopPropagation()">
+                <h2 id="image-viewer-title" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">Просмотр изображения товара</h2>
+                <img id="image-viewer-img" class="image-modal-img" alt="Изображение товара">
+                <button class="image-modal-close" onclick="closeImageViewer()" aria-label="Закрыть просмотр">×</button>
             </div>
         </div>
 
@@ -392,9 +545,10 @@
                 
                 return `
                     <div class="product-card" data-product-id="${product.id}">
+                        <button class="desc-btn" title="Описание" onclick="openDescriptionModal(${product.id}); event.stopPropagation();">ℹ️</button>
                         <div class="product-image">
                             ${product.image ? 
-                                `<img src="${product.image}" alt="${product.name}" loading="lazy">` : 
+                                `<img src=\"${product.image}\" alt=\"${product.name}\" loading=\"lazy\" style=\"cursor: zoom-in;\">` : 
                                 '<div style="font-size: 24px; color: #ccc;">📦</div>'
                             }
                         </div>
@@ -418,6 +572,100 @@
                 `;
             }).join('');
         }
+
+        function openDescriptionModal(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const titleEl = document.getElementById('desc-title');
+            const bodyEl = document.getElementById('desc-body');
+            const modalEl = document.getElementById('description-modal');
+
+            titleEl.textContent = product.name || 'Описание товара';
+            const text = (product.description && String(product.description).trim()) ? product.description : 'Описание отсутствует';
+            bodyEl.textContent = text; // эмодзи отображаются как Unicode
+
+            modalEl.classList.remove('hidden');
+        }
+
+        function closeDescriptionModal() {
+            const modalEl = document.getElementById('description-modal');
+            if (modalEl) modalEl.classList.add('hidden');
+        }
+
+        // Просмотр изображения товара (базовая версия с текущим src)
+        let lastFocusedImageEl = null;
+
+        function openImageViewer(src, alt) {
+            const modal = document.getElementById('image-viewer-modal');
+            const img = document.getElementById('image-viewer-img');
+            if (!modal || !img) return;
+
+            // Сохранить фокус для возврата
+            lastFocusedImageEl = document.activeElement;
+
+            img.src = src;
+            img.alt = alt || 'Изображение товара';
+
+            // Открыть
+            modal.classList.remove('hidden');
+
+            // Блокируем прокрутку body
+            document.body.style.overflow = 'hidden';
+
+            // Навесить обработчики
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    closeImageViewer();
+                }
+            };
+
+            document.addEventListener('keydown', onImageViewerKeydown);
+        }
+
+        function onImageViewerKeydown(e) {
+            if (e.key === 'Escape') {
+                closeImageViewer();
+            }
+        }
+
+        function closeImageViewer() {
+            const modal = document.getElementById('image-viewer-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+
+            // Возврат прокрутки
+            document.body.style.overflow = '';
+
+            document.removeEventListener('keydown', onImageViewerKeydown);
+
+            // Вернуть фокус
+            if (lastFocusedImageEl && typeof lastFocusedImageEl.focus === 'function') {
+                try { lastFocusedImageEl.focus(); } catch (_) {}
+            }
+        }
+
+        // Делегирование клика по изображениям товаров
+        document.addEventListener('click', function(e) {
+            try {
+                const img = e.target.closest('.product-image img');
+                if (!img) return;
+
+                const card = img.closest('.product-card');
+                if (!card) return;
+
+                const productIdStr = card.getAttribute('data-product-id');
+                const productId = productIdStr ? Number(productIdStr) : NaN;
+                if (Number.isNaN(productId)) return;
+
+                const product = products.find(p => p.id === productId);
+                if (!product || !product.image) return;
+
+                openImageViewer(product.image, product.name || 'Изображение товара');
+            } catch (err) {
+                console.error('Ошибка обработки клика по изображению:', err);
+            }
+        }, false);
 
         // Показать категории
         function showCategories() {

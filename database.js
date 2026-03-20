@@ -35,6 +35,54 @@ function initDB() {
                 throw err;
             }
             console.log('✅ Подключение к SQLite базе данных установлено');
+            
+            // Настраиваем оптимизации SQLite для высокой нагрузки
+            db.serialize(() => {
+                // Включаем WAL режим для concurrent доступа
+                db.run("PRAGMA journal_mode = WAL;", (err) => {
+                    if (err) {
+                        console.error('❌ Ошибка включения WAL режима:', err);
+                    } else {
+                        console.log('✅ WAL режим включен');
+                    }
+                });
+                
+                // Увеличиваем cache size для лучшей производительности
+                db.run("PRAGMA cache_size = 10000;", (err) => {
+                    if (err) {
+                        console.error('❌ Ошибка настройки cache_size:', err);
+                    } else {
+                        console.log('✅ Cache size установлен: 10000 страниц');
+                    }
+                });
+                
+                // Устанавливаем timeout для блокировок
+                db.run("PRAGMA busy_timeout = 5000;", (err) => {
+                    if (err) {
+                        console.error('❌ Ошибка настройки busy_timeout:', err);
+                    } else {
+                        console.log('✅ Busy timeout установлен: 5 секунд');
+                    }
+                });
+                
+                // Включаем foreign keys
+                db.run("PRAGMA foreign_keys = ON;", (err) => {
+                    if (err) {
+                        console.error('❌ Ошибка включения foreign keys:', err);
+                    } else {
+                        console.log('✅ Foreign keys включены');
+                    }
+                });
+                
+                // Оптимизируем synchronous режим для WAL
+                db.run("PRAGMA synchronous = NORMAL;", (err) => {
+                    if (err) {
+                        console.error('❌ Ошибка настройки synchronous:', err);
+                    } else {
+                        console.log('✅ Synchronous режим: NORMAL');
+                    }
+                });
+            });
         });
         
         // Обработчик ошибок базы данных
@@ -78,6 +126,43 @@ function query(sql, params = []) {
             });
         }
     });
+}
+
+// Функция query с retry логикой для обработки блокировок БД
+async function queryWithRetry(sql, params = [], maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await query(sql, params);
+        } catch (error) {
+            // Если это ошибка блокировки БД и не последняя попытка
+            if ((error.code === 'SQLITE_BUSY' || error.code === 'SQLITE_LOCKED') && attempt < maxRetries) {
+                console.warn(`⚠️ БД заблокирована, попытка ${attempt}/${maxRetries}. Повтор через ${attempt * 100}мс...`);
+                await new Promise(resolve => setTimeout(resolve, attempt * 100));
+                continue;
+            }
+            
+            // Логируем ошибку
+            const errorLog = {
+                timestamp: new Date().toISOString(),
+                type: 'DATABASE_QUERY_ERROR',
+                sql: sql.substring(0, 200), // Первые 200 символов SQL
+                params: params,
+                attempt: attempt,
+                error: {
+                    code: error.code,
+                    message: error.message
+                }
+            };
+            
+            const logsDir = path.join(__dirname, 'logs');
+            fs.appendFileSync(
+                path.join(logsDir, 'error.log'),
+                JSON.stringify(errorLog) + '\n'
+            );
+            
+            throw error;
+        }
+    }
 }
 
 // Миграция статусов заказов из app_settings в order_statuses
@@ -304,6 +389,25 @@ async function initDatabase() {
             await query('ALTER TABLE user_addresses ADD COLUMN admin_coordinate_comment TEXT');
         } catch (e) { /* столбец уже существует */ }
 
+        // Добавление новых столбцов в таблицу users для расширенного профиля
+        try {
+            await query('ALTER TABLE users ADD COLUMN phone_number TEXT');
+        } catch (e) { /* столбец уже существует */ }
+        try {
+            await query('ALTER TABLE users ADD COLUMN full_name TEXT');
+        } catch (e) { /* столбец уже существует */ }
+        try {
+            await query('ALTER TABLE users ADD COLUMN privacy_consent BOOLEAN DEFAULT 0');
+        } catch (e) { /* столбец уже существует */ }
+        
+        // Добавление полей Дата рождения и Пол
+        try {
+            await query('ALTER TABLE users ADD COLUMN date_of_birth DATE');
+        } catch (e) { /* столбец уже существует */ }
+        try {
+            await query('ALTER TABLE users ADD COLUMN gender TEXT');
+        } catch (e) { /* столбец уже существует */ }
+
         // Создание таблицы адресов пользователей
         await query(`
             CREATE TABLE IF NOT EXISTS user_addresses (
@@ -398,6 +502,11 @@ async function initDatabase() {
                 key: 'order_statuses',
                 value: JSON.stringify(['pending', 'в_обработке', 'собирается', 'в_доставке', 'доставлен', 'отменен']),
                 description: 'Доступные статусы заказов'
+            },
+            {
+                key: 'minimum_order_amount',
+                value: '500',
+                description: 'Минимальная сумма заказа в рублях'
             }
         ];
 
@@ -433,5 +542,6 @@ async function initDatabase() {
 
 module.exports = {
     query,
+    queryWithRetry,
     initDatabase
 }; 

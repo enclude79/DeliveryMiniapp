@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>🔍 API Тест для диагностики</h1>
+    
+    <div class="test-section">
+        <h3>1. Тест получения пользователя</h3>
+        <input type="text" id="testUserId" placeholder="Telegram ID" value="123456789">
+        <button onclick="testGetUser()">Получить пользователя</button>
+        <div id="getUserResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Тест обновления пользователя</h3>
+        <input type="text" id="updateUserId" placeholder="Telegram ID" value="123456789">
+        <input type="text" id="updateFullName" placeholder="Полное имя" value="Тест Тестович">
+        <input type="text" id="updatePhone" placeholder="Телефон" value="+7 (123) 456-78-90">
+        <input type="checkbox" id="updateConsent"> Согласие на ПД
+        <button onclick="testUpdateUser()">Обновить пользователя</button>
+        <div id="updateUserResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Тест API админки (без авторизации)</h3>
+        <button onclick="testAdminAPI()">Тест /api/admin/customers</button>
+        <div id="adminAPIResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. Проверка базы данных</h3>
+        <button onclick="testDatabase()">Проверить данные в БД</button>
+        <div id="databaseResult" class="result"></div>
+    </div>
+
+    <script>
+        async function testGetUser() {
+            const userId = document.getElementById('testUserId').value;
+            const resultDiv = document.getElementById('getUserResult');
+            
+            try {
+                resultDiv.innerHTML = 'Загрузка...';
+                const response = await fetch(`/users/${userId}`);
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ Успешно получен пользователь</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Ошибка: ${error.message}</div>`;
+            }
+        }
+        
+        async function testUpdateUser() {
+            const userId = document.getElementById('updateUserId').value;
+            const fullName = document.getElementById('updateFullName').value;
+            const phone = document.getElementById('updatePhone').value;
+            const consent = document.getElementById('updateConsent').checked;
+            const resultDiv = document.getElementById('updateUserResult');
+            
+            try {
+                resultDiv.innerHTML = 'Обновление...';
+                const response = await fetch(`/users/${userId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        telegram_id: userId,
+                        first_name: 'Тест',
+                        last_name: 'Пользователь',
+                        username: 'testuser',
+                        phone: null,
+                        full_name: fullName,
+                        phone_number: phone,
+                        privacy_consent: consent
+                    })
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <div class="success">✅ Пользователь обновлен</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Ошибка: ${error.message}</div>`;
+            }
+        }
+        
+        async function testAdminAPI() {
+            const resultDiv = document.getElementById('adminAPIResult');
+            
+            try {
+                resultDiv.innerHTML = 'Запрос к админ API...';
+                const response = await fetch('/api/admin/customers');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ Ответ от админ API</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Ошибка: ${error.message}</div>`;
+            }
+        }
+        
+        async function testDatabase() {
+            const resultDiv = document.getElementById('databaseResult');
+            
+            try {
+                resultDiv.innerHTML = 'Проверка базы данных...';
+                const response = await fetch('/test-db');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ Данные из базы</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Ошибка: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html> 

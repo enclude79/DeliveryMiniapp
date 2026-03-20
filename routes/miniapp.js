@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const path = require('path');
 const { query } = require('../database');
 const { cache } = require('../cache');
+const ensureProfileComplete = require('../middleware/ensureProfileComplete');
 
 const router = express.Router();
 
@@ -76,8 +77,8 @@ router.get('/categories', async (req, res) => {
     }
 });
 
-// Получение товаров по категории
-router.get('/category/:id', async (req, res) => {
+// Получение товаров по категории (защищено Telegram подписью)
+router.get('/category/:id', verifyTelegramUser, async (req, res) => {
     try {
         const categoryId = req.params.id;
         const products = await query(
@@ -91,8 +92,8 @@ router.get('/category/:id', async (req, res) => {
     }
 });
 
-// Получение всех товаров
-router.get('/products', async (req, res) => {
+// Получение всех товаров (защищено Telegram подписью)
+router.get('/products', verifyTelegramUser, async (req, res) => {
     try {
         const products = await query(`
             SELECT p.*, c.name as category_name
@@ -107,8 +108,8 @@ router.get('/products', async (req, res) => {
     }
 });
 
-// Получение информации о товаре
-router.get('/product/:id', async (req, res) => {
+// Получение информации о товаре (защищено Telegram подписью)
+router.get('/product/:id', verifyTelegramUser, async (req, res) => {
     try {
         const productId = req.params.id;
         const [product] = await query(
@@ -131,7 +132,7 @@ router.get('/product/:id', async (req, res) => {
 });
 
 // Создание заказа
-router.post('/order', verifyTelegramUser, async (req, res) => {
+router.post('/order', verifyTelegramUser, ensureProfileComplete, async (req, res) => {
     try {
         const { items, total, customer_name, phone, address } = req.body;
         const userId = req.telegramUser?.id || 'anonymous';

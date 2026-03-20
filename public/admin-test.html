@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .error { color: red; }
+        .success { color: green; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Admin Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Тест API админки</h3>
+        <button onclick="testAdminAPI()">Проверить API админки</button>
+        <div id="admin-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Тест данных пользователей</h3>
+        <button onclick="testUsersData()">Проверить данные пользователей</button>
+        <div id="users-result" class="result"></div>
+    </div>
+
+    <script>
+        // Тест API админки
+        async function testAdminAPI() {
+            const resultDiv = document.getElementById('admin-result');
+            
+            try {
+                resultDiv.innerHTML = 'Проверяем API админки...';
+                
+                const response = await fetch('/api/admin/customers');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ API админки работает</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ Ошибка API админки: ${response.status}</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Ошибка: ${error.message}</div>`;
+            }
+        }
+
+        // Тест данных пользователей
+        async function testUsersData() {
+            const resultDiv = document.getElementById('users-result');
+            
+            try {
+                resultDiv.innerHTML = 'Проверяем данные пользователей...';
+                
+                // Проверяем demo_user
+                const demoResponse = await fetch('/users/demo_user');
+                const demoData = await demoResponse.json();
+                
+                // Проверяем 1717714804
+                const realResponse = await fetch('/users/1717714804');
+                const realData = await realResponse.json();
+                
+                let html = '<div class="success">✅ Данные пользователей:</div>';
+                html += '<table>';
+                html += '<tr><th>Telegram ID</th><th>Имя</th><th>Полное имя</th><th>Телефон</th><th>Согласие</th></tr>';
+                
+                // Demo user
+                html += `<tr>
+                    <td>${demoData.telegram_id || 'N/A'}</td>
+                    <td>${demoData.first_name || 'N/A'}</td>
+                    <td>${demoData.full_name || 'N/A'}</td>
+                    <td>${demoData.phone_number || 'N/A'}</td>
+                    <td>${demoData.privacy_consent ? '✅' : '❌'}</td>
+                </tr>`;
+                
+                // Real user
+                html += `<tr>
+                    <td>${realData.telegram_id || 'N/A'}</td>
+                    <td>${realData.first_name || 'N/A'}</td>
+                    <td>${realData.full_name || 'N/A'}</td>
+                    <td>${realData.phone_number || 'N/A'}</td>
+                    <td>${realData.privacy_consent ? '✅' : '❌'}</td>
+                </tr>`;
+                
+                html += '</table>';
+                
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Ошибка: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html> 

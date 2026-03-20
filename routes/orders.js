@@ -5,6 +5,23 @@ const { query } = require('../database');
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false });
 
+// Вспомогательная функция: получить минимальную сумму заказа (в рублях)
+async function getMinimumOrderAmountSafe() {
+    try {
+        const [setting] = await query(
+            'SELECT setting_value FROM app_settings WHERE setting_key = ? LIMIT 1',
+            ['minimum_order_amount']
+        );
+        const value = setting ? Number(setting.setting_value) : NaN;
+        if (Number.isNaN(value) || value < 0) {
+            return 500; // безопасный дефолт
+        }
+        return value;
+    } catch (_) {
+        return 500; // при ошибке — дефолт
+    }
+}
+
 // Middleware для логирования всех запросов к заказам
 router.use((req, res, next) => {
     console.log(`[ORDERS API] ${req.method} ${req.url} - IP: ${req.ip} - Time: ${new Date().toISOString()}`);
@@ -36,8 +53,8 @@ router.post('/miniapp', async (req, res) => {
             return res.status(400).json({ error: 'Некорректная сумма заказа' });
         }
 
-        // Получаем или создаем пользователя
-        let [user] = await query('SELECT id FROM users WHERE telegram_id = ?', [user_id]);
+        // Получаем или создаем пользователя (с полями профиля)
+        let [user] = await query('SELECT id, full_name, phone_number, privacy_consent FROM users WHERE telegram_id = ?', [user_id]);
         let userId;
 
         if (!user) {
@@ -47,9 +64,35 @@ router.post('/miniapp', async (req, res) => {
                 [user_id, user_data?.first_name || '', user_data?.last_name || '', user_data?.username || '']
             );
             userId = result.lastID;
+            // Загружаем полные данные пользователя для дальнейшей проверки
+            const [createdUser] = await query('SELECT id, full_name, phone_number, privacy_consent FROM users WHERE id = ?', [userId]);
+            user = createdUser;
         } else {
             userId = user.id;
             console.log(`[ORDERS API] Using existing user ID: ${userId}`);
+        }
+
+        // Серверная валидация профиля и согласия (для Mini App)
+        const missingName = !user?.full_name || String(user.full_name).trim() === '';
+        const missingPhone = !user?.phone_number || String(user.phone_number).trim() === '';
+        const noConsent = !user?.privacy_consent;
+        if (missingName || missingPhone || noConsent) {
+            console.log('[ORDERS API] MiniApp profile validation failed', { missingName, missingPhone, noConsent });
+            return res.status(400).json({
+                error: 'Для оформления заказа укажите имя и номер телефона и подтвердите согласие на обработку данных'
+            });
+        }
+
+        // Проверяем минимальную сумму
+        const minAmount = await getMinimumOrderAmountSafe();
+        const totalNumber = Number(total);
+        if (!Number.isFinite(totalNumber) || totalNumber <= 0) {
+            console.log('[ORDERS API] Invalid total amount');
+            return res.status(400).json({ error: 'Некорректная сумма заказа' });
+        }
+        if (totalNumber < minAmount) {
+            console.log(`[ORDERS API] Total below minimum: total=${totalNumber}, min=${minAmount}`);
+            return res.status(400).json({ error: `Минимальная сумма заказа ${minAmount}₽` });
         }
 
         // Создаем заказ
@@ -114,8 +157,8 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ error: 'Не указан telegram_id' });
         }
 
-        // Получаем пользователя
-        let [user] = await query('SELECT id FROM users WHERE telegram_id = ?', [telegram_id]);
+        // Получаем пользователя с полями профиля для проверки
+        let [user] = await query('SELECT id, full_name, phone_number, privacy_consent FROM users WHERE telegram_id = ?', [telegram_id]);
         let userId;
 
         if (!user) {
@@ -124,6 +167,33 @@ router.post('/', async (req, res) => {
         } else {
             userId = user.id;
             console.log(`[ORDERS API] Using user ID: ${userId}`);
+        }
+
+        // Серверная валидация профиля и согласия
+        const missingName = !user.full_name || String(user.full_name).trim() === '';
+        const missingPhone = !user.phone_number || String(user.phone_number).trim() === '';
+        const noConsent = !user.privacy_consent;
+        if (missingName || missingPhone || noConsent) {
+            console.log('[ORDERS API] Profile validation failed', {
+                missingName,
+                missingPhone,
+                noConsent
+            });
+            return res.status(400).json({
+                error: 'Для оформления заказа укажите имя и номер телефона и подтвердите согласие на обработку данных'
+            });
+        }
+
+        // Проверяем минимальную сумму
+        const minAmount = await getMinimumOrderAmountSafe();
+        const totalNumber = Number(total);
+        if (!Number.isFinite(totalNumber) || totalNumber <= 0) {
+            console.log('[ORDERS API] Invalid total amount');
+            return res.status(400).json({ error: 'Некорректная сумма заказа' });
+        }
+        if (totalNumber < minAmount) {
+            console.log(`[ORDERS API] Total below minimum: total=${totalNumber}, min=${minAmount}`);
+            return res.status(400).json({ error: `Минимальная сумма заказа ${minAmount}₽` });
         }
 
         // Создаем заказ

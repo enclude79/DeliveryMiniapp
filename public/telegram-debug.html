@@ -2,344 +2,233 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🤖 Telegram Bot Debug</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Mini App Debug</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
-            background: #1a1a1a !important;
-            color: #00ff00 !important;
-            font-family: 'Courier New', monospace;
-            padding: 15px;
-            font-size: 14px;
-            line-height: 1.4;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
         }
-        
-        .header {
-            background: #ff0000;
-            color: white;
-            padding: 15px;
+        .debug-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
             border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .debug-title {
+            font-size: 18px;
             font-weight: bold;
-        }
-        
-        .section {
-            background: rgba(0,255,0,0.1);
-            border: 1px solid #00ff00;
-            padding: 15px;
-            border-radius: 8px;
             margin-bottom: 15px;
+            color: #333;
         }
-        
-        .error { color: #ff4444; }
-        .success { color: #44ff44; }
-        .warning { color: #ffaa44; }
-        
-        .test-result {
-            padding: 10px;
-            margin: 10px 0;
+        .debug-content {
+            background: #f8f9fa;
+            padding: 15px;
             border-radius: 5px;
-            border-left: 4px solid;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
         }
-        
-        .test-pass { border-color: #44ff44; background: rgba(68,255,68,0.1); }
-        .test-fail { border-color: #ff4444; background: rgba(255,68,68,0.1); }
-        .test-warn { border-color: #ffaa44; background: rgba(255,170,68,0.1); }
-        
-        button {
-            background: #00ff00;
-            color: #000;
+        .test-button {
+            background: #007bff;
+            color: white;
             border: none;
             padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
             margin: 5px;
-            font-weight: bold;
         }
-        
-        button:hover { background: #44ff44; }
-        
-        .log {
-            background: #000;
-            color: #00ff00;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-            white-space: pre-wrap;
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .warning {
+            color: #ffc107;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        🤖 TELEGRAM BOT ДИАГНОСТИКА
-        <br>Анализ проблемы черного экрана
+    <h1>🔍 Telegram Mini App Debug</h1>
+    
+    <div class="debug-section">
+        <div class="debug-title">📱 Telegram WebApp Object</div>
+        <div class="debug-content" id="tg-object"></div>
     </div>
 
-    <div class="section">
-        <h3>📊 СИСТЕМНАЯ ИНФОРМАЦИЯ</h3>
-        <div id="system-info">Загрузка...</div>
+    <div class="debug-section">
+        <div class="debug-title">🔐 Init Data</div>
+        <div class="debug-content" id="init-data"></div>
     </div>
 
-    <div class="section">
-        <h3>🌐 ТЕСТ ПОДКЛЮЧЕНИЯ</h3>
-        <button onclick="testConnections()">🔄 Запустить тесты</button>
-        <div id="connection-tests"></div>
+    <div class="debug-section">
+        <div class="debug-title">👤 User Data</div>
+        <div class="debug-content" id="user-data"></div>
     </div>
 
-    <div class="section">
-        <h3>🤖 TELEGRAM API ТЕСТ</h3>
-        <button onclick="testTelegramAPI()">📱 Тест Telegram WebApp</button>
-        <div id="telegram-tests"></div>
-    </div>
-
-    <div class="section">
-        <h3>📝 ЛОГИ РЕАЛЬНОГО ВРЕМЕНИ</h3>
-        <button onclick="startLogging()">▶️ Начать логирование</button>
-        <button onclick="stopLogging()">⏹️ Остановить</button>
-        <div class="log" id="live-logs">Нажмите "Начать логирование" для мониторинга...</div>
-    </div>
-
-    <div class="section">
-        <h3>🛠️ РЕШЕНИЯ ПРОБЛЕМ</h3>
-        <div id="solutions"></div>
+    <div class="debug-section">
+        <div class="debug-title">🧪 API Tests</div>
+        <button class="test-button" onclick="testCreateUser()">Test Create User</button>
+        <button class="test-button" onclick="testGetUser()">Test Get User</button>
+        <button class="test-button" onclick="testUpdateUser()">Test Update User</button>
+        <div class="debug-content" id="api-results"></div>
     </div>
 
     <script>
-        let loggingInterval = null;
-        let testResults = [];
-        
-        // Системная информация
-        function displaySystemInfo() {
-            const info = {
-                'User-Agent': navigator.userAgent,
-                'Экран': `${screen.width}x${screen.height}`,
-                'Viewport': `${window.innerWidth}x${window.innerHeight}`,
-                'URL': window.location.href,
-                'Referer': document.referrer || 'Нет',
-                'Язык': navigator.language,
-                'Платформа': navigator.platform,
-                'Время': new Date().toLocaleString()
-            };
-            
-            let html = '';
-            for (const [key, value] of Object.entries(info)) {
-                html += `<div><strong>${key}:</strong> ${value}</div>`;
-            }
-            
-            document.getElementById('system-info').innerHTML = html;
-        }
-        
-        // Тест подключений
-        async function testConnections() {
-            const tests = [
-                { name: 'HTTP /app', url: '/app' },
-                { name: 'HTTPS /app', url: 'https://89.169.182.9:3443/app' },
-                { name: 'API Categories', url: '/products/categories' },
-                { name: 'Telegram Script', url: 'https://telegram.org/js/telegram-web-app.js' }
-            ];
-            
-            let html = '';
-            
-            for (const test of tests) {
-                try {
-                    const startTime = Date.now();
-                    const response = await fetch(test.url, { 
-                        method: 'HEAD',
-                        mode: 'no-cors'
-                    });
-                    const endTime = Date.now();
-                    
-                    html += `<div class="test-result test-pass">
-                        ✅ ${test.name}: OK (${endTime - startTime}ms)
-                    </div>`;
-                } catch (error) {
-                    html += `<div class="test-result test-fail">
-                        ❌ ${test.name}: ОШИБКА - ${error.message}
-                    </div>`;
-                }
-            }
-            
-            document.getElementById('connection-tests').innerHTML = html;
-        }
-        
-        // Тест Telegram API
-        function testTelegramAPI() {
-            let html = '';
-            
-            // Проверка наличия Telegram объекта
-            if (window.Telegram) {
-                html += `<div class="test-result test-pass">
-                    ✅ window.Telegram: Доступен
-                </div>`;
-                
-                if (window.Telegram.WebApp) {
-                    html += `<div class="test-result test-pass">
-                        ✅ Telegram.WebApp: Доступен
-                    </div>`;
-                    
-                    const webApp = window.Telegram.WebApp;
-                    
-                    // Проверяем свойства WebApp
-                    const properties = [
-                        'initData', 'initDataUnsafe', 'version', 'platform',
-                        'colorScheme', 'themeParams', 'isExpanded', 'viewportHeight',
-                        'viewportStableHeight', 'headerColor', 'backgroundColor'
-                    ];
-                    
-                    properties.forEach(prop => {
-                        if (webApp[prop] !== undefined) {
-                            html += `<div class="test-result test-pass">
-                                ✅ WebApp.${prop}: ${JSON.stringify(webApp[prop]).substring(0, 100)}
-                            </div>`;
-                        } else {
-                            html += `<div class="test-result test-warn">
-                                ⚠️ WebApp.${prop}: Не определено
-                            </div>`;
-                        }
-                    });
-                    
-                } else {
-                    html += `<div class="test-result test-fail">
-                        ❌ Telegram.WebApp: НЕ ДОСТУПЕН
-                    </div>`;
-                }
-            } else {
-                html += `<div class="test-result test-fail">
-                    ❌ window.Telegram: НЕ ДОСТУПЕН
-                </div>`;
-            }
-            
-            // Проверка мобильного устройства
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            html += `<div class="test-result ${isMobile ? 'test-pass' : 'test-warn'}">
-                ${isMobile ? '✅' : '⚠️'} Мобильное устройство: ${isMobile ? 'ДА' : 'НЕТ'}
-            </div>`;
-            
-            // Проверка источника
-            const fromTelegram = document.referrer.includes('telegram') || 
-                               window.location.href.includes('tgWebAppData');
-            html += `<div class="test-result ${fromTelegram ? 'test-pass' : 'test-fail'}">
-                ${fromTelegram ? '✅' : '❌'} Запуск из Telegram: ${fromTelegram ? 'ДА' : 'НЕТ'}
-            </div>`;
-            
-            document.getElementById('telegram-tests').innerHTML = html;
-        }
-        
-        // Логирование в реальном времени
-        function startLogging() {
-            if (loggingInterval) return;
-            
-            const logElement = document.getElementById('live-logs');
-            let logCount = 0;
-            
-            logElement.innerHTML = 'Мониторинг запущен...\n';
-            
-            loggingInterval = setInterval(async () => {
-                try {
-                    // Отправляем тестовый запрос
-                    const response = await fetch('/products/categories', {
-                        headers: {
-                            'X-Debug-Source': 'telegram-debug',
-                            'X-Debug-Time': Date.now()
-                        }
-                    });
-                    
-                    logCount++;
-                    const timestamp = new Date().toLocaleTimeString();
-                    logElement.innerHTML += `[${timestamp}] Тест #${logCount}: ${response.status} ${response.statusText}\n`;
-                    
-                    // Автоскролл
-                    logElement.scrollTop = logElement.scrollHeight;
-                    
-                } catch (error) {
-                    const timestamp = new Date().toLocaleTimeString();
-                    logElement.innerHTML += `[${timestamp}] ОШИБКА: ${error.message}\n`;
-                }
-            }, 3000);
-        }
-        
-        function stopLogging() {
-            if (loggingInterval) {
-                clearInterval(loggingInterval);
-                loggingInterval = null;
-                document.getElementById('live-logs').innerHTML += '\nМониторинг остановлен.\n';
-            }
-        }
-        
-        // Решения проблем
-        function displaySolutions() {
-            const solutions = [
-                {
-                    problem: '🤖 Бот не обращается к серверу',
-                    solution: 'Проверьте URL в BotFather: /setmenubutton → https://89.169.182.9:3443/app'
-                },
-                {
-                    problem: '🔒 SSL сертификат не валиден',
-                    solution: 'Telegram требует валидный SSL. Используйте Let\'s Encrypt или купите сертификат'
-                },
-                {
-                    problem: '📱 Черный экран в мобильном Telegram',
-                    solution: 'Проблема с iframe. Проверьте заголовки X-Frame-Options и CSP'
-                },
-                {
-                    problem: '🌐 Mixed Content ошибки',
-                    solution: 'Все ресурсы должны загружаться по HTTPS'
-                }
-            ];
-            
-            let html = '';
-            solutions.forEach(item => {
-                html += `<div class="test-result test-warn">
-                    <strong>${item.problem}</strong><br>
-                    💡 ${item.solution}
-                </div>`;
-            });
-            
-            document.getElementById('solutions').innerHTML = html;
-        }
-        
-        // Инициализация
-        document.addEventListener('DOMContentLoaded', function() {
-            displaySystemInfo();
-            displaySolutions();
-            
-            // Автоматически запускаем тесты
-            setTimeout(() => {
-                testConnections();
-                testTelegramAPI();
-            }, 1000);
-        });
-        
-        // Отправка диагностических данных на сервер
-        async function sendDiagnostics() {
-            const diagnostics = {
-                userAgent: navigator.userAgent,
-                url: window.location.href,
-                referrer: document.referrer,
-                timestamp: Date.now(),
-                telegramAvailable: !!(window.Telegram && window.Telegram.WebApp),
-                testResults: testResults
-            };
-            
+        let tg;
+        let currentUser = null;
+
+        // Инициализация Telegram WebApp
+        function initTelegram() {
             try {
-                await fetch('/debug/report', {
+                tg = window.Telegram.WebApp;
+                tg.ready();
+                tg.expand();
+                
+                console.log('✅ Telegram WebApp инициализирован');
+                displayDebugInfo();
+            } catch (error) {
+                console.error('❌ Ошибка инициализации Telegram WebApp:', error);
+                document.getElementById('tg-object').innerHTML = '❌ Ошибка: ' + error.message;
+            }
+        }
+
+        // Отображение отладочной информации
+        function displayDebugInfo() {
+            // Telegram WebApp Object
+            const tgInfo = {
+                version: tg.version,
+                platform: tg.platform,
+                colorScheme: tg.colorScheme,
+                themeParams: tg.themeParams,
+                isExpanded: tg.isExpanded,
+                viewportHeight: tg.viewportHeight,
+                viewportStableHeight: tg.viewportStableHeight,
+                headerColor: tg.headerColor,
+                backgroundColor: tg.backgroundColor,
+                isClosingConfirmationEnabled: tg.isClosingConfirmationEnabled,
+                backButton: tg.backButton,
+                mainButton: tg.mainButton,
+                HapticFeedback: tg.HapticFeedback
+            };
+            
+            document.getElementById('tg-object').textContent = JSON.stringify(tgInfo, null, 2);
+
+            // Init Data
+            const initDataInfo = {
+                query_id: tg.initDataUnsafe?.query_id,
+                user: tg.initDataUnsafe?.user,
+                receiver: tg.initDataUnsafe?.receiver,
+                chat: tg.initDataUnsafe?.chat,
+                chat_type: tg.initDataUnsafe?.chat_type,
+                chat_instance: tg.initDataUnsafe?.chat_instance,
+                start_param: tg.initDataUnsafe?.start_param,
+                can_send_after: tg.initDataUnsafe?.can_send_after,
+                auth_date: tg.initDataUnsafe?.auth_date,
+                hash: tg.initData
+            };
+            
+            document.getElementById('init-data').textContent = JSON.stringify(initDataInfo, null, 2);
+
+            // User Data
+            const userInfo = tg.initDataUnsafe?.user || null;
+            document.getElementById('user-data').textContent = JSON.stringify(userInfo, null, 2);
+        }
+
+        // Тест создания пользователя
+        async function testCreateUser() {
+            try {
+                const userData = {
+                    telegram_id: tg.initDataUnsafe?.user?.id?.toString() || 'test_user',
+                    first_name: tg.initDataUnsafe?.user?.first_name || 'Test',
+                    last_name: tg.initDataUnsafe?.user?.last_name || 'User',
+                    username: tg.initDataUnsafe?.user?.username || 'test_user'
+                };
+
+                const response = await fetch('/users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(diagnostics)
+                    body: JSON.stringify(userData)
                 });
+
+                const result = await response.json();
+                document.getElementById('api-results').innerHTML = 
+                    `<span class="success">✅ POST /users - ${response.status}</span>\n` +
+                    JSON.stringify(result, null, 2);
+                
+                if (response.ok) {
+                    currentUser = result;
+                }
             } catch (error) {
-                console.error('Ошибка отправки диагностики:', error);
+                document.getElementById('api-results').innerHTML = 
+                    `<span class="error">❌ POST /users - Ошибка: ${error.message}</span>`;
+            }
+        }
+
+        // Тест получения пользователя
+        async function testGetUser() {
+            try {
+                const telegramId = tg.initDataUnsafe?.user?.id?.toString() || 'test_user';
+                const response = await fetch(`/users/${telegramId}`);
+                const result = await response.json();
+                
+                document.getElementById('api-results').innerHTML = 
+                    `<span class="success">✅ GET /users/${telegramId} - ${response.status}</span>\n` +
+                    JSON.stringify(result, null, 2);
+                
+                if (response.ok) {
+                    currentUser = result;
+                }
+            } catch (error) {
+                document.getElementById('api-results').innerHTML = 
+                    `<span class="error">❌ GET /users - Ошибка: ${error.message}</span>`;
+            }
+        }
+
+        // Тест обновления пользователя
+        async function testUpdateUser() {
+            try {
+                const telegramId = tg.initDataUnsafe?.user?.id?.toString() || 'test_user';
+                const updateData = {
+                    telegram_id: telegramId,
+                    first_name: tg.initDataUnsafe?.user?.first_name || 'Test',
+                    last_name: tg.initDataUnsafe?.user?.last_name || 'User',
+                    username: tg.initDataUnsafe?.user?.username || 'test_user',
+                    phone: null,
+                    full_name: 'Тест Тестович',
+                    phone_number: '+7 (999) 123-45-67',
+                    privacy_consent: true
+                };
+
+                const response = await fetch(`/users/${telegramId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updateData)
+                });
+
+                const result = await response.json();
+                document.getElementById('api-results').innerHTML = 
+                    `<span class="success">✅ PUT /users/${telegramId} - ${response.status}</span>\n` +
+                    JSON.stringify(result, null, 2);
+                
+                if (response.ok) {
+                    currentUser = result;
+                }
+            } catch (error) {
+                document.getElementById('api-results').innerHTML = 
+                    `<span class="error">❌ PUT /users - Ошибка: ${error.message}</span>`;
             }
         }
         
-        // Отправляем диагностику при загрузке
-        window.addEventListener('load', sendDiagnostics);
+        // Инициализация при загрузке страницы
+        window.addEventListener('load', initTelegram);
     </script>
 </body>
 </html> 

@@ -13,6 +13,7 @@
             box-sizing: border-box;
         }
 
+
         html, body {
             height: 100%;
             background-color: #F8F9FA !important;
@@ -25,6 +26,26 @@
             visibility: visible !important;
             opacity: 1 !important;
             overflow-x: hidden;
+        }
+
+        /* Стили для браузерного режима */
+        .browser-mode {
+            padding-top: 20px;
+        }
+
+        .browser-mode .app-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 15px;
+            text-align: center;
+            margin: -20px -16px 20px -16px;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .browser-mode .app-header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
         }
 
         /* Современная цветовая схема для доставки */
@@ -157,6 +178,7 @@
             box-shadow: var(--card-shadow);
             text-align: center;
             transition: all 0.3s ease;
+            position: relative;
         }
 
         .product-card:hover {
@@ -196,6 +218,149 @@
             font-weight: 700;
             color: var(--accent-color);
             margin-bottom: 12px;
+        }
+
+        /* Мини-кнопка описания товара */
+        .desc-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--border-color);
+            background: var(--background-white);
+            color: var(--text-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .desc-btn:hover {
+            background: var(--background-light);
+            transform: translateY(-1px);
+        }
+
+        /* Модальное окно описания товара */
+        .desc-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1100;
+            padding: 20px;
+        }
+
+        .desc-modal.hidden {
+            display: none;
+        }
+
+        .desc-modal-content {
+            background: var(--background-white);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 520px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--card-shadow);
+        }
+
+        .desc-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .desc-modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .desc-modal-close {
+            background: none;
+            border: 1px solid var(--border-color);
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .desc-modal-body {
+            padding: 18px 20px 22px 20px;
+            color: var(--text-primary);
+            line-height: 1.5;
+            white-space: pre-wrap; /* сохраняем переносы строк и эмодзи */
+            font-size: 14px;
+        }
+
+        /* Модалка просмотра изображения товара */
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1200;
+            padding: 20px;
+        }
+
+        .image-modal.hidden {
+            display: none;
+        }
+
+        .image-modal-content {
+            position: relative;
+            max-width: 96vw;
+            max-height: 92vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-modal-img {
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+            background: #000;
+        }
+
+        .image-modal-close {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background: var(--background-white);
+            color: var(--text-primary);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
         }
 
         .price-weight-row {
@@ -308,6 +473,153 @@
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        /* Снипет профиля */
+        .profile-snippet {
+            background: var(--background-light);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .snippet-item {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+            gap: 12px;
+        }
+
+        .snippet-item:last-child {
+            border-bottom: none;
+        }
+
+        .snippet-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            flex-shrink: 1;
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        .snippet-value {
+            color: var(--text-secondary);
+            text-align: right;
+            flex-shrink: 0;
+            min-width: 120px;
+            word-break: keep-all;
+            white-space: nowrap;
+        }
+
+        /* Модальное окно профиля */
+        .profile-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .profile-modal.hidden {
+            display: none;
+        }
+
+        .profile-modal-content {
+            background: var(--background-white);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .profile-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .profile-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .profile-modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .profile-modal-close:hover {
+            background: var(--background-light);
+            color: var(--text-primary);
+        }
+
+        .profile-modal-body {
+            padding: 15px 20px;
+        }
+
+        /* Область текста согласия */
+        .consent-text-area {
+            background: var(--background-light);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 15px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.4;
+            color: var(--text-secondary);
+            white-space: pre-line;
+        }
+
+        .consent-text-area::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .consent-text-area::-webkit-scrollbar-track {
+            background: var(--background-light);
+            border-radius: 3px;
+        }
+
+        .consent-text-area::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .consent-text-area::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        .profile-modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .profile-modal-actions .btn {
+            flex: 1;
         }
 
         .address-item {
@@ -898,10 +1210,136 @@
         .hidden {
             display: none !important;
         }
+
+        /* Стили для формы профиля */
+        .profile-form {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="tel"],
+        .form-group input[type="date"],
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background: var(--background-white);
+            color: var(--text-primary);
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        /* Стили для селекторов даты - всегда в одной строке */
+        .date-selectors {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.5fr; /* День | Месяц | Год */
+            gap: 8px;
+            width: 100%;
+        }
+
+        .date-selector {
+            width: 100%;
+            padding: 12px 8px; /* Уменьшаем горизонтальный padding для компактности */
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background: var(--background-white);
+            color: var(--text-primary);
+            transition: border-color 0.3s ease;
+            min-width: 0; /* Позволяет сжиматься меньше содержимого */
+        }
+
+        .date-selector:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        /* Адаптация для очень маленьких экранов */
+        @media (max-width: 320px) {
+            .date-selectors {
+                gap: 4px;
+            }
+            
+            .date-selector {
+                padding: 10px 6px;
+                font-size: 14px;
+            }
+        }
+
+        .checkbox-label {
+            display: flex !important;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal !important;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+        }
+
+        .checkbox-label input[type="checkbox"]:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Заголовок для браузерного режима -->
+        <div class="app-header" style="display: none;">
+            <h1>🍽️ DeliveryVLG</h1>
+            <p>Доставка еды в Волгограде</p>
+        </div>
+        
         <div class="header">
             <h1>🍽️ Delivery App</h1>
             <p>Быстрая доставка вкусной еды</p>
@@ -932,8 +1370,55 @@
             </div>
         </div>
 
+        <!-- Модальное окно описания товара -->
+        <div id="description-modal" class="desc-modal hidden">
+            <div class="desc-modal-content">
+                <div class="desc-modal-header">
+                    <div class="desc-modal-title" id="desc-title"></div>
+                    <button class="desc-modal-close" onclick="closeDescriptionModal()">×</button>
+                </div>
+                <div class="desc-modal-body" id="desc-body"></div>
+            </div>
+        </div>
+
+        <!-- Модальное окно просмотра изображения товара -->
+        <div id="image-viewer-modal" class="image-modal hidden" role="dialog" aria-modal="true" aria-labelledby="image-viewer-title">
+            <div class="image-modal-content" onclick="event.stopPropagation()">
+                <h2 id="image-viewer-title" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">Просмотр изображения товара</h2>
+                <img id="image-viewer-img" class="image-modal-img" alt="Изображение товара">
+                <button class="image-modal-close" onclick="closeImageViewer()" aria-label="Закрыть просмотр">×</button>
+            </div>
+        </div>
+
         <!-- Личный кабинет -->
         <div id="profile-view">
+            <!-- Личные данные -->
+            <div class="profile-section">
+                <h3>👤 Личные данные</h3>
+                
+                <!-- Снипет данных -->
+                <div class="profile-snippet" id="profile-snippet">
+                    <div class="snippet-item">
+                        <span class="snippet-label">📝 Полное имя:</span>
+                        <span class="snippet-value" id="snippet-full-name">Не указано</span>
+                    </div>
+                    <div class="snippet-item">
+                        <span class="snippet-label">📱 Ном тел:</span>
+                        <span class="snippet-value" id="snippet-phone">Не указан</span>
+                    </div>
+                    <div class="snippet-item">
+                        <span class="snippet-label">🎂 Дата рождения:</span>
+                        <span class="snippet-value" id="snippet-birth-date">Не указана</span>
+                    </div>
+                    <div class="snippet-item">
+                        <span class="snippet-label">👤 Пол:</span>
+                        <span class="snippet-value" id="snippet-gender">Не указан</span>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="showEditProfileModal()">✏️ Редактировать</button>
+                </div>
+            </div>
+
             <!-- Адреса -->
             <div class="profile-section">
                 <h3>📍 Мои адреса</h3>
@@ -983,16 +1468,140 @@
         </div>
     </div>
 
+    <!-- Модальное окно редактирования профиля -->
+    <div id="profile-modal" class="profile-modal hidden">
+        <div class="profile-modal-content">
+            <div class="profile-modal-header">
+                <div class="profile-modal-title">✏️ Редактирование профиля</div>
+                <button class="profile-modal-close" onclick="closeProfileModal()">×</button>
+            </div>
+            <div class="profile-modal-body">
+                <div class="profile-form">
+                    <div class="form-group">
+                        <label for="modal-fullName">📝 Полное имя</label>
+                        <input type="text" id="modal-fullName" placeholder="Введите ваше полное имя" maxlength="150">
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-phoneNumber">📱 Номер телефона</label>
+                        <input type="tel" id="modal-phoneNumber" placeholder="+7 (___) ___-__-__" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label>🎂 Дата рождения</label>
+                        <div class="date-selectors">
+                            <select id="modal-birthDay" class="date-selector">
+                                <option value="">День</option>
+                            </select>
+                            <select id="modal-birthMonth" class="date-selector">
+                                <option value="">Месяц</option>
+                            </select>
+                            <select id="modal-birthYear" class="date-selector">
+                                <option value="">Год</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-gender">👤 Пол</label>
+                        <select id="modal-gender" class="form-control">
+                            <option value="">Не указан</option>
+                            <option value="Мужской">Мужской</option>
+                            <option value="Женский">Женский</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Область текста согласия (показывается только если согласие не дано) -->
+                    <div id="consent-text-container" class="form-group" style="display: none;">
+                        <label>🔒 Текст согласия на обработку персональных данных</label>
+                        <div id="consent-text-area" class="consent-text-area"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modal-privacyConsent" class="checkbox-label">
+                            <input type="checkbox" id="modal-privacyConsent">
+                            ✅ Согласие на обработку персональных данных
+                        </label>
+                    </div>
+                    <div class="profile-modal-actions">
+                        <button class="btn btn-primary" onclick="saveProfileFromModal()">💾 Сохранить</button>
+                        <button class="btn btn-secondary" onclick="closeProfileModal()">❌ Отмена</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
-        // Telegram WebApp
+        // ===== Минимальная сумма заказа: кэш на сессию =====
+        let minimumOrderAmountCache = null; // number | null
+        async function initMinimumOrderAmount() {
+            try {
+                // Однократная загрузка при старте
+                const resp = await fetch('/settings');
+                const settings = await resp.json();
+                let value = Number(settings.minimum_order_amount?.value);
+                if (!Number.isFinite(value) || value < 0) value = 500;
+                minimumOrderAmountCache = value;
+                console.log('🔧 [INIT] Минимальная сумма заказа загружена:', minimumOrderAmountCache);
+            } catch (e) {
+                minimumOrderAmountCache = 500; // безопасный дефолт
+                console.warn('⚠️ [INIT] Не удалось загрузить минимум, используем дефолт:', minimumOrderAmountCache, e);
+            }
+        }
+
+        function getMinimumOrderAmountFromCache() {
+            return Number.isFinite(minimumOrderAmountCache) ? minimumOrderAmountCache : 500;
+        }
+
+        // Telegram WebApp с улучшенным fallback
         let tg = window.Telegram?.WebApp || {
-            ready: () => {},
+            ready: () => {
+                console.log('📱 Fallback: Telegram WebApp недоступен, используем браузерный режим');
+            },
             expand: () => {},
-            MainButton: { setText: () => {}, show: () => {}, hide: () => {}, onClick: () => {} },
+            MainButton: { 
+                setText: () => {}, 
+                show: () => {}, 
+                hide: () => {}, 
+                onClick: () => {} 
+            },
             showAlert: (msg) => alert(msg),
-            close: () => window.history.back()
+            close: () => window.history.back(),
+            initData: '',
+            initDataUnsafe: {},
+            version: '6.0',
+            platform: 'web',
+            colorScheme: 'light',
+            themeParams: {
+                bg_color: '#ffffff',
+                text_color: '#000000',
+                hint_color: '#999999',
+                link_color: '#2481cc',
+                button_color: '#2481cc',
+                button_text_color: '#ffffff'
+            },
+            isExpanded: false,
+            viewportHeight: window.innerHeight,
+            viewportStableHeight: window.innerHeight
         };
+
+        // Проверяем, запущено ли приложение в Telegram
+        const isInTelegram = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData;
+        
+        if (!isInTelegram) {
+            console.log('🌐 Приложение открыто в браузере (не в Telegram)');
+            // Убираем сообщение об ошибке инициализации для браузерного режима
+            document.body.classList.add('browser-mode');
+            
+            // Показываем заголовок для браузерного режима
+            setTimeout(() => {
+                const appHeader = document.querySelector('.app-header');
+                if (appHeader) {
+                    appHeader.style.display = 'block';
+                }
+            }, 100);
+        } else {
+            console.log('📱 Приложение открыто в Telegram');
+        }
 
         // Глобальные переменные
         let categories = [];
@@ -1002,6 +1611,7 @@
         let userAddresses = [];
         let userOrders = [];
         let currentView = 'categories';
+        let privacyConsentText = '';
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
@@ -1016,19 +1626,79 @@
             initializeUser();
             loadCategories();
             updateCartIcon();
+            
+            // Инициализируем минимальную сумму заказа один раз при старте
+            initMinimumOrderAmount();
+            
+            // Добавляем обработчики событий для формы профиля
+            const phoneInput = document.getElementById('phoneNumber');
+            if (phoneInput) {
+                phoneInput.addEventListener('input', function() {
+                    formatPhoneNumber(this);
+                });
+                
+                // Добавляем "+7" при фокусе на пустом поле
+                phoneInput.addEventListener('focus', function() {
+                    if (!this.value || this.value.trim() === '') {
+                        this.value = '+7';
+                    }
+                });
+                
+                // Очищаем поле если пользователь убрал фокус и оставил только "+7"
+                phoneInput.addEventListener('blur', function() {
+                    if (this.value === '+7') {
+                        this.value = '';
+                    }
+                });
+            }
+
+            // Добавляем обработчики событий для модального окна профиля
+            const modalPhoneInput = document.getElementById('modal-phoneNumber');
+            if (modalPhoneInput) {
+                modalPhoneInput.addEventListener('input', function() {
+                    formatPhoneNumber(this);
+                });
+                
+                // Добавляем "+7" при фокусе на пустом поле
+                modalPhoneInput.addEventListener('focus', function() {
+                    if (!this.value || this.value.trim() === '') {
+                        this.value = '+7';
+                    }
+                });
+                
+                // Очищаем поле если пользователь убрал фокус и оставил только "+7"
+                modalPhoneInput.addEventListener('blur', function() {
+                    if (this.value === '+7') {
+                        this.value = '';
+                    }
+                });
+            }
+
+            // Закрытие модального окна при клике вне его
+            document.getElementById('profile-modal').addEventListener('click', function(event) {
+                if (event.target === this) {
+                    closeProfileModal();
+                }
+            });
+
+            // Инициализация селекторов даты
+            initializeDateSelectors();
         });
 
         // Инициализация пользователя
         async function initializeUser() {
             try {
-                let userData = {
-                    telegram_id: 'demo_user',
-                    first_name: 'Демо',
-                    last_name: 'Пользователь',
-                    username: 'demo_user'
-                };
-
-                // Попытка получить реальные данные из Telegram
+                console.log('🔍 [DEBUG] Начало инициализации пользователя');
+                console.log('🔍 [DEBUG] tg объект:', tg);
+                console.log('🔍 [DEBUG] tg.initDataUnsafe:', tg.initDataUnsafe);
+                console.log('🔍 [DEBUG] tg.initDataUnsafe.user:', tg.initDataUnsafe?.user);
+                console.log('🔍 [DEBUG] tg.initDataUnsafe.chat_instance:', tg.initDataUnsafe?.chat_instance);
+                console.log('🔍 [DEBUG] tg.initDataUnsafe.chat_type:', tg.initDataUnsafe?.chat_type);
+                console.log('🔍 [DEBUG] tg.initDataUnsafe.start_param:', tg.initDataUnsafe?.start_param);
+                
+                // Получаем данные пользователя из Telegram
+                let userData = null;
+                
                 if (tg.initDataUnsafe?.user) {
                     const telegramUser = tg.initDataUnsafe.user;
                     userData = {
@@ -1037,22 +1707,71 @@
                         last_name: telegramUser.last_name || '',
                         username: telegramUser.username || ''
                     };
-                    console.log('✅ Реальный пользователь:', userData.telegram_id);
+                    console.log('✅ Реальный пользователь Telegram:', userData.telegram_id);
+                    console.log('🔍 [DEBUG] Telegram User Data:', telegramUser);
+                } else {
+                    // Браузерный режим - создаем тестового пользователя
+                    if (!isInTelegram) {
+                        console.log('🌐 Браузерный режим: создаем тестового пользователя');
+                        userData = {
+                            telegram_id: 'browser_user_' + Date.now(),
+                            first_name: 'Тестовый',
+                            last_name: 'Пользователь',
+                            username: 'browser_user'
+                        };
+                        console.log('✅ Тестовый пользователь создан:', userData.telegram_id);
+                    } else {
+                        console.error('❌ [DEBUG] tg.initDataUnsafe.user не найден!');
+                        console.error('❌ [DEBUG] tg.initDataUnsafe:', tg.initDataUnsafe);
+                        safeAlert('Ошибка инициализации Telegram. Попробуйте перезапустить приложение.');
+                        return;
+                    }
                 }
 
+                console.log('🔍 [DEBUG] Отправляем данные пользователя на сервер:', userData);
+                
                 const response = await fetch('/users', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(userData)
                 });
 
+                console.log('🔍 [DEBUG] Ответ сервера:', response.status, response.statusText);
+
                 if (response.ok) {
                     currentUser = await response.json();
                     console.log('✅ Пользователь инициализирован:', currentUser.telegram_id);
+                    console.log('🔍 [DEBUG] Полные данные пользователя:', currentUser);
                     
                     // Загружаем данные пользователя
                     await loadUserAddresses();
                     await loadUserOrders();
+                    
+                    // Принудительно загружаем полные данные профиля
+                    await loadProfileForm();
+
+                    // Авто-показ модалки профиля при первом входе/незаполненных данных
+                    try {
+                        const missingName = !currentUser.full_name || currentUser.full_name.trim() === '';
+                        const missingPhone = !currentUser.phone_number || currentUser.phone_number.trim() === '';
+                        const noConsent = !currentUser.privacy_consent;
+                        if (missingName || missingPhone || noConsent) {
+                            const friendlyText = `🙂 Давайте познакомимся!
+
+Чтобы оформить заказ, укажите ваше имя и номер телефона, 
+а также подтвердите согласие на обработку персональных данных.
+
+Это займёт меньше минуты 💚`;
+                            safeAlert(friendlyText);
+                            showEditProfileModal();
+                        }
+                    } catch (e) {
+                        console.error('Ошибка авто-показа модалки профиля:', e);
+                    }
+                } else {
+                    console.error('❌ [DEBUG] Ошибка создания пользователя:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('❌ [DEBUG] Текст ошибки:', errorText);
                 }
             } catch (error) {
                 console.error('Ошибка инициализации пользователя:', error);
@@ -1087,9 +1806,607 @@
                 
                 await loadUserOrders();
                 await displayOrders();
+                
+                // Загружаем данные профиля
+                await loadProfileForm();
             } catch (error) {
                 console.error('Ошибка загрузки данных профиля:', error);
             }
+        }
+
+        // Загрузка формы профиля
+        async function loadProfileForm() {
+            try {
+                console.log('🔍 [DEBUG] Начало загрузки формы профиля');
+                console.log('🔍 [DEBUG] currentUser:', currentUser);
+                
+                if (!currentUser) {
+                    console.error('❌ [DEBUG] currentUser не найден в loadProfileForm');
+                    return;
+                }
+                
+                console.log('🔍 [DEBUG] Запрашиваем данные пользователя:', `/users/${currentUser.telegram_id}`);
+                
+                const response = await fetch(`/users/${currentUser.telegram_id}`);
+                console.log('🔍 [DEBUG] Ответ сервера loadProfileForm:', response.status, response.statusText);
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    console.log('🔍 [DEBUG] Полученные данные пользователя:', userData);
+                    
+                    // Обновляем снипет профиля
+                    updateProfileSnippet(userData);
+                    
+                    // Заполняем модальную форму данными
+                    document.getElementById('modal-fullName').value = userData.full_name || '';
+                    document.getElementById('modal-phoneNumber').value = userData.phone_number || '';
+                    setDateToSelectors(userData.date_of_birth);
+                    document.getElementById('modal-gender').value = userData.gender || '';
+                    
+                    // Устанавливаем состояние чекбокса согласия в модальном окне
+                    const privacyCheckbox = document.getElementById('modal-privacyConsent');
+                    privacyCheckbox.checked = userData.privacy_consent || false;
+                    
+                    // Если согласие уже дано, делаем чекбокс недоступным
+                    if (userData.privacy_consent) {
+                        privacyCheckbox.disabled = true;
+                    } else {
+                        privacyCheckbox.disabled = false;
+                    }
+                    
+                    console.log('🔍 [DEBUG] Загружены данные профиля:', {
+                        full_name: userData.full_name,
+                        phone_number: userData.phone_number,
+                        privacy_consent: userData.privacy_consent
+                    });
+                    
+                    // Обновляем currentUser с полученными данными
+                    currentUser = userData;
+                    console.log('🔍 [DEBUG] currentUser обновлен:', currentUser);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки формы профиля:', error);
+            }
+        }
+
+        // Обновление снипета профиля
+        function updateProfileSnippet(userData) {
+            document.getElementById('snippet-full-name').textContent = userData.full_name || 'Не указано';
+            document.getElementById('snippet-phone').textContent = userData.phone_number || 'Не указан';
+            
+            // Форматируем дату рождения для отображения
+            let birthDateText = 'Не указана';
+            if (userData.date_of_birth) {
+                const date = new Date(userData.date_of_birth);
+                birthDateText = date.toLocaleDateString('ru-RU');
+            }
+            document.getElementById('snippet-birth-date').textContent = birthDateText;
+            
+            document.getElementById('snippet-gender').textContent = userData.gender || 'Не указан';
+        }
+
+        // Показать модальное окно редактирования профиля
+        async function showEditProfileModal() {
+            // Загружаем данные профиля
+            loadProfileForm();
+            
+            // Показываем модальное окно
+            document.getElementById('profile-modal').classList.remove('hidden');
+            
+            // Настраиваем отображение текста согласия
+            await setupConsentTextDisplay();
+        }
+
+        // Настроить отображение текста согласия в модальном окне
+        async function setupConsentTextDisplay() {
+            const consentContainer = document.getElementById('consent-text-container');
+            const consentTextArea = document.getElementById('consent-text-area');
+            const consentCheckbox = document.getElementById('modal-privacyConsent');
+            
+            if (!consentContainer || !consentTextArea || !consentCheckbox) return;
+            
+            // Показываем текст согласия только если пользователь еще не дал согласие
+            if (!currentUser?.privacy_consent) {
+                // Загружаем текст согласия только если он еще не загружен
+                if (!privacyConsentText) {
+                    console.log('🔄 Загружаем текст согласия для пользователя без согласия');
+                    await loadPrivacyConsentText();
+                }
+                
+                // Используем загруженный текст или текст по умолчанию
+                const consentText = privacyConsentText || getDefaultPrivacyConsentText();
+                consentTextArea.textContent = consentText;
+                consentContainer.style.display = 'block';
+                
+                // Сбрасываем чекбокс
+                consentCheckbox.checked = false;
+            } else {
+                // Скрываем текст согласия если согласие уже дано
+                console.log('✅ Пользователь уже дал согласие, текст не загружаем');
+                consentContainer.style.display = 'none';
+                consentCheckbox.checked = true;
+                consentCheckbox.disabled = true;
+            }
+        }
+
+        // Закрыть модальное окно редактирования профиля
+        function closeProfileModal() {
+            // Сбрасываем состояние чекбокса согласия
+            const consentCheckbox = document.getElementById('modal-privacyConsent');
+            if (consentCheckbox) {
+                consentCheckbox.disabled = false;
+            }
+            
+            document.getElementById('profile-modal').classList.add('hidden');
+        }
+
+        // ===== ПРОСТЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С ДАТОЙ =====
+        
+        // Инициализация селекторов даты
+        function initializeDateSelectors() {
+            const daySelect = document.getElementById('modal-birthDay');
+            const monthSelect = document.getElementById('modal-birthMonth');
+            const yearSelect = document.getElementById('modal-birthYear');
+            
+            // Заполняем дни (1-31)
+            for (let day = 1; day <= 31; day++) {
+                const option = document.createElement('option');
+                option.value = day;
+                option.textContent = day;
+                daySelect.appendChild(option);
+            }
+            
+            // Заполняем месяцы (1-12)
+            for (let month = 1; month <= 12; month++) {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = month.toString().padStart(2, '0'); // 01, 02, 03...
+                monthSelect.appendChild(option);
+            }
+            
+            // Заполняем годы (1950 - текущий год)
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year >= 1950; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+            
+            // Обработчик изменения месяца/года для корректировки дней
+            function updateDays() {
+                const month = parseInt(monthSelect.value);
+                const year = parseInt(yearSelect.value);
+                const currentDay = parseInt(daySelect.value);
+                
+                if (month && year) {
+                    const daysInMonth = new Date(year, month, 0).getDate();
+                    
+                    // Удаляем лишние дни
+                    while (daySelect.children.length > daysInMonth + 1) {
+                        daySelect.removeChild(daySelect.lastChild);
+                    }
+                    
+                    // Добавляем недостающие дни
+                    for (let day = daySelect.children.length; day <= daysInMonth; day++) {
+                        const option = document.createElement('option');
+                        option.value = day;
+                        option.textContent = day;
+                        daySelect.appendChild(option);
+                    }
+                    
+                    // Если выбранный день больше доступных, сбрасываем
+                    if (currentDay > daysInMonth) {
+                        daySelect.value = '';
+                    }
+                }
+            }
+            
+            monthSelect.addEventListener('change', updateDays);
+            yearSelect.addEventListener('change', updateDays);
+        }
+        
+        // Получить дату из селекторов в формате YYYY-MM-DD
+        function getDateFromSelectors() {
+            const day = document.getElementById('modal-birthDay').value;
+            const month = document.getElementById('modal-birthMonth').value;
+            const year = document.getElementById('modal-birthYear').value;
+            
+            if (!day || !month || !year) return null;
+            
+            return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+        
+        // Установить дату в селекторы из формата YYYY-MM-DD
+        function setDateToSelectors(dateString) {
+            if (!dateString) {
+                document.getElementById('modal-birthDay').value = '';
+                document.getElementById('modal-birthMonth').value = '';
+                document.getElementById('modal-birthYear').value = '';
+                return;
+            }
+            
+            const [year, month, day] = dateString.split('-');
+            document.getElementById('modal-birthDay').value = parseInt(day);
+            document.getElementById('modal-birthMonth').value = parseInt(month);
+            document.getElementById('modal-birthYear').value = parseInt(year);
+        }
+
+        // Сохранение профиля из модального окна
+        async function saveProfileFromModal() {
+            try {
+                console.log('🔍 [DEBUG] ===== НАЧАЛО СОХРАНЕНИЯ ПРОФИЛЯ =====');
+                console.log('🔍 [DEBUG] currentUser:', currentUser);
+                console.log('🔍 [DEBUG] Функция вызвана из модального окна');
+                
+                if (!currentUser) {
+                    console.error('❌ [DEBUG] currentUser не найден');
+                    safeAlert('Ошибка: пользователь не найден');
+                    return;
+                }
+
+                const fullName = document.getElementById('modal-fullName').value.trim();
+                const phoneNumber = document.getElementById('modal-phoneNumber').value.trim();
+                const birthDate = getDateFromSelectors();
+                const gender = document.getElementById('modal-gender').value;
+                const privacyConsent = document.getElementById('modal-privacyConsent').checked;
+
+                console.log('🔍 [DEBUG] Данные для сохранения:', {
+                    fullName,
+                    phoneNumber,
+                    birthDate,
+                    gender,
+                    privacyConsent,
+                    currentUserPrivacyConsent: currentUser.privacy_consent,
+                    currentUserTelegramId: currentUser.telegram_id
+                });
+
+                // Валидация
+                if (!fullName) {
+                    safeAlert('Пожалуйста, введите ваше полное имя');
+                    return;
+                }
+
+                if (!phoneNumber || phoneNumber === '+7' || phoneNumber.trim() === '') {
+                    safeAlert('Пожалуйста, введите корректный номер телефона');
+                    return;
+                }
+
+                // Проверяем формат номера телефона
+                const phoneRegex = /^\+7\s?\(?[0-9]{3}\)?\s?[0-9]{3}-?[0-9]{2}-?[0-9]{2}$/;
+                if (!phoneRegex.test(phoneNumber)) {
+                    safeAlert('Пожалуйста, введите номер телефона в формате +7 (XXX) XXX-XX-XX');
+                    return;
+                }
+
+                // Валидация даты рождения (необязательное поле)
+                if (birthDate) {
+                    const birthDateObj = new Date(birthDate);
+                    const today = new Date();
+                    const minDate = new Date(today.getFullYear() - 120, 0, 1); // Максимум 120 лет назад
+                    
+                    if (birthDateObj > today) {
+                        safeAlert('Дата рождения не может быть в будущем');
+                        return;
+                    }
+                    
+                    if (birthDateObj < minDate) {
+                        safeAlert('Пожалуйста, выберите корректную дату рождения');
+                        return;
+                    }
+                }
+
+                // Валидация пола (необязательное поле)
+                if (gender && !['Мужской', 'Женский'].includes(gender)) {
+                    safeAlert('Пожалуйста, выберите корректный пол');
+                    return;
+                }
+
+                // Если это первое сохранение и согласие не дано
+                if (!currentUser.privacy_consent && !privacyConsent) {
+                    safeAlert('Для сохранения профиля необходимо дать согласие на обработку персональных данных');
+                    return;
+                }
+
+                // Подготавливаем данные для отправки
+                const profileData = {
+                    telegram_id: currentUser.telegram_id,
+                    first_name: currentUser.first_name,
+                    last_name: currentUser.last_name,
+                    username: currentUser.username,
+                    phone: currentUser.phone,
+                    full_name: fullName,
+                    phone_number: phoneNumber,
+                    date_of_birth: birthDate || null,
+                    gender: gender || null,
+                    privacy_consent: privacyConsent
+                };
+
+                console.log('🔍 [DEBUG] Отправляем данные на сервер:', profileData);
+                console.log('🔍 [DEBUG] URL запроса:', `/users/${currentUser.telegram_id}`);
+
+                const response = await fetch(`/users/${currentUser.telegram_id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(profileData)
+                });
+
+                console.log('🔍 [DEBUG] Ответ сервера:', response.status, response.statusText);
+
+                if (response.ok) {
+                    const updatedUser = await response.json();
+                    currentUser = updatedUser;
+                    
+                    console.log('Обновленный пользователь:', updatedUser);
+                    
+                    // Обновляем снипет профиля
+                    updateProfileSnippet(updatedUser);
+                    
+                    // Делаем чекбокс согласия недоступным после сохранения
+                    if (privacyConsent) {
+                        document.getElementById('modal-privacyConsent').disabled = true;
+                        // Скрываем текст согласия после подтверждения
+                        const consentContainer = document.getElementById('consent-text-container');
+                        if (consentContainer) {
+                            consentContainer.style.display = 'none';
+                        }
+                    }
+                    
+                    // Закрываем модальное окно
+                    closeProfileModal();
+                    
+                    console.log('🔍 [DEBUG] ===== ПРОФИЛЬ УСПЕШНО СОХРАНЕН =====');
+                    safeAlert('✅ Профиль успешно сохранен!');
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ [DEBUG] Ошибка сервера:', errorText);
+                    console.error('❌ [DEBUG] Статус ответа:', response.status);
+                    safeAlert('Ошибка сохранения профиля: ' + response.status);
+                }
+            } catch (error) {
+                console.error('❌ [DEBUG] ===== ОШИБКА СОХРАНЕНИЯ ПРОФИЛЯ =====');
+                console.error('❌ [DEBUG] Ошибка:', error);
+                console.error('❌ [DEBUG] Сообщение ошибки:', error.message);
+                safeAlert('Ошибка сохранения профиля: ' + error.message);
+            }
+        }
+
+        // Сохранение профиля
+        async function saveProfile() {
+            try {
+                console.log('🔍 [DEBUG] Начало сохранения профиля');
+                console.log('🔍 [DEBUG] currentUser:', currentUser);
+                
+                if (!currentUser) {
+                    console.error('❌ [DEBUG] currentUser не найден');
+                    safeAlert('Ошибка: пользователь не найден');
+                    return;
+                }
+
+                const fullName = document.getElementById('fullName').value.trim();
+                const phoneNumber = document.getElementById('phoneNumber').value.trim();
+                const privacyConsent = document.getElementById('privacyConsent').checked;
+
+                console.log('🔍 [DEBUG] Данные для сохранения:', {
+                    fullName,
+                    phoneNumber,
+                    privacyConsent,
+                    currentUserPrivacyConsent: currentUser.privacy_consent,
+                    currentUserTelegramId: currentUser.telegram_id
+                });
+
+                // Валидация
+                if (!fullName) {
+                    safeAlert('Пожалуйста, введите ваше полное имя');
+                    return;
+                }
+
+                if (!phoneNumber || phoneNumber === '+7' || phoneNumber.trim() === '') {
+                    safeAlert('Пожалуйста, введите корректный номер телефона');
+                    return;
+                }
+
+                // Проверяем формат номера телефона
+                const phoneRegex = /^\+7\s?\(?[0-9]{3}\)?\s?[0-9]{3}-?[0-9]{2}-?[0-9]{2}$/;
+                if (!phoneRegex.test(phoneNumber)) {
+                    safeAlert('Пожалуйста, введите номер телефона в формате +7 (XXX) XXX-XX-XX');
+                    return;
+                }
+
+                // Если это первое сохранение и согласие не дано
+                if (!currentUser.privacy_consent && !privacyConsent) {
+                    await showPrivacyConsentModal();
+                    return;
+                }
+
+                // Подготавливаем данные для отправки
+                const profileData = {
+                    telegram_id: currentUser.telegram_id,
+                    first_name: currentUser.first_name,
+                    last_name: currentUser.last_name,
+                    username: currentUser.username,
+                    phone: currentUser.phone,
+                    full_name: fullName,
+                    phone_number: phoneNumber,
+                    privacy_consent: privacyConsent
+                };
+
+                console.log('🔍 [DEBUG] Отправляем данные на сервер:', profileData);
+                console.log('🔍 [DEBUG] URL запроса:', `/users/${currentUser.telegram_id}`);
+
+                const response = await fetch(`/users/${currentUser.telegram_id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(profileData)
+                });
+
+                console.log('🔍 [DEBUG] Ответ сервера:', response.status, response.statusText);
+
+                if (response.ok) {
+                    const updatedUser = await response.json();
+                    currentUser = updatedUser;
+                    
+                    console.log('Обновленный пользователь:', updatedUser);
+                    
+                    // Делаем чекбокс согласия недоступным после сохранения
+                    if (privacyConsent) {
+                        document.getElementById('privacyConsent').disabled = true;
+                    }
+                    
+                    safeAlert('✅ Профиль успешно сохранен!');
+                } else {
+                    const errorText = await response.text();
+                    console.error('Ошибка сервера:', errorText);
+                    safeAlert('Ошибка сохранения профиля: ' + response.status);
+                }
+            } catch (error) {
+                console.error('Ошибка сохранения профиля:', error);
+                safeAlert('Ошибка сохранения профиля: ' + error.message);
+            }
+        }
+
+        // Показать модальное окно согласия на обработку персональных данных
+        async function showPrivacyConsentModal() {
+            // Загружаем текст согласия только если он еще не загружен
+            if (!privacyConsentText) {
+                console.log('🔄 Загружаем текст согласия для модального окна');
+                await loadPrivacyConsentText();
+            }
+            
+            // Используем загруженный текст или текст по умолчанию
+            const message = privacyConsentText || getDefaultPrivacyConsentText();
+
+            // Создаем модальное окно с возможностью скроллинга
+            const modalHtml = `
+                <div class="modal fade" id="privacyConsentModal" tabindex="-1" aria-labelledby="privacyConsentModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="privacyConsentModalLabel">🔒 Согласие на обработку персональных данных</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                            </div>
+                            <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                                <div style="white-space: pre-line; line-height: 1.5;">${message}</div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отказаться</button>
+                                <button type="button" class="btn btn-primary" onclick="confirmPrivacyConsent()">Согласен</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Удаляем существующее модальное окно если есть
+            const existingModal = document.getElementById('privacyConsentModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // Добавляем новое модальное окно
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // Показываем модальное окно
+            const modal = new bootstrap.Modal(document.getElementById('privacyConsentModal'));
+            modal.show();
+
+            // Обработчик закрытия модального окна
+            document.getElementById('privacyConsentModal').addEventListener('hidden.bs.modal', function () {
+                this.remove();
+            });
+        }
+
+        // Подтвердить согласие на обработку персональных данных
+        function confirmPrivacyConsent() {
+            console.log('Пользователь дал согласие');
+            document.getElementById('privacyConsent').checked = true;
+            
+            // Закрываем модальное окно
+            const modal = bootstrap.Modal.getInstance(document.getElementById('privacyConsentModal'));
+            modal.hide();
+            
+            setTimeout(() => {
+                saveProfile();
+            }, 100);
+        }
+
+        // Получить текст согласия по умолчанию
+        function getDefaultPrivacyConsentText() {
+            return `🔒 Согласие на обработку персональных данных
+
+Для сохранения ваших данных необходимо дать согласие на обработку персональных данных.
+
+📋 Что мы обрабатываем:
+• Ваше полное имя
+• Номер телефона
+• Адреса доставки
+• История заказов
+
+✅ Нажимая "Согласен", вы подтверждаете, что:
+• Предоставленные данные корректны
+• Согласны на их обработку для оказания услуг
+• Можете отозвать согласие в любое время
+
+Продолжить?`;
+        }
+
+        // Загрузить текст согласия из настроек (ленивая загрузка)
+        async function loadPrivacyConsentText() {
+            try {
+                console.log('🔄 Загружаем текст согласия из настроек...');
+                const response = await fetch('/settings/privacy_consent_text');
+                if (response.ok) {
+                    const data = await response.json();
+                    privacyConsentText = data.value || '';
+                    console.log('✅ Текст согласия загружен из настроек (длина:', privacyConsentText.length, 'символов)');
+                } else {
+                    console.log('⚠️ Не удалось загрузить текст согласия, используется текст по умолчанию');
+                    privacyConsentText = '';
+                }
+            } catch (error) {
+                console.error('❌ Ошибка загрузки текста согласия:', error);
+                privacyConsentText = '';
+            }
+        }
+
+        // Форматирование номера телефона
+        function formatPhoneNumber(input) {
+            let value = input.value.replace(/\D/g, '');
+            
+            // Если поле пустое или содержит только "+7", позволяем очистить
+            if (value.length === 0) {
+                input.value = '';
+                return;
+            }
+            
+            // Убираем ведущую 7 если она есть
+            if (value.length > 0 && value[0] === '7') {
+                value = value.substring(1);
+            }
+            
+            // Если после удаления 7 ничего не осталось, очищаем поле
+            if (value.length === 0) {
+                input.value = '';
+                return;
+            }
+            
+            // Форматируем номер
+            let formatted = '+7';
+            
+            if (value.length > 0) {
+                formatted += ` (${value.substring(0, Math.min(3, value.length))}`;
+            }
+            if (value.length > 3) {
+                formatted += `) ${value.substring(3, Math.min(6, value.length))}`;
+            }
+            if (value.length > 6) {
+                formatted += `-${value.substring(6, Math.min(8, value.length))}`;
+            }
+            if (value.length > 8) {
+                formatted += `-${value.substring(8, Math.min(10, value.length))}`;
+            }
+            
+            input.value = formatted;
         }
 
         function setActiveNavItem(activeId) {
@@ -1161,9 +2478,10 @@
                 
                 return `
                     <div class="product-card" data-product-id="${product.id}">
+                        <button class="desc-btn" title="Описание" onclick="openDescriptionModal(${product.id}); event.stopPropagation();">ℹ️</button>
                         <div class="product-image">
                             ${product.image ? 
-                                `<img src="${product.image}" alt="${product.name}" loading="lazy">` : 
+                                `<img src="${product.image}" alt="${product.name}" loading="lazy" style="cursor: zoom-in;">` : 
                                 '<div style="font-size: 32px; color: #9CA3AF;">📦</div>'
                             }
                         </div>
@@ -1197,6 +2515,104 @@
                 `;
             }).join('');
         }
+
+        function openDescriptionModal(productId) {
+            try {
+                const product = products.find(p => p.id === productId);
+                if (!product) return;
+
+                const titleEl = document.getElementById('desc-title');
+                const bodyEl = document.getElementById('desc-body');
+                const modalEl = document.getElementById('description-modal');
+
+                titleEl.textContent = product.name || 'Описание товара';
+                const text = (product.description && String(product.description).trim()) ? product.description : 'Описание отсутствует';
+                bodyEl.textContent = text; // эмодзи отображаются как Unicode
+
+                modalEl.classList.remove('hidden');
+            } catch (e) {
+                console.error('Ошибка открытия описания:', e);
+            }
+        }
+
+        function closeDescriptionModal() {
+            const modalEl = document.getElementById('description-modal');
+            if (modalEl) modalEl.classList.add('hidden');
+        }
+
+        // Просмотр изображения товара (базовая версия с текущим src)
+        let lastFocusedImageEl = null;
+
+        function openImageViewer(src, alt) {
+            const modal = document.getElementById('image-viewer-modal');
+            const img = document.getElementById('image-viewer-img');
+            if (!modal || !img) return;
+
+            // Сохранить фокус для возврата
+            lastFocusedImageEl = document.activeElement;
+
+            img.src = src;
+            img.alt = alt || 'Изображение товара';
+
+            // Открыть
+            modal.classList.remove('hidden');
+
+            // Блокируем прокрутку body
+            document.body.style.overflow = 'hidden';
+
+            // Навесить обработчики
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    closeImageViewer();
+                }
+            };
+
+            document.addEventListener('keydown', onImageViewerKeydown);
+        }
+
+        function onImageViewerKeydown(e) {
+            if (e.key === 'Escape') {
+                closeImageViewer();
+            }
+        }
+
+        function closeImageViewer() {
+            const modal = document.getElementById('image-viewer-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+
+            // Возврат прокрутки
+            document.body.style.overflow = '';
+
+            document.removeEventListener('keydown', onImageViewerKeydown);
+
+            // Вернуть фокус
+            if (lastFocusedImageEl && typeof lastFocusedImageEl.focus === 'function') {
+                try { lastFocusedImageEl.focus(); } catch (_) {}
+            }
+        }
+
+        // Делегирование клика по изображениям товаров
+        document.addEventListener('click', function(e) {
+            try {
+                const img = e.target.closest('.product-image img');
+                if (!img) return;
+
+                const card = img.closest('.product-card');
+                if (!card) return;
+
+                const productIdStr = card.getAttribute('data-product-id');
+                const productId = productIdStr ? Number(productIdStr) : NaN;
+                if (Number.isNaN(productId)) return;
+
+                const product = products.find(p => p.id === productId);
+                if (!product || !product.image) return;
+
+                openImageViewer(product.image, product.name || 'Изображение товара');
+            } catch (err) {
+                console.error('Ошибка обработки клика по изображению:', err);
+            }
+        }, false);
 
         // Показать категории
         function showCategories() {
@@ -1599,7 +3015,8 @@
 
         // Отменить заказ
         async function cancelOrder(orderId) {
-            if (!confirm('Вы уверены, что хотите отменить этот заказ?')) {
+            const confirmed = await new Promise(resolve => safeConfirm('Вы уверены, что хотите отменить этот заказ?', resolve));
+            if (!confirmed) {
                 return;
             }
             
@@ -1621,11 +3038,7 @@
                 }
                 
                 // Показываем сообщение об успехе
-                if (tg && tg.showAlert) {
-                    tg.showAlert('Заказ успешно отменен');
-                } else {
-                    alert('Заказ успешно отменен');
-                }
+                safeAlert('Заказ успешно отменен');
                 
                 // Обновляем список заказов
                 await loadUserOrders();
@@ -1633,11 +3046,7 @@
                 
             } catch (error) {
                 console.error('Ошибка отмены заказа:', error);
-                if (tg && tg.showAlert) {
-                    tg.showAlert('Ошибка: ' + error.message);
-                } else {
-                    alert('Ошибка: ' + error.message);
-                }
+                safeAlert('Ошибка: ' + error.message);
             }
         }
 
@@ -1651,25 +3060,25 @@
 
         // Добавить в корзину
         function addToCart(productId) {
+            console.log('🔍 [DEBUG] addToCart() вызвана для товара:', productId);
             const product = products.find(p => p.id === productId);
             if (!product) return;
 
             // Проверяем доступность товара
-            if (product.available === 0 || product.available === false) {
-                if (tg && tg.showAlert) {
-                    tg.showAlert('Товар временно недоступен');
-                } else {
-                    alert('Товар временно недоступен');
-                }
+                if (product.available === 0 || product.available === false) {
+                safeAlert('Товар временно недоступен');
                 return;
             }
 
             if (cart[productId]) {
                 cart[productId].quantity += 1;
+                console.log('🔍 [DEBUG] Увеличено количество товара', productId, 'до', cart[productId].quantity);
             } else {
                 cart[productId] = { ...product, quantity: 1 };
+                console.log('🔍 [DEBUG] Добавлен новый товар', productId, 'в корзину');
             }
 
+            console.log('🔍 [DEBUG] Состояние корзины после добавления:', Object.keys(cart).length, 'товаров');
             updateCartIcon();
             updateProductUI(productId);
         }
@@ -1681,11 +3090,7 @@
 
             // Проверяем доступность товара
             if (product.available === 0 || product.available === false) {
-                if (tg && tg.showAlert) {
-                    tg.showAlert('Товар временно недоступен');
-                } else {
-                    alert('Товар временно недоступен');
-                }
+                safeAlert('Товар временно недоступен');
                 return;
             }
 
@@ -1741,6 +3146,40 @@
             });
         }
 
+        // Унифицированное уведомление: безопасно использует tg.showAlert или alert
+        function safeAlert(message) {
+            try {
+                if (typeof tg !== 'undefined' && tg && typeof tg.showAlert === 'function') {
+                    tg.showAlert(message);
+                } else {
+                    alert(message);
+                }
+            } catch (err) {
+                console.error('Ошибка показа уведомления:', err, message);
+                try { alert(message); } catch (_) {}
+            }
+        }
+
+        // Унифицированное подтверждение: безопасно использует tg.showConfirm или confirm
+        function safeConfirm(message, callback) {
+            try {
+                if (typeof tg !== 'undefined' && tg && typeof tg.showConfirm === 'function') {
+                    tg.showConfirm(message, callback);
+                } else {
+                    const confirmed = confirm(message);
+                    if (callback) callback(confirmed);
+                }
+            } catch (err) {
+                console.error('Ошибка показа подтверждения:', err, message);
+                try {
+                    const confirmed = confirm(message);
+                    if (callback) callback(confirmed);
+                } catch (_) {
+                    if (callback) callback(false);
+                }
+            }
+        }
+
         // Обновить иконку корзины
         function updateCartIcon() {
             const totalItems = Object.values(cart).reduce((sum, item) => sum + item.quantity, 0);
@@ -1754,45 +3193,99 @@
             }
         }
 
+        // Флаг для предотвращения множественных одновременных вызовов showCart
+        let showCartInProgress = false;
+
         // Показать корзину
-        function showCart() {
-            const items = Object.values(cart);
-            if (items.length === 0) {
-                tg.showAlert('Корзина пуста');
+        async function showCart() {
+            console.log('🔍 [DEBUG] showCart() вызвана');
+            console.log('🔍 [DEBUG] tg доступен:', !!(typeof tg !== 'undefined' && tg), 'showAlert:', !!(typeof tg !== 'undefined' && tg && tg.showAlert));
+            
+            // Предотвращаем множественные одновременные вызовы
+            if (showCartInProgress) {
+                console.log('🔍 [DEBUG] showCart() уже выполняется, пропускаем вызов');
                 return;
             }
             
-            const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const itemsList = items.map(item => `• ${item.name} x${item.quantity} = ${item.price * item.quantity}₽`).join('\n');
+            showCartInProgress = true;
             
-            // Показываем товары и кнопку оформления
-            const message = `Корзина:\n\n${itemsList}\n\nИтого: ${total}₽\n\nОформить заказ?`;
-            
-            if (tg && tg.showConfirm) {
-                tg.showConfirm(message, (confirmed) => {
+            try {
+                const items = Object.values(cart);
+                console.log('🔍 [DEBUG] Товары в корзине:', items.length, items.map(item => `${item.name} x${item.quantity}`));
+                
+                if (items.length === 0) {
+                    safeAlert('Корзина пуста');
+                    return;
+                }
+                
+                const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                console.log('🔍 [DEBUG] Общая сумма корзины:', total);
+                
+                console.log('🔍 [DEBUG] showCart() - проверка минимальной суммы, текущая сумма:', total);
+                const minimumAmount = getMinimumOrderAmountFromCache();
+                console.log('🔍 [DEBUG] showCart() - минимальная сумма (кэш):', minimumAmount);
+                // Проверяем минимальную сумму
+                if (total < minimumAmount) {
+                    console.log('🔍 [DEBUG] showCart() - сумма меньше минимальной, показываем модальное окно');
+                    showMinimumOrderModal(total, minimumAmount, items);
+                    console.log('🔍 [DEBUG] showCart() завершена модальным окном.');
+                    return;
+                }
+                console.log('🔍 [DEBUG] showCart() - сумма достаточная, показываем диалог подтверждения');
+                
+                // Если сумма достаточная, показываем стандартное окно корзины
+                const itemsList = items.map(item => `• ${item.name} x${item.quantity} = ${item.price * item.quantity}₽`).join('\n');
+                const message = `Корзина:\n\n${itemsList}\n\nИтого: ${total}₽\n\nОформить заказ?`;
+                
+                console.log('🔍 [DEBUG] showCart() - показываем диалог подтверждения');
+                safeConfirm(message, (confirmed) => {
+                    console.log('🔍 [DEBUG] showCart() - результат подтверждения:', confirmed);
                     if (confirmed) {
                         checkout();
                     }
                 });
-            } else {
-                const confirmed = confirm(message);
-                if (confirmed) {
-                    checkout();
-                }
+            } catch (error) {
+                console.error('Ошибка в showCart():', error);
+                console.error('Стек ошибки:', error.stack);
+                console.error('Контекст ошибки:', {
+                    itemsCount: items.length,
+                    total: total,
+                    minimumAmount: getMinimumOrderAmountFromCache(),
+                    showCartInProgress: showCartInProgress
+                });
+                safeAlert('Ошибка обработки корзины. Попробуйте еще раз.');
+            } finally {
+                showCartInProgress = false;
             }
+        }
+
+        // Показать модальное окно минимальной суммы заказа
+        function showMinimumOrderModal(currentTotal, minimumAmount, items) {
+            try {
+                console.log('🔍 [DEBUG] showMinimumOrderModal() вызвана с параметрами:', { currentTotal, minimumAmount, itemsCount: Array.isArray(items) ? items.length : 'n/a' });
+            } catch (e) {
+                console.log('🔍 [DEBUG] showMinimumOrderModal() логирование параметров не удалось');
+            }
+            const itemsList = items.map(item => `• ${item.name} x${item.quantity} = ${item.price * item.quantity}₽`).join('\n');
+            const remaining = minimumAmount - currentTotal;
+            
+            const message = `🛒 Ваша корзина:\n\n${itemsList}\n\n💰 Текущая сумма: ${currentTotal}₽\n🎯 Минимальная сумма: ${minimumAmount}₽\n\n📝 Для оформления заказа необходимо добавить товаров на ${remaining}₽\n\n✨ Продолжайте выбирать товары, чтобы достичь минимальной суммы!`;
+            
+            console.log('🔍 [DEBUG] Показываем модальное окно с сообщением:', message.substring(0, 100) + '...');
+            safeAlert(message);
         }
 
         // Оформление заказа
         async function checkout() {
             const cartItems = Object.values(cart);
             if (cartItems.length === 0) {
-                tg.showAlert('Корзина пуста!');
+                safeAlert('Корзина пуста!');
                 return;
             }
             
             // Проверяем, есть ли пользователь и адрес
             if (!currentUser) {
-                tg.showAlert('Ошибка: пользователь не найден. Перезагрузите приложение.');
+                safeAlert('Ошибка: пользователь не найден. Перезагрузите приложение.');
                 return;
             }
             
@@ -1800,7 +3293,7 @@
             await loadUserAddresses();
             
             if (userAddresses.length === 0) {
-                tg.showAlert('Для оформления заказа нужно указать адрес доставки.');
+                safeAlert('Для оформления заказа нужно указать адрес доставки.');
                 showAddressSetup();
                 return;
             }
@@ -1826,6 +3319,43 @@
                     timestamp: new Date().toISOString()
                 };
                 
+                // Перед отправкой проверяем заполненность профиля и согласие
+                try {
+                    const missingName = !currentUser?.full_name || currentUser.full_name.trim() === '';
+                    const missingPhone = !currentUser?.phone_number || currentUser.phone_number.trim() === '';
+                    const noConsent = !currentUser?.privacy_consent;
+                    if (missingName || missingPhone || noConsent) {
+                        const friendlyText = `🙂 Почти готово!
+
+Чтобы принять заказ, укажите имя и телефон, 
+а также подтвердите согласие на обработку персональных данных.
+
+Нажмите «Заполнить профиль», это быстро ⚡`;
+
+                        // Показать дружественное окно
+                        safeConfirm(friendlyText, (ok) => {
+                            if (ok) {
+                                showEditProfileModal();
+                            }
+                        });
+
+                        return; // Блокируем отправку заказа
+                    }
+                } catch (e) {
+                    console.error('Ошибка проверки профиля перед заказом:', e);
+                }
+
+                // Проверяем минимальную сумму заказа перед отправкой (только кэш)
+                console.log('🔍 [DEBUG] Проверка минимальной суммы в checkout(), текущая сумма:', orderData.total);
+                const minimumAmountCheckout = getMinimumOrderAmountFromCache();
+                console.log('🔍 [DEBUG] Минимальная сумма (кэш):', minimumAmountCheckout);
+                if (orderData.total < minimumAmountCheckout) {
+                    console.log('🔍 [DEBUG] Сумма меньше минимальной, показываем модальное окно');
+                    showMinimumOrderModal(orderData.total, minimumAmountCheckout, cartItems);
+                    return;
+                }
+                console.log('🔍 [DEBUG] Сумма достаточная, продолжаем оформление');
+
                 // Отправляем заказ на сервер
                 const response = await fetch('/orders', {
                     method: 'POST',
@@ -1843,15 +3373,15 @@
                     // Обновляем UI всех товаров для скрытия количеств
                     updateAllProductsUI();
                     
-                    tg.showAlert(`Заказ #${order.id} оформлен! Спасибо за покупку!`);
+                    safeAlert(`Заказ #${order.id} оформлен! Спасибо за покупку!`);
                 } else {
                     console.error('Ошибка создания заказа:', response.status);
-                    tg.showAlert('Ошибка оформления заказа. Попробуйте еще раз.');
+                    safeAlert('Ошибка оформления заказа. Попробуйте еще раз.');
                 }
                 
             } catch (error) {
                 console.error('Ошибка оформления заказа:', error);
-                tg.showAlert('Ошибка оформления заказа. Попробуйте еще раз.');
+                safeAlert('Ошибка оформления заказа. Попробуйте еще раз.');
             }
         }
 
@@ -1859,22 +3389,13 @@
         function showAddressSetup() {
             const message = 'Для доставки нам нужен ваш адрес. Хотите определить его автоматически по вашему местоположению?';
             
-            if (tg && tg.showConfirm) {
-                tg.showConfirm(message, (confirmed) => {
-                    if (confirmed) {
-                        requestGeolocation();
-                    } else {
-                        showManualAddressForm();
-                    }
-                });
-            } else {
-                const confirmed = confirm(message);
+            safeConfirm(message, (confirmed) => {
                 if (confirmed) {
                     requestGeolocation();
                 } else {
                     showManualAddressForm();
                 }
-            }
+            });
         }
 
         // Запрос геолокации
@@ -1888,7 +3409,11 @@
                         console.error('Ошибка геолокации:', error);
                         showManualAddressForm();
                     },
-                    { timeout: 10000, enableHighAccuracy: true }
+                    { 
+                        timeout: 15000, 
+                        enableHighAccuracy: true, 
+                        maximumAge: 0 
+                    }
                 );
             } else {
                 showManualAddressForm();
@@ -1919,24 +3444,54 @@
 
         // Показать подтверждение адреса
         function showAddressConfirmation(addressData) {
-            const message = `Мы определили ваш адрес как:\n\n${addressData.full_address}\n\nВсё верно?`;
+            // Пытаемся собрать человекочитаемый адрес из components, если доступны
+            const c = addressData.components || {};
+            const parts = [];
+            if (c.locality) parts.push(c.locality);
+            if (c.street) parts.push(c.street);
+            if (c.house) parts.push(c.house);
+            const composed = parts.join(', ').trim();
+            const shownAddress = composed || addressData.full_address || 'Адрес не определён';
+            let message = `Мы определили ваш адрес как:\n\n${shownAddress}`;
             
-            if (tg && tg.showConfirm) {
-                tg.showConfirm(message, (confirmed) => {
-                    if (confirmed) {
-                        saveQuickAddress(addressData, 'Основной адрес');
-                    } else {
-                        showManualAddressForm(addressData);
-                    }
+            // Добавляем информацию о точности
+            if (addressData.precision) {
+                const precisionText = {
+                    'exact': '✅ Точный адрес',
+                    'number': '📍 Примерный адрес',
+                    'street': '🏘️ Только улица',
+                    'approximate': '📍 Примерное местоположение'
+                };
+                message += `\n\n${precisionText[addressData.precision] || '📍 Определен автоматически'}`;
+            }
+            
+            // Показываем альтернативы только для неточных адресов
+            const isLowPrecision = addressData.precision === 'street' || addressData.precision === 'approximate';
+            if (isLowPrecision && addressData.alternatives && addressData.alternatives.length > 0) {
+                message += '\n\nДругие варианты:';
+                addressData.alternatives.forEach((alt, index) => {
+                    message += `\n${index + 1}. ${alt.full_address}`;
                 });
+                message += '\n\nВыберите правильный адрес или введите вручную.';
             } else {
-                const confirmed = confirm(message);
+                message += '\n\nВсё верно?';
+            }
+            
+            safeConfirm(message, (confirmed) => {
                 if (confirmed) {
-                    saveQuickAddress(addressData, 'Основной адрес');
+                    // При сохранении используем собранный адрес, если он есть
+                    const dataToSave = {
+                        ...addressData,
+                        full_address: shownAddress
+                    };
+                    // Генерируем человекочитаемое имя записи адреса (только при валидных компонентах)
+                    const isValidComponents = c && c.street && c.house && c.locality && c.street !== 'Улица' && c.locality !== 'Город';
+                    const entryName = isValidComponents ? `${c.street}, ${c.house}` : (dataToSave.full_address || 'Адрес');
+                    saveQuickAddress(dataToSave, entryName);
                 } else {
                     showManualAddressForm(addressData);
                 }
-            }
+            });
         }
 
         // Показать форму ручного ввода адреса
@@ -1980,15 +3535,15 @@
                 if (response.ok) {
                     await loadUserAddresses();
                     displayAddresses(); // Обновляем отображение
-                    tg.showAlert('Адрес успешно сохранен!');
+                    safeAlert('Адрес успешно сохранен!');
                 } else {
                     console.error('Ошибка сохранения адреса:', response.status);
-                    tg.showAlert('Ошибка сохранения адреса');
+                    safeAlert('Ошибка сохранения адреса');
                 }
                 
             } catch (error) {
                 console.error('Ошибка сохранения адреса:', error);
-                tg.showAlert('Ошибка сохранения адреса');
+                safeAlert('Ошибка сохранения адреса');
             }
         }
 
@@ -2030,20 +3585,12 @@
 
                 // Валидация обязательных полей
                 if (!updateData.name) {
-                    if (tg && tg.showAlert) {
-                        tg.showAlert('Укажите название адреса');
-                    } else {
-                        alert('Укажите название адреса');
-                    }
+                    safeAlert('Укажите название адреса');
                     return;
                 }
 
                 if (!updateData.full_address) {
-                    if (tg && tg.showAlert) {
-                        tg.showAlert('Укажите полный адрес');
-                    } else {
-                        alert('Укажите полный адрес');
-                    }
+                    safeAlert('Укажите полный адрес');
                     return;
                 }
 
@@ -2056,27 +3603,15 @@
                 if (response.ok) {
                     await loadUserAddresses();
                     displayAddresses();
-                    if (tg && tg.showAlert) {
-                        tg.showAlert('Адрес успешно обновлен!');
-                    } else {
-                        alert('Адрес успешно обновлен!');
-                    }
+                    safeAlert('Адрес успешно обновлен!');
                 } else {
                     console.error('Ошибка обновления адреса:', response.status);
-                    if (tg && tg.showAlert) {
-                        tg.showAlert('Ошибка обновления адреса');
-                    } else {
-                        alert('Ошибка обновления адреса');
-                    }
+                    safeAlert('Ошибка обновления адреса');
                 }
                 
             } catch (error) {
                 console.error('Ошибка обновления адреса:', error);
-                if (tg && tg.showAlert) {
-                    tg.showAlert('Ошибка обновления адреса');
-                } else {
-                    alert('Ошибка обновления адреса');
-                }
+                safeAlert('Ошибка обновления адреса');
             }
         }
 
@@ -2085,18 +3620,12 @@
             try {
                 // Проверяем, что это не последний адрес
                 if (userAddresses.length <= 1) {
-                    if (tg && tg.showAlert) {
-                        tg.showAlert('Нельзя удалить последний адрес');
-                    } else {
-                        alert('Нельзя удалить последний адрес');
-                    }
+                    safeAlert('Нельзя удалить последний адрес');
                     return;
                 }
 
                 // Подтверждение удаления
-                const confirmed = tg && tg.showConfirm ? 
-                    await new Promise(resolve => tg.showConfirm('Удалить адрес?', resolve)) :
-                    confirm('Удалить адрес?');
+                const confirmed = await new Promise(resolve => safeConfirm('Удалить адрес?', resolve));
                     
                 if (!confirmed) return;
 
@@ -2107,27 +3636,15 @@
                 if (response.ok) {
                     await loadUserAddresses();
                     displayAddresses();
-                    if (tg && tg.showAlert) {
-                        tg.showAlert('Адрес удален');
-                    } else {
-                        alert('Адрес удален');
-                    }
+                    safeAlert('Адрес удален');
                 } else {
                     console.error('Ошибка удаления адреса:', response.status);
-                    if (tg && tg.showAlert) {
-                        tg.showAlert('Ошибка удаления адреса');
-                    } else {
-                        alert('Ошибка удаления адреса');
-                    }
+                    safeAlert('Ошибка удаления адреса');
                 }
                 
             } catch (error) {
                 console.error('Ошибка удаления адреса:', error);
-                if (tg && tg.showAlert) {
-                    tg.showAlert('Ошибка удаления адреса');
-                } else {
-                    alert('Ошибка удаления адреса');
-                }
+                safeAlert('Ошибка удаления адреса');
             }
         }
 
@@ -2143,15 +3660,15 @@
                 if (response.ok) {
                     await loadUserAddresses();
                     displayAddresses();
-                    tg.showAlert('Адрес установлен по умолчанию');
+                    safeAlert('Адрес установлен по умолчанию');
                 } else {
                     console.error('Ошибка установки адреса по умолчанию:', response.status);
-                    tg.showAlert('Ошибка установки адреса по умолчанию');
+                    safeAlert('Ошибка установки адреса по умолчанию');
                 }
                 
             } catch (error) {
                 console.error('Ошибка установки адреса по умолчанию:', error);
-                tg.showAlert('Ошибка установки адреса по умолчанию');
+                safeAlert('Ошибка установки адреса по умолчанию');
             }
         }
 

@@ -2,6 +2,12 @@
 let token = localStorage.getItem('adminToken');
 let currentOrders = [];
 let currentCustomers = [];
+let customerListParams = { search: '', page: 1, limit: 20 };
+let orderListParams = { page: 1, limit: 50 };
+let productListParams = { page: 1, limit: 50, category_id: '' };
+let lastOrdersPageCount = 0;
+let lastProductsPageCount = 0;
+let lastViewedCustomer = null;
 let filters = {
     dateFrom: '',
     dateTo: '',
@@ -299,20 +305,65 @@ async function loadOrders() {
         if (filters.status) params.append('status', filters.status);
         if (filters.customerId) params.append('telegram_id', filters.customerId);
         
+        // Пагинация заказов
+        if (orderListParams.page) params.append('page', orderListParams.page);
+        if (orderListParams.limit) params.append('limit', orderListParams.limit);
         const endpoint = `/api/admin/orders${params.toString() ? '?' + params.toString() : ''}`;
         console.log('API endpoint:', endpoint);
         
-        const orders = await apiCall(endpoint);
+        const response = await apiCall(endpoint);
+        const orders = response.orders || response;
         console.log('Orders received:', orders);
         currentOrders = orders;
+        lastOrdersPageCount = Array.isArray(orders) ? orders.length : 0;
         
         renderOrdersTable(orders);
+        const pagination = response.pagination || {
+            page: orderListParams.page,
+            // если элементов меньше лимита — это последняя страница
+            totalPages: lastOrdersPageCount < orderListParams.limit ? orderListParams.page : orderListParams.page + 1
+        };
+        renderOrdersPagination(pagination);
     } catch (error) {
         console.error('Error loading orders:', error);
         showAlert('Ошибка загрузки заказов: ' + error.message, 'danger');
         document.getElementById('ordersTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Ошибка загрузки данных</td></tr>';
     }
 }
+function renderOrdersPagination(pagination) {
+    const container = document.getElementById('ordersPagination');
+    if (!container) return;
+    const { page, totalPages } = pagination;
+    if (!totalPages || totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    const items = [];
+    const make = (p, label = null, disabled = false, active = false) => {
+        const text = label || p;
+        return `<li class="page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}"><a class="page-link" href="#" data-page="${p}">${text}</a></li>`;
+    };
+    items.push(make(Math.max(1, page - 1), '«', page === 1));
+    const windowSize = 5;
+    const start = Math.max(1, page - Math.floor(windowSize / 2));
+    const end = Math.min(totalPages, start + windowSize - 1);
+    const realStart = Math.max(1, end - windowSize + 1);
+    for (let p = realStart; p <= end; p++) items.push(make(p, null, false, p === page));
+    const disableNext = page === totalPages || lastOrdersPageCount < orderListParams.limit;
+    items.push(make(Math.min(totalPages, page + 1), '»', disableNext));
+    container.innerHTML = `<ul class="pagination">${items.join('')}</ul>`;
+    container.querySelectorAll('a.page-link').forEach(a => {
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+            const p = parseInt(e.currentTarget.getAttribute('data-page'));
+            if (!Number.isNaN(p) && p !== orderListParams.page) {
+                orderListParams.page = p;
+                loadOrders();
+            }
+        });
+    });
+}
+
 
 function renderOrdersTable(orders) {
     console.log('Rendering orders table:', { ordersCount: orders.length, orders });
@@ -355,27 +406,50 @@ function renderOrdersTable(orders) {
 }
 
 function renderCustomersTable(customers) {
-    console.log('Rendering customers table:', { customersCount: customers.length, customers });
+    console.log('🔍 [ADMIN DEBUG] Rendering customers table:', { customersCount: customers.length, customers });
     const customersTableBody = document.getElementById('customersTableBody');
     
     if (!customersTableBody) {
-        console.error('customersTableBody element not found!');
+        console.error('❌ [ADMIN DEBUG] customersTableBody element not found!');
         return;
     }
     
     if (!customers.length) {
-        customersTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Клиенты не найдены</td></tr>';
+        console.log('⚠️ [ADMIN DEBUG] Нет клиентов для отображения');
+        customersTableBody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">Клиенты не найдены</td></tr>';
         return;
     }
     
-    customersTableBody.innerHTML = customers.map(customer => `
+    customersTableBody.innerHTML = customers.map(customer => {
+        console.log('🔍 [ADMIN DEBUG] Обработка клиента:', {
+            telegram_id: customer.telegram_id,
+            full_name: customer.full_name,
+            phone_number: customer.phone_number,
+            privacy_consent: customer.privacy_consent
+        });
+        
+        return `
         <tr>
             <td>
                 <strong>${customer.name || [customer.first_name || '', customer.last_name || ''].filter(Boolean).join(' ') || 'Без имени'}</strong>
                 ${customer.username ? `<br><small class="text-muted">@${customer.username}</small>` : ''}
             </td>
             <td><code>${customer.telegram_id}</code></td>
-            <td>${customer.phone || 'Не указан'}</td>
+            <td>${customer.full_name || 'Не указано'}</td>
+            <td>${customer.phone_number || customer.phone || 'Не указан'}</td>
+            <td>${customer.date_of_birth ? formatDate(customer.date_of_birth) : 'Не указана'}</td>
+            <td>${customer.gender || 'Не указан'}</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="form-check form-switch m-0">
+                        <input class="form-check-input" type="checkbox" 
+                               id="consent-${customer.telegram_id}"
+                               ${customer.privacy_consent ? 'checked' : ''}
+                               onchange="debouncedToggleConsent('${customer.telegram_id}', this.checked)">
+                    </div>
+                    <small class="text-muted" id="consent-status-${customer.telegram_id}">${customer.privacy_consent ? '✅ Да' : '❌ Нет'}</small>
+                </div>
+            </td>
             <td><strong>${customer.total_orders || 0}</strong></td>
             <td><strong>${customer.total_spent || 0} ₽</strong></td>
             <td>
@@ -390,22 +464,159 @@ function renderCustomersTable(customers) {
                 </button>
             </td>
         </tr>
-    `).join('');
+    `}).join('');
 }
+// Сохранение согласия ПД из карточки клиента
+async function updateCustomerConsent(telegramId) {
+    try {
+        const btn = document.getElementById('saveConsentBtn');
+        const toggle = document.getElementById('privacyConsentToggle');
+        if (!toggle || !btn) return;
+        const newValue = !!toggle.checked;
+
+        btn.disabled = true;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '⏳ Сохранение...';
+
+        // Используем публичный users API
+        await apiCall(`/users/${telegramId}`, 'PUT', { privacy_consent: newValue });
+
+        // Обновляем подпись и локальное состояние
+        const label = toggle.nextElementSibling;
+        if (label) {
+            label.textContent = newValue ? 'Да' : 'Нет';
+        }
+        // Обновить строку в таблице если уже загружена
+        const consentCellText = document.getElementById(`consent-status-${telegramId}`);
+        if (consentCellText) {
+            consentCellText.textContent = newValue ? '✅ Да' : '❌ Нет';
+        }
+        // Синхронизируем currentCustomers
+        currentCustomers = (currentCustomers || []).map(c => 
+            c.telegram_id == telegramId ? { ...c, privacy_consent: newValue } : c
+        );
+
+        showAlert('✅ Согласие на обработку ПД обновлено', 'success');
+    } catch (error) {
+        showAlert('Ошибка сохранения согласия: ' + error.message, 'danger');
+        // Откатить переключатель
+        const toggle = document.getElementById('privacyConsentToggle');
+        if (toggle) toggle.checked = !toggle.checked;
+    } finally {
+        const btn = document.getElementById('saveConsentBtn');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '💾 Сохранить';
+        }
+    }
+}
+
+// Сохранение всех полей из карточки клиента
+async function updateCustomerAllFields(telegramId) {
+    try {
+        const dateOfBirthInput = document.getElementById('dateOfBirthInput');
+        const genderSelect = document.getElementById('genderSelect');
+        const consentToggle = document.getElementById('privacyConsentToggle');
+        
+        if (!dateOfBirthInput || !genderSelect || !consentToggle) {
+            showAlert('❌ Ошибка: не удалось найти поля для сохранения', 'danger');
+            return;
+        }
+        
+        const dateOfBirth = dateOfBirthInput.value || null;
+        const gender = genderSelect.value || null;
+        const privacyConsent = !!consentToggle.checked;
+        
+        // Используем публичный users API для сохранения всех полей
+        await apiCall(`/users/${telegramId}`, 'PUT', { 
+            date_of_birth: dateOfBirth,
+            gender: gender,
+            privacy_consent: privacyConsent
+        });
+        
+        // Синхронизируем currentCustomers
+        currentCustomers = (currentCustomers || []).map(c => 
+            c.telegram_id == telegramId ? { 
+                ...c, 
+                date_of_birth: dateOfBirth, 
+                gender: gender, 
+                privacy_consent: privacyConsent 
+            } : c
+        );
+        
+        showAlert('✅ Все изменения сохранены успешно', 'success');
+        
+        // Обновляем статус согласия в таблице если есть
+        const consentStatusEl = document.getElementById(`consent-status-${telegramId}`);
+        if (consentStatusEl) {
+            consentStatusEl.textContent = privacyConsent ? '✅ Да' : '❌ Нет';
+        }
+        
+        // Обновляем чекбокс в таблице если есть
+        const consentCheckbox = document.getElementById(`consent-${telegramId}`);
+        if (consentCheckbox) {
+            consentCheckbox.checked = privacyConsent;
+        }
+        
+    } catch (error) {
+        showAlert('Ошибка сохранения данных: ' + error.message, 'danger');
+    }
+}
+
+// Debounce для переключателя в таблице
+const debouncedToggleConsent = debounce(async (telegramId, checked) => {
+    try {
+        const statusEl = document.getElementById(`consent-status-${telegramId}`);
+        if (statusEl) {
+            statusEl.textContent = '⏳ Сохранение...';
+        }
+        await apiCall(`/users/${telegramId}`, 'PUT', { privacy_consent: !!checked });
+        if (statusEl) {
+            statusEl.textContent = checked ? '✅ Да' : '❌ Нет';
+        }
+        // Обновляем локальное состояние
+        currentCustomers = (currentCustomers || []).map(c => 
+            c.telegram_id == telegramId ? { ...c, privacy_consent: !!checked } : c
+        );
+        showAlert('✅ Согласие на обработку ПД обновлено', 'success');
+    } catch (error) {
+        showAlert('Ошибка сохранения согласия: ' + error.message, 'danger');
+        // Откат чекбокса
+        const cb = document.getElementById(`consent-${telegramId}`);
+        if (cb) cb.checked = !checked;
+        const statusEl = document.getElementById(`consent-status-${telegramId}`);
+        if (statusEl) statusEl.textContent = !checked ? '✅ Да' : '❌ Нет';
+    }
+}, 600);
 
 // Работа с клиентами
 async function loadCustomers() {
     try {
+        console.log('🔍 [ADMIN DEBUG] Начало загрузки клиентов');
         showLoading('customersTableBody');
-        const response = await apiCall('/api/admin/customers');
+        // Формируем параметры запроса: поиск + пагинация
+        const params = new URLSearchParams();
+        if (customerListParams.search) params.append('search', customerListParams.search);
+        if (customerListParams.page) params.append('page', customerListParams.page);
+        if (customerListParams.limit) params.append('limit', customerListParams.limit);
+        const endpoint = `/api/admin/customers${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await apiCall(endpoint);
+        console.log('🔍 [ADMIN DEBUG] Ответ API клиентов:', response);
+        
         // API возвращает объект с customers массивом
         const customers = response.customers || response;
+        console.log('🔍 [ADMIN DEBUG] Обработанные данные клиентов:', customers);
+        
         currentCustomers = customers;
         renderCustomersTable(customers);
+        // Рендер пагинации если есть
+        if (response.pagination) {
+            renderCustomersPagination(response.pagination);
+        }
     } catch (error) {
-        console.error('Error loading customers:', error);
+        console.error('❌ [ADMIN DEBUG] Ошибка загрузки клиентов:', error);
         showAlert('Ошибка загрузки клиентов: ' + error.message, 'danger');
-        document.getElementById('customersTableBody').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Ошибка загрузки данных</td></tr>';
+        document.getElementById('customersTableBody').innerHTML = '<tr><td colspan="11" class="text-center text-danger">Ошибка загрузки данных</td></tr>';
     }
 }
 
@@ -562,6 +773,7 @@ async function showOrderDetails(orderId) {
 async function showCustomer(telegramId) {
     try {
         const customer = await apiCall(`/api/admin/customers/${telegramId}`);
+        lastViewedCustomer = customer;
         
         const modal = new bootstrap.Modal(document.getElementById('customerModal'));
         const modalBody = document.querySelector('#customerModal .modal-body');
@@ -587,6 +799,26 @@ async function showCustomer(telegramId) {
                         <tr><td><strong>Фамилия:</strong></td><td>${customer.last_name || 'Не указано'}</td></tr>
                         <tr><td><strong>Username:</strong></td><td>${customer.username ? '@' + customer.username : 'Не указан'}</td></tr>
                         <tr><td><strong>Телефон:</strong></td><td>${customer.phone || 'Не указан'}</td></tr>
+                        <tr><td><strong>Полное имя:</strong></td><td>${customer.full_name || 'Не указано'}</td></tr>
+                        <tr><td><strong>Номер телефона для связи:</strong></td><td>${customer.phone_number || 'Не указан'}</td></tr>
+                        <tr><td><strong>Дата рождения:</strong></td><td>
+                            <input type="date" class="form-control form-control-sm" id="dateOfBirthInput" value="${customer.date_of_birth || ''}" style="width: 200px;">
+                        </td></tr>
+                        <tr><td><strong>Пол:</strong></td><td>
+                            <select class="form-select form-select-sm" id="genderSelect" style="width: 200px;">
+                                <option value="">Не указан</option>
+                                <option value="Мужской" ${customer.gender === 'Мужской' ? 'selected' : ''}>Мужской</option>
+                                <option value="Женский" ${customer.gender === 'Женский' ? 'selected' : ''}>Женский</option>
+                            </select>
+                        </td></tr>
+                        <tr><td><strong>Согласие на обработку ПД:</strong></td><td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="privacyConsentToggle" ${customer.privacy_consent ? 'checked' : ''}>
+                                <label class="form-check-label" for="privacyConsentToggle">
+                                    ${customer.privacy_consent ? 'Да' : 'Нет'}
+                                </label>
+                            </div>
+                        </td></tr>
                         <tr><td><strong>Дата регистрации:</strong></td><td>${formatDateTime(customer.created_at)}</td></tr>
                         <tr><td><strong>Последнее обновление:</strong></td><td>${formatDateTime(customer.updated_at)}</td></tr>
                     </table>
@@ -702,6 +934,17 @@ async function showCustomer(telegramId) {
                 </div>
             </div>
         `;
+        
+        // Добавляем кнопку "Сохранить" в футер модального окна
+        const modalFooter = document.querySelector('#customerModal .modal-footer');
+        if (modalFooter) {
+            modalFooter.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-primary" onclick="updateCustomerAllFields('${customer.telegram_id}')">
+                    💾 Сохранить изменения
+                </button>
+            `;
+        }
         
         modal.show();
     } catch (error) {
@@ -1037,10 +1280,21 @@ let productFilters = {
 async function loadProducts() {
     try {
         showLoading('productsTableBody');
-        const products = await apiCall('/api/admin/products');
+        const params = new URLSearchParams();
+        if (productListParams.category_id) params.append('category_id', productListParams.category_id);
+        if (productListParams.page) params.append('page', productListParams.page);
+        if (productListParams.limit) params.append('limit', productListParams.limit);
+        const endpoint = `/api/admin/products${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await apiCall(endpoint);
+        const products = response.products || response;
         currentProducts = products;
+        lastProductsPageCount = Array.isArray(products) ? products.length : 0;
         renderProductsTable(products);
-        
+        const pagination = response.pagination || {
+            page: productListParams.page,
+            totalPages: lastProductsPageCount < productListParams.limit ? productListParams.page : productListParams.page + 1
+        };
+        renderProductsPagination(pagination);
         // Загружаем категории для фильтра
         loadCategoriesForFilter();
     } catch (error) {
@@ -1225,13 +1479,64 @@ function clearOrderFilters() {
 }
 
 function applyCustomerFilters() {
-    // Функция для фильтрации клиентов
-    console.log('Apply customer filters');
+    const searchInput = document.getElementById('customerSearch');
+    customerListParams.search = (searchInput?.value || '').trim();
+    customerListParams.page = 1;
+    loadCustomers();
 }
 
 function clearCustomerFilters() {
-    // Функция для очистки фильтров клиентов
-    console.log('Clear customer filters');
+    const searchInput = document.getElementById('customerSearch');
+    if (searchInput) searchInput.value = '';
+    customerListParams = { search: '', page: 1, limit: 20 };
+    loadCustomers();
+}
+
+function renderCustomersPagination(pagination) {
+    const container = document.getElementById('customersPagination');
+    if (!container) return;
+    const { page, totalPages } = pagination;
+    if (!totalPages || totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const makePageItem = (p, label = null, disabled = false, active = false) => {
+        const text = label || p;
+        const disabledClass = disabled ? ' disabled' : '';
+        const activeClass = active ? ' active' : '';
+        return `<li class="page-item${disabledClass}${activeClass}">
+            <a class="page-link" href="#" data-page="${p}">${text}</a>
+        </li>`;
+    };
+
+    const items = [];
+    // Prev
+    items.push(makePageItem(Math.max(1, page - 1), '«', page === 1));
+    // Window of pages
+    const windowSize = 5;
+    const start = Math.max(1, page - Math.floor(windowSize / 2));
+    const end = Math.min(totalPages, start + windowSize - 1);
+    const realStart = Math.max(1, end - windowSize + 1);
+    for (let p = realStart; p <= end; p++) {
+        items.push(makePageItem(p, null, false, p === page));
+    }
+    // Next
+    items.push(makePageItem(Math.min(totalPages, page + 1), '»', page === totalPages));
+
+    container.innerHTML = `<ul class="pagination">${items.join('')}</ul>`;
+
+    // Навешиваем обработчики
+    container.querySelectorAll('a.page-link').forEach(a => {
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetPage = parseInt(e.currentTarget.getAttribute('data-page'));
+            if (!Number.isNaN(targetPage) && targetPage !== customerListParams.page) {
+                customerListParams.page = targetPage;
+                loadCustomers();
+            }
+        });
+    });
 }
 
 // Функции для работы с товарами
@@ -1270,16 +1575,47 @@ async function loadStatusesForFilter() {
 function applyProductFilters() {
     const categoryFilter = document.getElementById('productCategoryFilter');
     productFilters.category = categoryFilter?.value || '';
+    productListParams.category_id = productFilters.category;
+    productListParams.page = 1;
     
     let filteredProducts = currentProducts;
     
-    if (productFilters.category) {
-        filteredProducts = currentProducts.filter(product => 
-            product.category_id == productFilters.category
-        );
+    // Серверная фильтрация + пагинация
+    loadProducts();
+}
+
+function renderProductsPagination(pagination) {
+    const container = document.getElementById('productsPagination');
+    if (!container) return;
+    const { page, totalPages } = pagination;
+    if (!totalPages || totalPages <= 1) {
+        container.innerHTML = '';
+        return;
     }
-    
-    renderProductsTable(filteredProducts);
+    const items = [];
+    const make = (p, label = null, disabled = false, active = false) => {
+        const text = label || p;
+        return `<li class="page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}"><a class="page-link" href="#" data-page="${p}">${text}</a></li>`;
+    };
+    items.push(make(Math.max(1, page - 1), '«', page === 1));
+    const windowSize = 5;
+    const start = Math.max(1, page - Math.floor(windowSize / 2));
+    const end = Math.min(totalPages, start + windowSize - 1);
+    const realStart = Math.max(1, end - windowSize + 1);
+    for (let p = realStart; p <= end; p++) items.push(make(p, null, false, p === page));
+    const disableNext = page === totalPages || lastProductsPageCount < productListParams.limit;
+    items.push(make(Math.min(totalPages, page + 1), '»', disableNext));
+    container.innerHTML = `<ul class="pagination">${items.join('')}</ul>`;
+    container.querySelectorAll('a.page-link').forEach(a => {
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+            const p = parseInt(e.currentTarget.getAttribute('data-page'));
+            if (!Number.isNaN(p) && p !== productListParams.page) {
+                productListParams.page = p;
+                loadProducts();
+            }
+        });
+    });
 }
 
 async function showProductCard(productId) {
@@ -1593,6 +1929,9 @@ async function toggleProductDiscontinued(productId, discontinued) {
 
 // ====== ФУНКЦИИ ДЛЯ РАБОТЫ С НАСТРОЙКАМИ ======
 
+// Переменная для хранения оригинального текста согласия
+let originalPrivacyConsentText = '';
+
 // Загрузить настройки при открытии страницы
 async function loadSettings() {
     try {
@@ -1608,6 +1947,21 @@ async function loadSettings() {
             select.value = criticalStatus;
         }
         
+        // Устанавливаем минимальную сумму заказа
+        const minimumAmount = settings.minimum_order_amount?.value || '500';
+        const amountInput = document.getElementById('minimumOrderAmount');
+        if (amountInput) {
+            amountInput.value = minimumAmount;
+        }
+        
+        // Загружаем текст согласия
+        const privacyConsentText = settings.privacy_consent_text?.value || '';
+        const textarea = document.getElementById('privacyConsentText');
+        if (textarea) {
+            textarea.value = privacyConsentText;
+            updatePrivacyConsentCharCount();
+        }
+        
         // Отображаем все настройки в таблице
         renderAllSettings(settings);
         
@@ -1618,6 +1972,136 @@ async function loadSettings() {
         console.error('Ошибка загрузки настроек:', error);
         showAlert('Ошибка загрузки настроек: ' + error.message, 'danger');
     }
+}
+
+// Обновить счетчик символов для текста согласия
+function updatePrivacyConsentCharCount() {
+    const textarea = document.getElementById('privacyConsentText');
+    const counter = document.getElementById('privacyConsentCharCount');
+    if (textarea && counter) {
+        counter.textContent = textarea.value.length;
+    }
+}
+
+// Обновить счетчик символов в модальном окне
+function updatePrivacyConsentCharCountModal() {
+    const textarea = document.getElementById('privacyConsentTextModal');
+    const counter = document.getElementById('privacyConsentCharCountModal');
+    if (textarea && counter) {
+        counter.textContent = textarea.value.length;
+    }
+}
+
+// Редактировать текст согласия
+function editPrivacyConsentText() {
+    const textarea = document.getElementById('privacyConsentText');
+    const modalTextarea = document.getElementById('privacyConsentTextModal');
+    
+    if (textarea && modalTextarea) {
+        // Сохраняем оригинальный текст
+        originalPrivacyConsentText = textarea.value;
+        
+        // Копируем текст в модальное окно
+        modalTextarea.value = textarea.value;
+        updatePrivacyConsentCharCountModal();
+        
+        // Показываем модальное окно
+        const modal = new bootstrap.Modal(document.getElementById('privacyConsentEditModal'));
+        modal.show();
+    }
+}
+
+// Сохранить текст согласия из модального окна
+async function savePrivacyConsentFromModal() {
+    const modalTextarea = document.getElementById('privacyConsentTextModal');
+    const mainTextarea = document.getElementById('privacyConsentText');
+    
+    if (!modalTextarea || !mainTextarea) return;
+    
+    const newText = modalTextarea.value.trim();
+    
+    if (newText.length === 0) {
+        showAlert('Текст согласия не может быть пустым', 'warning');
+        return;
+    }
+    
+    if (newText.length > 2500) {
+        showAlert('Текст согласия не может превышать 2500 символов', 'warning');
+        return;
+    }
+    
+    try {
+        // Обновляем настройку через API
+        await apiCall('/settings/privacy_consent_text', 'PUT', {
+            value: newText,
+            description: 'Текст согласия на обработку персональных данных для показа пользователям'
+        });
+        
+        // Обновляем основной textarea
+        mainTextarea.value = newText;
+        updatePrivacyConsentCharCount();
+        
+        // Закрываем модальное окно
+        const modal = bootstrap.Modal.getInstance(document.getElementById('privacyConsentEditModal'));
+        modal.hide();
+        
+        showAlert('✅ Текст согласия успешно обновлен', 'success');
+        
+    } catch (error) {
+        console.error('Ошибка сохранения текста согласия:', error);
+        showAlert('Ошибка сохранения текста согласия: ' + error.message, 'danger');
+    }
+}
+
+// Сохранить текст согласия (прямое редактирование)
+async function savePrivacyConsentText() {
+    const textarea = document.getElementById('privacyConsentText');
+    if (!textarea) return;
+    
+    const newText = textarea.value.trim();
+    
+    if (newText.length === 0) {
+        showAlert('Текст согласия не может быть пустым', 'warning');
+        return;
+    }
+    
+    if (newText.length > 2500) {
+        showAlert('Текст согласия не может превышать 2500 символов', 'warning');
+        return;
+    }
+    
+    try {
+        await apiCall('/settings/privacy_consent_text', 'PUT', {
+            value: newText,
+            description: 'Текст согласия на обработку персональных данных для показа пользователям'
+        });
+        
+        // Переводим в режим только для чтения
+        textarea.readOnly = true;
+        document.getElementById('savePrivacyConsentBtn').style.display = 'none';
+        document.getElementById('cancelPrivacyConsentBtn').style.display = 'none';
+        document.querySelector('button[onclick="editPrivacyConsentText()"]').style.display = 'inline-block';
+        
+        showAlert('✅ Текст согласия успешно обновлен', 'success');
+        
+    } catch (error) {
+        console.error('Ошибка сохранения текста согласия:', error);
+        showAlert('Ошибка сохранения текста согласия: ' + error.message, 'danger');
+    }
+}
+
+// Отменить редактирование текста согласия
+function cancelPrivacyConsentEdit() {
+    const textarea = document.getElementById('privacyConsentText');
+    if (textarea) {
+        textarea.value = originalPrivacyConsentText;
+        updatePrivacyConsentCharCount();
+        textarea.readOnly = true;
+    }
+    
+    document.getElementById('savePrivacyConsentBtn').style.display = 'none';
+    document.getElementById('cancelPrivacyConsentBtn').style.display = 'none';
+    document.querySelector('button[onclick="editPrivacyConsentText()"]').style.display = 'inline-block';
 }
 
 // Отобразить все настройки в таблице
@@ -1643,22 +2127,37 @@ function renderAllSettings(settings) {
     tbody.innerHTML = rows || '<tr><td colspan="4" class="text-center"><em>Настройки не найдены</em></td></tr>';
 }
 
-// Сохранить критический статус
-async function saveCriticalStatus() {
+// Сохранить настройки заказов
+async function saveOrderSettings() {
     try {
         const select = document.getElementById('criticalStatus');
+        const amountInput = document.getElementById('minimumOrderAmount');
+        
         const newStatus = select.value;
+        const newAmount = amountInput.value;
         
         if (!newStatus) {
             showAlert('Выберите статус', 'warning');
             return;
         }
         
-        console.log('Сохранение критического статуса:', newStatus);
+        if (!newAmount || newAmount < 0) {
+            showAlert('Введите корректную минимальную сумму', 'warning');
+            return;
+        }
         
-        const response = await apiCall('/settings/critical_order_status', 'PUT', {
+        console.log('Сохранение настроек заказов:', { status: newStatus, amount: newAmount });
+        
+        // Сохраняем критический статус
+        await apiCall('/settings/critical_order_status', 'PUT', {
             value: newStatus,
             description: 'Критический статус заказа, после которого отмена невозможна'
+        });
+        
+        // Сохраняем минимальную сумму заказа
+        await apiCall('/settings/minimum_order_amount', 'PUT', {
+            value: newAmount,
+            description: 'Минимальная сумма заказа в рублях'
         });
         
         showAlert('Настройки успешно сохранены', 'success');

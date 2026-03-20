@@ -260,11 +260,36 @@ router.post('/geocode', async (req, res) => {
             return res.status(400).json({ error: 'Требуются координаты latitude и longitude' });
         }
         
-        // Используем интеграцию с Яндекс.Картами
+        // Всегда используем сервис с внутренним fallback (mock)
         const addressData = await getAddressByCoordinates(latitude, longitude);
+        logAddresses('SUCCESS', `Геокодирование выполнено: ${addressData.full_address || '[без full_address]'} (точность: ${addressData.precision || 'n/a'})`);
+
+        // Валидация адреса: запрещаем плейсхолдеры
+        const cRaw = addressData.components || {};
+        const placeholders = ['Город', 'Улица'];
+        const isPlaceholder = placeholders.includes(cRaw.locality) || placeholders.includes(cRaw.street) || (!cRaw.street && cRaw.house === '1');
+        if (process.env.NODE_ENV === 'production' && isPlaceholder) {
+            logAddresses('ERROR', 'Недостоверный адрес (плейсхолдеры), просим ручной ввод', { components: cRaw });
+            return res.status(422).json({ error: 'Не удалось точно определить адрес дома. Введите адрес вручную.' });
+        }
+
+        // Гарантируем наличие базовых полей в ответе для стабильности фронта
+        const safeResponse = {
+            full_address: addressData.full_address || `Адрес по координатам ${latitude}, ${longitude}`,
+            formatted_address: addressData.formatted_address || addressData.full_address || '',
+            latitude: addressData.latitude ?? parseFloat(latitude),
+            longitude: addressData.longitude ?? parseFloat(longitude),
+            precision: addressData.precision || 'approximate',
+            components: {
+                country: addressData.components?.country || '',
+                locality: addressData.components?.locality || '',
+                street: addressData.components?.street || '',
+                house: addressData.components?.house || ''
+            },
+            alternatives: Array.isArray(addressData.alternatives) ? addressData.alternatives : []
+        };
         
-        logAddresses('SUCCESS', `Геокодирование выполнено: ${addressData.full_address}`);
-        res.json(addressData);
+        res.json(safeResponse);
     } catch (error) {
         logAddresses('ERROR', 'Ошибка при геокодировании', { error: error.message });
         res.status(500).json({ error: 'Ошибка сервера' });

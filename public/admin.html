@@ -436,7 +436,11 @@
                             <tr>
                                 <th>Клиент</th>
                                 <th>Telegram ID</th>
-                                <th>Телефон</th>
+                                <th>Полное имя</th>
+                                <th>Номер телефона</th>
+                                <th>Дата рождения</th>
+                                <th>Пол</th>
+                                <th>Согласие на ПД</th>
                                 <th>Заказов</th>
                                 <th>Потрачено</th>
                                 <th>Последний заказ</th>
@@ -445,7 +449,7 @@
                         </thead>
                         <tbody id="customersTableBody">
                             <tr>
-                                <td colspan="7" class="text-center">
+                                <td colspan="11" class="text-center">
                                     <div class="spinner-border" role="status">
                                         <span class="visually-hidden">Загрузка...</span>
                                     </div>
@@ -513,6 +517,10 @@
                     </table>
                 </div>
             </div>
+            <!-- Пагинация товаров -->
+            <nav id="productsPagination" class="pagination-container">
+                <!-- Пагинация будет добавлена динамически -->
+            </nav>
         </div>
 
         <!-- Категории -->
@@ -721,9 +729,57 @@
                                 </div>
                             </div>
                             
-                            <button class="btn btn-primary" onclick="saveCriticalStatus()">
+                            <div class="mb-3">
+                                <label for="minimumOrderAmount" class="form-label">
+                                    <strong>💰 Минимальная сумма заказа</strong>
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="minimumOrderAmount" 
+                                           placeholder="500" min="0" step="1">
+                                    <span class="input-group-text">₽</span>
+                                </div>
+                                <div class="form-text">
+                                    Минимальная сумма заказа для оформления. Если сумма меньше, пользователь увидит уведомление
+                                </div>
+                            </div>
+                            
+                            <button class="btn btn-primary" onclick="saveOrderSettings()">
                                 💾 Сохранить настройки
                             </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-8 mt-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>🔒 Согласие на обработку персональных данных</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="privacyConsentText" class="form-label">
+                                    <strong>Текст согласия</strong>
+                                </label>
+                                <textarea class="form-control" id="privacyConsentText" rows="7" 
+                                          maxlength="2500" readonly 
+                                          style="resize: vertical; overflow-y: auto;"
+                                          oninput="updatePrivacyConsentCharCount()"></textarea>
+                                <div class="form-text">
+                                    <span id="privacyConsentCharCount">0</span>/2500 символов
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary" onclick="editPrivacyConsentText()">
+                                    ✏️ Редактировать
+                                </button>
+                                <button class="btn btn-success" onclick="savePrivacyConsentText()" id="savePrivacyConsentBtn" style="display: none;">
+                                    💾 Сохранить
+                                </button>
+                                <button class="btn btn-secondary" onclick="cancelPrivacyConsentEdit()" id="cancelPrivacyConsentBtn" style="display: none;">
+                                    ❌ Отменить
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -776,6 +832,37 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования текста согласия -->
+    <div class="modal fade" id="privacyConsentEditModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">✏️ Редактирование текста согласия</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="privacyConsentTextModal" class="form-label">
+                            <strong>Текст согласия на обработку персональных данных</strong>
+                        </label>
+                        <textarea class="form-control" id="privacyConsentTextModal" rows="15" 
+                                  maxlength="2500" style="resize: vertical;"
+                                  oninput="updatePrivacyConsentCharCountModal()"></textarea>
+                        <div class="form-text">
+                            <span id="privacyConsentCharCountModal">0</span>/2500 символов
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отменить</button>
+                    <button type="button" class="btn btn-primary" onclick="savePrivacyConsentFromModal()">
+                        💾 Сохранить изменения
+                    </button>
                 </div>
             </div>
         </div>

@@ -6,8 +6,8 @@ const compression = require('compression');
 const path = require('path');
 const fs = require('fs');
 const morgan = require('morgan');
-// ВРЕМЕННО ОТКЛЮЧЕНА СЛОЖНАЯ БЕЗОПАСНОСТЬ ДЛЯ ИСПРАВЛЕНИЯ ЧЕРНОГО ЭКРАНА
-// const telegramSecurity = require('./middleware/telegram-security');
+// Включаем систему безопасности Telegram
+const telegramSecurity = require('./middleware/telegram-security');
 const { initDatabase } = require('./database');
 const adminRoutes = require('./routes/admin');
 const productRoutes = require('./routes/products');
@@ -61,30 +61,14 @@ const errorLogger = (err, req, res, next) => {
     next(err);
 };
 
-// ВРЕМЕННО ПРОСТАЯ СИСТЕМА ДЛЯ ИСПРАВЛЕНИЯ ЧЕРНОГО ЭКРАНА
+// Система безопасности с зональной архитектурой
 app.set('trust proxy', 1);
 
-// Простые заголовки для Telegram
-app.use((req, res, next) => {
-    res.setHeader('X-Frame-Options', 'ALLOWALL');
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    
-    const csp = [
-        "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
-        "style-src 'self' 'unsafe-inline' https:",
-        "img-src 'self' data: https: blob:",
-        "connect-src 'self' https:",
-        "frame-src 'self' https://telegram.org https://web.telegram.org",
-        "frame-ancestors 'self' https://web.telegram.org https://telegram.org"
-    ].join('; ');
-    
-    res.setHeader('Content-Security-Policy', csp);
-    next();
-});
+// Применяем умную систему безопасности
+app.use(telegramSecurity.smartSecurityHeaders);
+app.use(telegramSecurity.smartCSP);
+app.use(telegramSecurity.smartRateLimit);
+app.use(telegramSecurity.smartBotProtection);
 
 // 5. Стандартные middleware
 app.use(cors());
@@ -143,6 +127,26 @@ app.get('/test-admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'test_admin.html'));
 });
 
+// Диагностическая страница для Telegram Mini App
+app.get('/telegram-debug', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'telegram-debug.html'));
+});
+
+// Тестовая страница для Mini App
+app.get('/miniapp-test', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'miniapp-test.html'));
+});
+
+// Тестовая страница для админки
+app.get('/admin-test', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-test.html'));
+});
+
+// Инструкция по добавлению в каталог Mini Apps
+app.get('/catalog-guide', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'catalog-setup-guide.html'));
+});
+
 // API Routes (защита применяется автоматически через умную систему)
 app.use('/api/admin', adminRoutes);
 app.use('/products', productRoutes);
@@ -175,6 +179,26 @@ app.get('/cache/stats', (req, res) => {
 app.get('/test', (req, res) => {
     console.log('🧪 Тестовый Mini App запрошен:', req.get('User-Agent'));
     res.sendFile(path.join(__dirname, 'public', 'miniapp-test.html'));
+});
+
+// Тестовый endpoint для проверки базы данных
+app.get('/test-db', async (req, res) => {
+    try {
+        const { query } = require('./database');
+        const users = await query('SELECT telegram_id, first_name, full_name, phone_number, privacy_consent FROM users LIMIT 10');
+        res.json({ 
+            success: true, 
+            users: users,
+            total: users.length,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('Ошибка тестирования БД:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
 });
 
 // Роут для Mini App
